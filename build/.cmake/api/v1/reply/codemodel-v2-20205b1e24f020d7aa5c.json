@@ -1,0 +1,151 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4
+					],
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.24"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "frontend",
+					"jsonFile" : "directory-frontend-Debug-b40a0bdb4e36631bd821.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.24"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "frontend",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "ir",
+					"jsonFile" : "directory-ir-Debug-cf42322932682f82fa30.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.24"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "ir",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "runtime",
+					"jsonFile" : "directory-runtime-Debug-aa77dd525374e6c519b8.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.24"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "runtime",
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"build" : "tests",
+					"jsonFile" : "directory-tests-Debug-b01f6abb0ab61427ef3b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.24"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "tests",
+					"targetIndexes" : 
+					[
+						3
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4
+					],
+					"name" : "ImpulseJIT",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 1,
+					"id" : "impulse-frontend::@73e8a6b9a3e1c0d3809b",
+					"jsonFile" : "target-impulse-frontend-Debug-4d3d79c288cbba5410fe.json",
+					"name" : "impulse-frontend",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "impulse-ir::@d424d1cf9c0b1dfbc6dd",
+					"jsonFile" : "target-impulse-ir-Debug-36e6202ef54a537fdf1b.json",
+					"name" : "impulse-ir",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "impulse-runtime::@dcf6d6b3a78d87189fa9",
+					"jsonFile" : "target-impulse-runtime-Debug-2d0fc58ed6bf504a13b0.json",
+					"name" : "impulse-runtime",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "impulse-tests::@a44f0ac069e85531cdee",
+					"jsonFile" : "target-impulse-tests-Debug-c1a04cb999214c715835.json",
+					"name" : "impulse-tests",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/flicky/itmo/Impulse-JIT/build",
+		"source" : "/home/flicky/itmo/Impulse-JIT"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}

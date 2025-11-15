@@ -49,6 +49,29 @@
 - Frame map передаётся JIT для GC (точки safepoint).
 - Trampoline table хранит пары (`function_id`, `entry_ptr`). Если `entry_ptr` указывает на байткод — VM интерпретирует; если на машинный код — передаёт управление напрямую.
 
+### Calling convention
+- `r0` — return value (целые/указатели), `f0` — return float.
+- Аргументы: первые 4 целочисленных → `r1..r4`, следующие — стек; аналогично для float (`f1..f4`).
+- `r5` используется как временный для VM (не сохраняется).
+- Callee обязан сохранять `r6..r15`, а также FP (`fp`) и link register (`lr`).
+
+### Stack layout (native)
+```
+| arg spill (если >4) |
+| return addr (lr)    |
+| saved fp            |
+| locals              |
+| spills              |
+```
+
+### FFI мосты
+- Для вызова C/Go функций предоставляется `extern "C"` шима. VM конвертирует Impulse-значения в C ABI (64-бит System V):
+	- `int` → `int64_t`
+	- `float` → `double`
+	- `string` → `{const char*, size_t}`
+- Возврат значений обратно происходит с копированием (для строк/структур).
+- FFI-функции отмечаются в байткоде отдельным флагом, чтобы JIT мог генерировать прямые вызовы.
+
 ## 8. Формат дескрипторов объектов
 - Каждый heap-объект начинается с заголовка: `struct Header { TypeId tid; uint8 color; uint8 flags; }`.
 - Далее следует payload (struct fields, array data, string bytes).

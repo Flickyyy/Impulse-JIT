@@ -1,0 +1,70 @@
+{
+	"kind" : "toolchains",
+	"toolchains" : 
+	[
+		{
+			"compiler" : 
+			{
+				"id" : "Clang",
+				"implicit" : 
+				{
+					"includeDirectories" : 
+					[
+						"/usr/include/c++/15",
+						"/usr/include/c++/15/x86_64-redhat-linux",
+						"/usr/include/c++/15/backward",
+						"/usr/lib/clang/20/include",
+						"/usr/local/include",
+						"/usr/include"
+					],
+					"linkDirectories" : 
+					[
+						"/usr/lib/clang/20/lib/x86_64-redhat-linux-gnu",
+						"/usr/lib/gcc/x86_64-redhat-linux/15",
+						"/usr/lib64",
+						"/lib64",
+						"/lib",
+						"/usr/lib"
+					],
+					"linkFrameworkDirectories" : [],
+					"linkLibraries" : 
+					[
+						"stdc++",
+						"m",
+						"gcc_s",
+						"gcc",
+						"c",
+						"gcc_s",
+						"gcc"
+					]
+				},
+				"path" : "/usr/bin/clang++",
+				"version" : "20.1.8"
+			},
+			"language" : "CXX",
+			"sourceFileExtensions" : 
+			[
+				"C",
+				"M",
+				"c++",
+				"cc",
+				"cpp",
+				"cxx",
+				"m",
+				"mm",
+				"mpp",
+				"CPP",
+				"ixx",
+				"cppm",
+				"ccm",
+				"cxxm",
+				"c++m"
+			]
+		}
+	],
+	"version" : 
+	{
+		"major" : 1,
+		"minor" : 0
+	}
+}

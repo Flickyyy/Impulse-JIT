@@ -49,6 +49,22 @@ Impulse-JIT/
 
 Workflow и CI описаны в `docs/spec/toolchain.md`.
 
+## Сборка фронтенда и CLI
+
+Чтобы `impulsec` мог вызвать C++ парсер, сначала собираем статическую библиотеку фронтенда (она появится в `build/frontend/libimpulse-frontend.a`), а затем запускаем Go-сборку CLI:
+
+```bash
+cmake -S . -B build
+cmake --build build --target impulse-frontend
+cd cli && go build ./...
+```
+
+После этого бинарь можно запускать напрямую:
+
+```bash
+./cli/impulsec --file path/to/module.imp
+```
+
 ## Снимок языка
 
 Every file is a module: первая строка `module ...;`, далее импорты и объявления. Ниже минимальный пример, отражающий текущую спецификацию (см. `docs/spec/grammar.md`):

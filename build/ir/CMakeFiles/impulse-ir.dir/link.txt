@@ -1,0 +1,2 @@
+/usr/bin/ar qc libimpulse-ir.a "CMakeFiles/impulse-ir.dir/src/placeholder.cpp.o"
+/usr/bin/ranlib libimpulse-ir.a

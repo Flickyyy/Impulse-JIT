@@ -1,0 +1,38 @@
+[
+{
+  "directory": "/home/flicky/itmo/Impulse-JIT/build/frontend",
+  "command": "/usr/bin/clang++  -I/home/flicky/itmo/Impulse-JIT/frontend/include -g -std=gnu++17 -o CMakeFiles/impulse-frontend.dir/src/lexer.cpp.o -c /home/flicky/itmo/Impulse-JIT/frontend/src/lexer.cpp",
+  "file": "/home/flicky/itmo/Impulse-JIT/frontend/src/lexer.cpp",
+  "output": "frontend/CMakeFiles/impulse-frontend.dir/src/lexer.cpp.o"
+},
+{
+  "directory": "/home/flicky/itmo/Impulse-JIT/build/frontend",
+  "command": "/usr/bin/clang++  -I/home/flicky/itmo/Impulse-JIT/frontend/include -g -std=gnu++17 -o CMakeFiles/impulse-frontend.dir/src/parser.cpp.o -c /home/flicky/itmo/Impulse-JIT/frontend/src/parser.cpp",
+  "file": "/home/flicky/itmo/Impulse-JIT/frontend/src/parser.cpp",
+  "output": "frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o"
+},
+{
+  "directory": "/home/flicky/itmo/Impulse-JIT/build/frontend",
+  "command": "/usr/bin/clang++  -I/home/flicky/itmo/Impulse-JIT/frontend/include -g -std=gnu++17 -o CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o -c /home/flicky/itmo/Impulse-JIT/frontend/src/frontend.cpp",
+  "file": "/home/flicky/itmo/Impulse-JIT/frontend/src/frontend.cpp",
+  "output": "frontend/CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o"
+},
+{
+  "directory": "/home/flicky/itmo/Impulse-JIT/build/ir",
+  "command": "/usr/bin/clang++  -I/home/flicky/itmo/Impulse-JIT/ir/include -g -std=gnu++17 -o CMakeFiles/impulse-ir.dir/src/placeholder.cpp.o -c /home/flicky/itmo/Impulse-JIT/ir/src/placeholder.cpp",
+  "file": "/home/flicky/itmo/Impulse-JIT/ir/src/placeholder.cpp",
+  "output": "ir/CMakeFiles/impulse-ir.dir/src/placeholder.cpp.o"
+},
+{
+  "directory": "/home/flicky/itmo/Impulse-JIT/build/runtime",
+  "command": "/usr/bin/clang++  -I/home/flicky/itmo/Impulse-JIT/ir/include -g -std=gnu++17 -o CMakeFiles/impulse-runtime.dir/src/placeholder.cpp.o -c /home/flicky/itmo/Impulse-JIT/runtime/src/placeholder.cpp",
+  "file": "/home/flicky/itmo/Impulse-JIT/runtime/src/placeholder.cpp",
+  "output": "runtime/CMakeFiles/impulse-runtime.dir/src/placeholder.cpp.o"
+},
+{
+  "directory": "/home/flicky/itmo/Impulse-JIT/build/tests",
+  "command": "/usr/bin/clang++  -I/home/flicky/itmo/Impulse-JIT/frontend/include -I/home/flicky/itmo/Impulse-JIT/ir/include -g -std=gnu++17 -o CMakeFiles/impulse-tests.dir/main.cpp.o -c /home/flicky/itmo/Impulse-JIT/tests/main.cpp",
+  "file": "/home/flicky/itmo/Impulse-JIT/tests/main.cpp",
+  "output": "tests/CMakeFiles/impulse-tests.dir/main.cpp.o"
+}
+]

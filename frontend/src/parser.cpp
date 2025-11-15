@@ -113,12 +113,15 @@ auto Parser::parseImportList() -> std::vector<ImportDecl> {
 }
 
 auto Parser::parseDeclaration() -> std::optional<Declaration> {
-    const auto bindingForKeyword = [this](TokenKind keyword, BindingKind kind) -> std::optional<Declaration> {
+    const bool exported = match(TokenKind::KwExport);
+
+    const auto bindingForKeyword = [this, exported](TokenKind keyword, BindingKind kind) -> std::optional<Declaration> {
         if (!match(keyword)) {
             return std::nullopt;
         }
         Declaration decl;
         decl.kind = Declaration::Kind::Binding;
+        decl.exported = exported;
         decl.binding = parseBindingDecl(kind);
         return decl;
     };
@@ -136,12 +139,32 @@ auto Parser::parseDeclaration() -> std::optional<Declaration> {
     if (match(TokenKind::KwFunc)) {
         Declaration decl;
         decl.kind = Declaration::Kind::Function;
+        decl.exported = exported;
         decl.function = parseFunctionDecl();
         return decl;
     }
 
+    if (match(TokenKind::KwStruct)) {
+        Declaration decl;
+        decl.kind = Declaration::Kind::Struct;
+        decl.exported = exported;
+        decl.structure = parseStructDecl();
+        return decl;
+    }
+
+    if (match(TokenKind::KwInterface)) {
+        Declaration decl;
+        decl.kind = Declaration::Kind::Interface;
+        decl.exported = exported;
+        decl.interface_decl = parseInterfaceDecl();
+        return decl;
+    }
+
     if (!check(TokenKind::EndOfFile)) {
-        reportError(peek(), "Only let/const/var/func declarations are supported in this iteration");
+        if (exported) {
+            reportError(previous(), "Expected declaration after 'export'");
+        }
+        reportError(peek(), "Only let/const/var/func/struct/interface declarations are supported in this iteration");
     }
     return std::nullopt;
 }
@@ -243,6 +266,124 @@ auto Parser::parseFunctionDecl() -> FunctionDecl {
     }
     decl.body = makeSnippet(TokenRange{bodyStart, bodyEnd});
     return decl;
+}
+
+auto Parser::parseStructDecl() -> StructDecl {
+    StructDecl decl;
+
+    const Token* name = consume(TokenKind::Identifier, "Expected identifier after 'struct'");
+    if (name != nullptr) {
+        decl.name = makeIdentifier(*name);
+    }
+
+    const Token* lbrace = consume(TokenKind::LBrace, "Expected '{' to start struct body");
+    (void)lbrace;
+
+    while (!check(TokenKind::RBrace) && !check(TokenKind::EndOfFile)) {
+        if (auto field = parseFieldDecl()) {
+            decl.fields.push_back(std::move(*field));
+        }
+    }
+
+    const Token* rbrace = consume(TokenKind::RBrace, "Expected '}' after struct body");
+    (void)rbrace;
+    return decl;
+}
+
+auto Parser::parseInterfaceDecl() -> InterfaceDecl {
+    InterfaceDecl decl;
+
+    const Token* name = consume(TokenKind::Identifier, "Expected identifier after 'interface'");
+    if (name != nullptr) {
+        decl.name = makeIdentifier(*name);
+    }
+
+    const Token* lbrace = consume(TokenKind::LBrace, "Expected '{' to start interface body");
+    (void)lbrace;
+
+    while (!check(TokenKind::RBrace) && !check(TokenKind::EndOfFile)) {
+        if (auto method = parseInterfaceMethod()) {
+            decl.methods.push_back(std::move(*method));
+        }
+    }
+
+    const Token* rbrace = consume(TokenKind::RBrace, "Expected '}' after interface body");
+    (void)rbrace;
+    return decl;
+}
+
+auto Parser::parseInterfaceMethod() -> std::optional<InterfaceMethod> {
+    InterfaceMethod method;
+
+    (void)match(TokenKind::KwFunc);
+    const Token* name = consume(TokenKind::Identifier, "Expected interface method name");
+    const Token* lparen = consume(TokenKind::LParen, "Expected '(' after method name");
+    (void)lparen;
+    method.parameters = parseParameterList();
+    const Token* rparen = consume(TokenKind::RParen, "Expected ')' to close method parameters");
+    (void)rparen;
+
+    if (match(TokenKind::Arrow)) {
+        const Token* returnType = consume(TokenKind::Identifier, "Expected return type after '->'");
+        if (returnType != nullptr) {
+            method.return_type = makeIdentifier(*returnType);
+        }
+    }
+
+    const Token* terminator = consume(TokenKind::Semicolon, "Expected ';' after interface method signature");
+    if (terminator == nullptr) {
+        while (!check(TokenKind::Semicolon) && !check(TokenKind::RBrace) && !check(TokenKind::EndOfFile)) {
+            (void)advance();
+        }
+        if (check(TokenKind::Semicolon)) {
+            advance();
+        }
+    }
+
+    if (name != nullptr) {
+        method.name = makeIdentifier(*name);
+    }
+
+    if (name == nullptr) {
+        return std::nullopt;
+    }
+    return method;
+}
+
+auto Parser::parseFieldDecl() -> std::optional<FieldDecl> {
+    const size_t fieldStart = current_;
+    FieldDecl field;
+
+    const Token* name = consume(TokenKind::Identifier, "Expected field name");
+    const Token* colon = consume(TokenKind::Colon, "Expected ':' after field name");
+    (void)colon;
+    const Token* typeName = consume(TokenKind::Identifier, "Expected field type");
+
+    const Token* terminator = consume(TokenKind::Semicolon, "Expected ';' after field declaration");
+    if (terminator == nullptr) {
+        while (!check(TokenKind::Semicolon) && !check(TokenKind::RBrace) && !check(TokenKind::EndOfFile)) {
+            (void)advance();
+        }
+        if (check(TokenKind::Semicolon)) {
+            advance();
+        }
+    }
+
+    if (name != nullptr) {
+        field.name = makeIdentifier(*name);
+    }
+    if (typeName != nullptr) {
+        field.type_name = makeIdentifier(*typeName);
+    }
+
+    if (current_ == fieldStart) {
+        advance();
+    }
+
+    if (name == nullptr || typeName == nullptr) {
+        return std::nullopt;
+    }
+    return field;
 }
 
 auto Parser::parseParameterList() -> std::vector<Parameter> {

@@ -178,6 +178,30 @@ src/lexer.cpp.s:
 	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/src/lexer.cpp.s
 .PHONY : src/lexer.cpp.s
 
+src/lowering.o: src/lowering.cpp.o
+.PHONY : src/lowering.o
+
+# target to build an object file
+src/lowering.cpp.o:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/src/lowering.cpp.o
+.PHONY : src/lowering.cpp.o
+
+src/lowering.i: src/lowering.cpp.i
+.PHONY : src/lowering.i
+
+# target to preprocess a source file
+src/lowering.cpp.i:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/src/lowering.cpp.i
+.PHONY : src/lowering.cpp.i
+
+src/lowering.s: src/lowering.cpp.s
+.PHONY : src/lowering.s
+
+# target to generate assembly for a file
+src/lowering.cpp.s:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/src/lowering.cpp.s
+.PHONY : src/lowering.cpp.s
+
 src/parser.o: src/parser.cpp.o
 .PHONY : src/parser.o
 
@@ -202,6 +226,30 @@ src/parser.cpp.s:
 	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.s
 .PHONY : src/parser.cpp.s
 
+src/semantic.o: src/semantic.cpp.o
+.PHONY : src/semantic.o
+
+# target to build an object file
+src/semantic.cpp.o:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o
+.PHONY : src/semantic.cpp.o
+
+src/semantic.i: src/semantic.cpp.i
+.PHONY : src/semantic.i
+
+# target to preprocess a source file
+src/semantic.cpp.i:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.i
+.PHONY : src/semantic.cpp.i
+
+src/semantic.s: src/semantic.cpp.s
+.PHONY : src/semantic.s
+
+# target to generate assembly for a file
+src/semantic.cpp.s:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.s
+.PHONY : src/semantic.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -217,9 +265,15 @@ help:
 	@echo "... src/lexer.o"
 	@echo "... src/lexer.i"
 	@echo "... src/lexer.s"
+	@echo "... src/lowering.o"
+	@echo "... src/lowering.i"
+	@echo "... src/lowering.s"
 	@echo "... src/parser.o"
 	@echo "... src/parser.i"
 	@echo "... src/parser.s"
+	@echo "... src/semantic.o"
+	@echo "... src/semantic.i"
+	@echo "... src/semantic.s"
 .PHONY : help
 
 

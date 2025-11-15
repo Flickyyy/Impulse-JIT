@@ -31,6 +31,10 @@ class Parser {
     [[nodiscard]] auto parseDeclaration() -> std::optional<Declaration>;
     [[nodiscard]] auto parseBindingDecl(BindingKind kind) -> BindingDecl;
     [[nodiscard]] auto parseFunctionDecl() -> FunctionDecl;
+    [[nodiscard]] auto parseStructDecl() -> StructDecl;
+    [[nodiscard]] auto parseFieldDecl() -> std::optional<FieldDecl>;
+    [[nodiscard]] auto parseInterfaceDecl() -> InterfaceDecl;
+    [[nodiscard]] auto parseInterfaceMethod() -> std::optional<InterfaceMethod>;
     [[nodiscard]] auto parseParameterList() -> std::vector<Parameter>;
     [[nodiscard]] auto parsePath(const char* context) -> std::vector<Identifier>;
 

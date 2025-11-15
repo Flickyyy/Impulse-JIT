@@ -130,6 +130,30 @@ impulse-ir/fast:
 	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/build
 .PHONY : impulse-ir/fast
 
+src/builder.o: src/builder.cpp.o
+.PHONY : src/builder.o
+
+# target to build an object file
+src/builder.cpp.o:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.o
+.PHONY : src/builder.cpp.o
+
+src/builder.i: src/builder.cpp.i
+.PHONY : src/builder.i
+
+# target to preprocess a source file
+src/builder.cpp.i:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.i
+.PHONY : src/builder.cpp.i
+
+src/builder.s: src/builder.cpp.s
+.PHONY : src/builder.s
+
+# target to generate assembly for a file
+src/builder.cpp.s:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.s
+.PHONY : src/builder.cpp.s
+
 src/placeholder.o: src/placeholder.cpp.o
 .PHONY : src/placeholder.o
 
@@ -154,6 +178,30 @@ src/placeholder.cpp.s:
 	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/src/placeholder.cpp.s
 .PHONY : src/placeholder.cpp.s
 
+src/printer.o: src/printer.cpp.o
+.PHONY : src/printer.o
+
+# target to build an object file
+src/printer.cpp.o:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.o
+.PHONY : src/printer.cpp.o
+
+src/printer.i: src/printer.cpp.i
+.PHONY : src/printer.i
+
+# target to preprocess a source file
+src/printer.cpp.i:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.i
+.PHONY : src/printer.cpp.i
+
+src/printer.s: src/printer.cpp.s
+.PHONY : src/printer.s
+
+# target to generate assembly for a file
+src/printer.cpp.s:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.s
+.PHONY : src/printer.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -163,9 +211,15 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... impulse-ir"
+	@echo "... src/builder.o"
+	@echo "... src/builder.i"
+	@echo "... src/builder.s"
 	@echo "... src/placeholder.o"
 	@echo "... src/placeholder.i"
 	@echo "... src/placeholder.s"
+	@echo "... src/printer.o"
+	@echo "... src/printer.i"
+	@echo "... src/printer.s"
 .PHONY : help
 
 

@@ -4,8 +4,11 @@
 frontend/CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o: /home/flicky/itmo/Impulse-JIT/frontend/src/frontend.cpp \
   /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/ast.h \
   /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lexer.h \
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lowering.h \
   /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/parser.h \
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/semantic.h \
   /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/frontend.h \
+  /home/flicky/itmo/Impulse-JIT/ir/include/impulse/ir/ir.h \
   /usr/lib/clang/20/include/__stdarg___gnuc_va_list.h \
   /usr/lib/clang/20/include/__stddef_header_macro.h \
   /usr/lib/clang/20/include/__stddef_max_align_t.h \
@@ -348,6 +351,181 @@ frontend/CMakeFiles/impulse-frontend.dir/src/lexer.cpp.o: /home/flicky/itmo/Impu
   /usr/include/sys/types.h \
   /usr/include/wchar.h
 
+frontend/CMakeFiles/impulse-frontend.dir/src/lowering.cpp.o: /home/flicky/itmo/Impulse-JIT/frontend/src/lowering.cpp \
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/ast.h \
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lowering.h \
+  /home/flicky/itmo/Impulse-JIT/ir/include/impulse/ir/builder.h \
+  /home/flicky/itmo/Impulse-JIT/ir/include/impulse/ir/ir.h \
+  /home/flicky/itmo/Impulse-JIT/ir/include/impulse/ir/printer.h \
+  /usr/lib/clang/20/include/__stdarg___gnuc_va_list.h \
+  /usr/lib/clang/20/include/__stddef_header_macro.h \
+  /usr/lib/clang/20/include/__stddef_max_align_t.h \
+  /usr/lib/clang/20/include/__stddef_null.h \
+  /usr/lib/clang/20/include/__stddef_nullptr_t.h \
+  /usr/lib/clang/20/include/__stddef_offsetof.h \
+  /usr/lib/clang/20/include/__stddef_ptrdiff_t.h \
+  /usr/lib/clang/20/include/__stddef_size_t.h \
+  /usr/lib/clang/20/include/__stddef_wchar_t.h \
+  /usr/lib/clang/20/include/stdarg.h \
+  /usr/lib/clang/20/include/stddef.h \
+  /usr/lib/clang/20/include/stdint.h \
+  /usr/include/c++/15/backward/binders.h \
+  /usr/include/c++/15/bit \
+  /usr/include/c++/15/bits/alloc_traits.h \
+  /usr/include/c++/15/bits/allocator.h \
+  /usr/include/c++/15/bits/basic_string.h \
+  /usr/include/c++/15/bits/basic_string.tcc \
+  /usr/include/c++/15/bits/char_traits.h \
+  /usr/include/c++/15/bits/charconv.h \
+  /usr/include/c++/15/bits/concept_check.h \
+  /usr/include/c++/15/bits/cpp_type_traits.h \
+  /usr/include/c++/15/bits/cxxabi_forced.h \
+  /usr/include/c++/15/bits/cxxabi_init_exception.h \
+  /usr/include/c++/15/bits/enable_special_members.h \
+  /usr/include/c++/15/bits/exception.h \
+  /usr/include/c++/15/bits/exception_defines.h \
+  /usr/include/c++/15/bits/exception_ptr.h \
+  /usr/include/c++/15/bits/functexcept.h \
+  /usr/include/c++/15/bits/functional_hash.h \
+  /usr/include/c++/15/bits/hash_bytes.h \
+  /usr/include/c++/15/bits/invoke.h \
+  /usr/include/c++/15/bits/localefwd.h \
+  /usr/include/c++/15/bits/memory_resource.h \
+  /usr/include/c++/15/bits/memoryfwd.h \
+  /usr/include/c++/15/bits/move.h \
+  /usr/include/c++/15/bits/nested_exception.h \
+  /usr/include/c++/15/bits/new_allocator.h \
+  /usr/include/c++/15/bits/ostream_insert.h \
+  /usr/include/c++/15/bits/postypes.h \
+  /usr/include/c++/15/bits/predefined_ops.h \
+  /usr/include/c++/15/bits/ptr_traits.h \
+  /usr/include/c++/15/bits/range_access.h \
+  /usr/include/c++/15/bits/refwrap.h \
+  /usr/include/c++/15/bits/requires_hosted.h \
+  /usr/include/c++/15/bits/std_abs.h \
+  /usr/include/c++/15/bits/stl_algobase.h \
+  /usr/include/c++/15/bits/stl_bvector.h \
+  /usr/include/c++/15/bits/stl_construct.h \
+  /usr/include/c++/15/bits/stl_function.h \
+  /usr/include/c++/15/bits/stl_iterator.h \
+  /usr/include/c++/15/bits/stl_iterator_base_funcs.h \
+  /usr/include/c++/15/bits/stl_iterator_base_types.h \
+  /usr/include/c++/15/bits/stl_pair.h \
+  /usr/include/c++/15/bits/stl_relops.h \
+  /usr/include/c++/15/bits/stl_uninitialized.h \
+  /usr/include/c++/15/bits/stl_vector.h \
+  /usr/include/c++/15/bits/string_view.tcc \
+  /usr/include/c++/15/bits/stringfwd.h \
+  /usr/include/c++/15/bits/uses_allocator.h \
+  /usr/include/c++/15/bits/uses_allocator_args.h \
+  /usr/include/c++/15/bits/utility.h \
+  /usr/include/c++/15/bits/vector.tcc \
+  /usr/include/c++/15/bits/version.h \
+  /usr/include/c++/15/cctype \
+  /usr/include/c++/15/cerrno \
+  /usr/include/c++/15/clocale \
+  /usr/include/c++/15/concepts \
+  /usr/include/c++/15/cstddef \
+  /usr/include/c++/15/cstdint \
+  /usr/include/c++/15/cstdio \
+  /usr/include/c++/15/cstdlib \
+  /usr/include/c++/15/cwchar \
+  /usr/include/c++/15/debug/assertions.h \
+  /usr/include/c++/15/debug/debug.h \
+  /usr/include/c++/15/exception \
+  /usr/include/c++/15/ext/alloc_traits.h \
+  /usr/include/c++/15/ext/numeric_traits.h \
+  /usr/include/c++/15/ext/string_conversions.h \
+  /usr/include/c++/15/ext/type_traits.h \
+  /usr/include/c++/15/initializer_list \
+  /usr/include/c++/15/iosfwd \
+  /usr/include/c++/15/new \
+  /usr/include/c++/15/optional \
+  /usr/include/c++/15/pstl/pstl_config.h \
+  /usr/include/c++/15/string \
+  /usr/include/c++/15/string_view \
+  /usr/include/c++/15/tuple \
+  /usr/include/c++/15/type_traits \
+  /usr/include/c++/15/typeinfo \
+  /usr/include/c++/15/utility \
+  /usr/include/c++/15/vector \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/c++allocator.h \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/c++config.h \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/c++locale.h \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/cpu_defines.h \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/os_defines.h \
+  /usr/include/alloca.h \
+  /usr/include/asm-generic/errno-base.h \
+  /usr/include/asm-generic/errno.h \
+  /usr/include/asm/errno.h \
+  /usr/include/bits/atomic_wide_counter.h \
+  /usr/include/bits/byteswap.h \
+  /usr/include/bits/endian.h \
+  /usr/include/bits/endianness.h \
+  /usr/include/bits/errno.h \
+  /usr/include/bits/floatn-common.h \
+  /usr/include/bits/floatn.h \
+  /usr/include/bits/libc-header-start.h \
+  /usr/include/bits/locale.h \
+  /usr/include/bits/long-double.h \
+  /usr/include/bits/pthreadtypes-arch.h \
+  /usr/include/bits/pthreadtypes.h \
+  /usr/include/bits/select.h \
+  /usr/include/bits/stdint-intn.h \
+  /usr/include/bits/stdint-least.h \
+  /usr/include/bits/stdint-uintn.h \
+  /usr/include/bits/stdio_lim.h \
+  /usr/include/bits/stdlib-float.h \
+  /usr/include/bits/struct_mutex.h \
+  /usr/include/bits/struct_rwlock.h \
+  /usr/include/bits/thread-shared-types.h \
+  /usr/include/bits/time64.h \
+  /usr/include/bits/timesize.h \
+  /usr/include/bits/types.h \
+  /usr/include/bits/types/FILE.h \
+  /usr/include/bits/types/__FILE.h \
+  /usr/include/bits/types/__fpos64_t.h \
+  /usr/include/bits/types/__fpos_t.h \
+  /usr/include/bits/types/__locale_t.h \
+  /usr/include/bits/types/__mbstate_t.h \
+  /usr/include/bits/types/__sigset_t.h \
+  /usr/include/bits/types/clock_t.h \
+  /usr/include/bits/types/clockid_t.h \
+  /usr/include/bits/types/cookie_io_functions_t.h \
+  /usr/include/bits/types/error_t.h \
+  /usr/include/bits/types/locale_t.h \
+  /usr/include/bits/types/mbstate_t.h \
+  /usr/include/bits/types/sigset_t.h \
+  /usr/include/bits/types/struct_FILE.h \
+  /usr/include/bits/types/struct_timespec.h \
+  /usr/include/bits/types/struct_timeval.h \
+  /usr/include/bits/types/time_t.h \
+  /usr/include/bits/types/timer_t.h \
+  /usr/include/bits/types/wint_t.h \
+  /usr/include/bits/typesizes.h \
+  /usr/include/bits/uintn-identity.h \
+  /usr/include/bits/waitflags.h \
+  /usr/include/bits/waitstatus.h \
+  /usr/include/bits/wchar.h \
+  /usr/include/bits/wordsize.h \
+  /usr/include/ctype.h \
+  /usr/include/endian.h \
+  /usr/include/errno.h \
+  /usr/include/features-time64.h \
+  /usr/include/features.h \
+  /usr/include/gnu/stubs-64.h \
+  /usr/include/gnu/stubs.h \
+  /usr/include/linux/errno.h \
+  /usr/include/locale.h \
+  /usr/include/stdc-predef.h \
+  /usr/include/stdint.h \
+  /usr/include/stdio.h \
+  /usr/include/stdlib.h \
+  /usr/include/sys/cdefs.h \
+  /usr/include/sys/select.h \
+  /usr/include/sys/types.h \
+  /usr/include/wchar.h
+
 frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Impulse-JIT/frontend/src/parser.cpp \
   /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/ast.h \
   /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lexer.h \
@@ -577,6 +755,183 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
   /usr/include/wchar.h \
   /usr/include/wctype.h
 
+frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o: /home/flicky/itmo/Impulse-JIT/frontend/src/semantic.cpp \
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/ast.h \
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/semantic.h \
+  /usr/lib/clang/20/include/__stdarg___gnuc_va_list.h \
+  /usr/lib/clang/20/include/__stddef_header_macro.h \
+  /usr/lib/clang/20/include/__stddef_max_align_t.h \
+  /usr/lib/clang/20/include/__stddef_null.h \
+  /usr/lib/clang/20/include/__stddef_nullptr_t.h \
+  /usr/lib/clang/20/include/__stddef_offsetof.h \
+  /usr/lib/clang/20/include/__stddef_ptrdiff_t.h \
+  /usr/lib/clang/20/include/__stddef_size_t.h \
+  /usr/lib/clang/20/include/__stddef_wchar_t.h \
+  /usr/lib/clang/20/include/stdarg.h \
+  /usr/lib/clang/20/include/stddef.h \
+  /usr/lib/clang/20/include/stdint.h \
+  /usr/include/c++/15/backward/binders.h \
+  /usr/include/c++/15/bit \
+  /usr/include/c++/15/bits/alloc_traits.h \
+  /usr/include/c++/15/bits/allocator.h \
+  /usr/include/c++/15/bits/basic_string.h \
+  /usr/include/c++/15/bits/basic_string.tcc \
+  /usr/include/c++/15/bits/char_traits.h \
+  /usr/include/c++/15/bits/charconv.h \
+  /usr/include/c++/15/bits/concept_check.h \
+  /usr/include/c++/15/bits/cpp_type_traits.h \
+  /usr/include/c++/15/bits/cxxabi_forced.h \
+  /usr/include/c++/15/bits/cxxabi_init_exception.h \
+  /usr/include/c++/15/bits/enable_special_members.h \
+  /usr/include/c++/15/bits/erase_if.h \
+  /usr/include/c++/15/bits/exception.h \
+  /usr/include/c++/15/bits/exception_defines.h \
+  /usr/include/c++/15/bits/exception_ptr.h \
+  /usr/include/c++/15/bits/functexcept.h \
+  /usr/include/c++/15/bits/functional_hash.h \
+  /usr/include/c++/15/bits/hash_bytes.h \
+  /usr/include/c++/15/bits/hashtable.h \
+  /usr/include/c++/15/bits/hashtable_policy.h \
+  /usr/include/c++/15/bits/invoke.h \
+  /usr/include/c++/15/bits/localefwd.h \
+  /usr/include/c++/15/bits/memory_resource.h \
+  /usr/include/c++/15/bits/memoryfwd.h \
+  /usr/include/c++/15/bits/move.h \
+  /usr/include/c++/15/bits/nested_exception.h \
+  /usr/include/c++/15/bits/new_allocator.h \
+  /usr/include/c++/15/bits/node_handle.h \
+  /usr/include/c++/15/bits/ostream_insert.h \
+  /usr/include/c++/15/bits/postypes.h \
+  /usr/include/c++/15/bits/predefined_ops.h \
+  /usr/include/c++/15/bits/ptr_traits.h \
+  /usr/include/c++/15/bits/range_access.h \
+  /usr/include/c++/15/bits/refwrap.h \
+  /usr/include/c++/15/bits/requires_hosted.h \
+  /usr/include/c++/15/bits/std_abs.h \
+  /usr/include/c++/15/bits/stl_algobase.h \
+  /usr/include/c++/15/bits/stl_bvector.h \
+  /usr/include/c++/15/bits/stl_construct.h \
+  /usr/include/c++/15/bits/stl_function.h \
+  /usr/include/c++/15/bits/stl_iterator.h \
+  /usr/include/c++/15/bits/stl_iterator_base_funcs.h \
+  /usr/include/c++/15/bits/stl_iterator_base_types.h \
+  /usr/include/c++/15/bits/stl_pair.h \
+  /usr/include/c++/15/bits/stl_uninitialized.h \
+  /usr/include/c++/15/bits/stl_vector.h \
+  /usr/include/c++/15/bits/string_view.tcc \
+  /usr/include/c++/15/bits/stringfwd.h \
+  /usr/include/c++/15/bits/unordered_map.h \
+  /usr/include/c++/15/bits/uses_allocator.h \
+  /usr/include/c++/15/bits/uses_allocator_args.h \
+  /usr/include/c++/15/bits/utility.h \
+  /usr/include/c++/15/bits/vector.tcc \
+  /usr/include/c++/15/bits/version.h \
+  /usr/include/c++/15/cctype \
+  /usr/include/c++/15/cerrno \
+  /usr/include/c++/15/clocale \
+  /usr/include/c++/15/concepts \
+  /usr/include/c++/15/cstddef \
+  /usr/include/c++/15/cstdint \
+  /usr/include/c++/15/cstdio \
+  /usr/include/c++/15/cstdlib \
+  /usr/include/c++/15/cwchar \
+  /usr/include/c++/15/debug/assertions.h \
+  /usr/include/c++/15/debug/debug.h \
+  /usr/include/c++/15/exception \
+  /usr/include/c++/15/ext/aligned_buffer.h \
+  /usr/include/c++/15/ext/alloc_traits.h \
+  /usr/include/c++/15/ext/numeric_traits.h \
+  /usr/include/c++/15/ext/string_conversions.h \
+  /usr/include/c++/15/ext/type_traits.h \
+  /usr/include/c++/15/initializer_list \
+  /usr/include/c++/15/iosfwd \
+  /usr/include/c++/15/new \
+  /usr/include/c++/15/optional \
+  /usr/include/c++/15/pstl/pstl_config.h \
+  /usr/include/c++/15/string \
+  /usr/include/c++/15/string_view \
+  /usr/include/c++/15/tuple \
+  /usr/include/c++/15/type_traits \
+  /usr/include/c++/15/typeinfo \
+  /usr/include/c++/15/unordered_map \
+  /usr/include/c++/15/vector \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/c++allocator.h \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/c++config.h \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/c++locale.h \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/cpu_defines.h \
+  /usr/include/c++/15/x86_64-redhat-linux/bits/os_defines.h \
+  /usr/include/alloca.h \
+  /usr/include/asm-generic/errno-base.h \
+  /usr/include/asm-generic/errno.h \
+  /usr/include/asm/errno.h \
+  /usr/include/bits/atomic_wide_counter.h \
+  /usr/include/bits/byteswap.h \
+  /usr/include/bits/endian.h \
+  /usr/include/bits/endianness.h \
+  /usr/include/bits/errno.h \
+  /usr/include/bits/floatn-common.h \
+  /usr/include/bits/floatn.h \
+  /usr/include/bits/libc-header-start.h \
+  /usr/include/bits/locale.h \
+  /usr/include/bits/long-double.h \
+  /usr/include/bits/pthreadtypes-arch.h \
+  /usr/include/bits/pthreadtypes.h \
+  /usr/include/bits/select.h \
+  /usr/include/bits/stdint-intn.h \
+  /usr/include/bits/stdint-least.h \
+  /usr/include/bits/stdint-uintn.h \
+  /usr/include/bits/stdio_lim.h \
+  /usr/include/bits/stdlib-float.h \
+  /usr/include/bits/struct_mutex.h \
+  /usr/include/bits/struct_rwlock.h \
+  /usr/include/bits/thread-shared-types.h \
+  /usr/include/bits/time64.h \
+  /usr/include/bits/timesize.h \
+  /usr/include/bits/types.h \
+  /usr/include/bits/types/FILE.h \
+  /usr/include/bits/types/__FILE.h \
+  /usr/include/bits/types/__fpos64_t.h \
+  /usr/include/bits/types/__fpos_t.h \
+  /usr/include/bits/types/__locale_t.h \
+  /usr/include/bits/types/__mbstate_t.h \
+  /usr/include/bits/types/__sigset_t.h \
+  /usr/include/bits/types/clock_t.h \
+  /usr/include/bits/types/clockid_t.h \
+  /usr/include/bits/types/cookie_io_functions_t.h \
+  /usr/include/bits/types/error_t.h \
+  /usr/include/bits/types/locale_t.h \
+  /usr/include/bits/types/mbstate_t.h \
+  /usr/include/bits/types/sigset_t.h \
+  /usr/include/bits/types/struct_FILE.h \
+  /usr/include/bits/types/struct_timespec.h \
+  /usr/include/bits/types/struct_timeval.h \
+  /usr/include/bits/types/time_t.h \
+  /usr/include/bits/types/timer_t.h \
+  /usr/include/bits/types/wint_t.h \
+  /usr/include/bits/typesizes.h \
+  /usr/include/bits/uintn-identity.h \
+  /usr/include/bits/waitflags.h \
+  /usr/include/bits/waitstatus.h \
+  /usr/include/bits/wchar.h \
+  /usr/include/bits/wordsize.h \
+  /usr/include/ctype.h \
+  /usr/include/endian.h \
+  /usr/include/errno.h \
+  /usr/include/features-time64.h \
+  /usr/include/features.h \
+  /usr/include/gnu/stubs-64.h \
+  /usr/include/gnu/stubs.h \
+  /usr/include/linux/errno.h \
+  /usr/include/locale.h \
+  /usr/include/stdc-predef.h \
+  /usr/include/stdint.h \
+  /usr/include/stdio.h \
+  /usr/include/stdlib.h \
+  /usr/include/sys/cdefs.h \
+  /usr/include/sys/select.h \
+  /usr/include/sys/types.h \
+  /usr/include/wchar.h
+
 
 /usr/include/time.h:
 
@@ -602,8 +957,6 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 
 /usr/include/asm/posix_types_64.h:
 
-/usr/include/c++/15/system_error:
-
 /usr/include/c++/15/stdexcept:
 
 /usr/include/c++/15/ostream:
@@ -621,6 +974,12 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 /usr/include/c++/15/bits/basic_ios.tcc:
 
 /home/flicky/itmo/Impulse-JIT/frontend/src/parser.cpp:
+
+/usr/include/c++/15/system_error:
+
+/home/flicky/itmo/Impulse-JIT/ir/include/impulse/ir/printer.h:
+
+/home/flicky/itmo/Impulse-JIT/ir/include/impulse/ir/builder.h:
 
 /usr/include/c++/15/unordered_map:
 
@@ -726,23 +1085,17 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 
 /usr/include/bits/timesize.h:
 
-/usr/include/c++/15/bits/stl_iterator_base_types.h:
+/usr/include/bits/thread-shared-types.h:
 
-/usr/include/c++/15/bits/allocator.h:
+/usr/include/bits/types/struct_itimerspec.h:
+
+/usr/include/bits/struct_rwlock.h:
 
 /usr/include/alloca.h:
 
 /usr/include/c++/15/x86_64-redhat-linux/bits/c++config.h:
 
 /usr/include/bits/struct_mutex.h:
-
-/usr/include/c++/15/bits/std_abs.h:
-
-/usr/include/c++/15/typeinfo:
-
-/usr/include/linux/errno.h:
-
-/usr/include/c++/15/bits/invoke.h:
 
 /usr/include/c++/15/bits/locale_classes.tcc:
 
@@ -756,15 +1109,9 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 
 /usr/include/c++/15/bits/vector.tcc:
 
-/usr/include/c++/15/bits/functexcept.h:
-
 /usr/include/c++/15/bits/ptr_traits.h:
 
 /usr/include/c++/15/debug/debug.h:
-
-/usr/include/c++/15/debug/assertions.h:
-
-/usr/include/bits/select.h:
 
 /usr/include/bits/setjmp.h:
 
@@ -772,7 +1119,15 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 
 /usr/include/bits/byteswap.h:
 
-/usr/include/c++/15/bits/basic_string.tcc:
+/usr/include/bits/types/struct_sched_param.h:
+
+/home/flicky/itmo/Impulse-JIT/frontend/src/lexer.cpp:
+
+/usr/include/c++/15/bits/cxxabi_init_exception.h:
+
+/usr/include/c++/15/bits/cxxabi_forced.h:
+
+/usr/include/c++/15/tuple:
 
 /usr/include/c++/15/bits/memory_resource.h:
 
@@ -780,9 +1135,47 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 
 /usr/include/c++/15/bit:
 
-/usr/include/c++/15/bits/postypes.h:
+/usr/include/c++/15/bits/basic_string.tcc:
 
-/usr/include/c++/15/cstring:
+/usr/include/c++/15/bits/functexcept.h:
+
+/home/flicky/itmo/Impulse-JIT/ir/include/impulse/ir/ir.h:
+
+/usr/include/bits/select.h:
+
+/usr/include/c++/15/debug/assertions.h:
+
+/usr/include/c++/15/bits/std_abs.h:
+
+/usr/include/c++/15/typeinfo:
+
+/usr/include/bits/atomic_wide_counter.h:
+
+/usr/include/bits/types/__sigset_t.h:
+
+/usr/lib/clang/20/include/__stddef_ptrdiff_t.h:
+
+/usr/include/bits/cpu-set.h:
+
+/usr/include/c++/15/utility:
+
+/usr/include/c++/15/backward/binders.h:
+
+/home/flicky/itmo/Impulse-JIT/frontend/src/semantic.cpp:
+
+/usr/include/c++/15/x86_64-redhat-linux/bits/ctype_base.h:
+
+/usr/include/c++/15/streambuf:
+
+/usr/include/c++/15/bits/basic_string.h:
+
+/usr/include/c++/15/bits/cpp_type_traits.h:
+
+/usr/include/c++/15/bits/uses_allocator_args.h:
+
+/usr/include/c++/15/bits/exception_ptr.h:
+
+/usr/include/c++/15/cstddef:
 
 /usr/include/wctype.h:
 
@@ -791,6 +1184,26 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 /usr/include/bits/errno.h:
 
 /usr/include/c++/15/bits/ostream_insert.h:
+
+/usr/include/bits/time64.h:
+
+/home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/semantic.h:
+
+/usr/include/bits/stdlib-float.h:
+
+/usr/include/linux/errno.h:
+
+/usr/include/c++/15/bits/invoke.h:
+
+/home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lowering.h:
+
+/usr/include/asm-generic/int-ll64.h:
+
+/usr/lib/clang/20/include/__stddef_max_align_t.h:
+
+/usr/include/c++/15/bits/memoryfwd.h:
+
+/usr/include/c++/15/bits/stringfwd.h:
 
 /usr/include/bits/types/cookie_io_functions_t.h:
 
@@ -810,14 +1223,6 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 
 /usr/include/c++/15/bits/alloc_traits.h:
 
-/usr/include/asm-generic/int-ll64.h:
-
-/usr/lib/clang/20/include/__stddef_max_align_t.h:
-
-/usr/include/c++/15/bits/memoryfwd.h:
-
-/usr/include/c++/15/bits/stringfwd.h:
-
 /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lexer.h:
 
 /usr/include/c++/15/bits/string_view.tcc:
@@ -826,29 +1231,13 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 
 /usr/include/c++/15/bits/stl_construct.h:
 
-/usr/include/bits/types/struct_sched_param.h:
-
-/home/flicky/itmo/Impulse-JIT/frontend/src/lexer.cpp:
-
-/usr/include/c++/15/bits/cxxabi_init_exception.h:
-
-/usr/include/c++/15/ext/atomicity.h:
-
-/usr/include/c++/15/bits/enable_special_members.h:
-
-/usr/include/c++/15/bits/stl_iterator_base_funcs.h:
-
-/usr/include/c++/15/bits/cxxabi_forced.h:
-
-/usr/include/c++/15/tuple:
-
 /home/flicky/itmo/Impulse-JIT/frontend/src/frontend.cpp:
 
 /usr/include/c++/15/ext/numeric_traits.h:
 
-/usr/include/bits/types/__sigset_t.h:
+/usr/include/c++/15/bits/postypes.h:
 
-/usr/lib/clang/20/include/__stddef_ptrdiff_t.h:
+/usr/include/c++/15/cstring:
 
 /usr/lib/clang/20/include/__stddef_wchar_t.h:
 
@@ -866,37 +1255,27 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 
 /usr/include/c++/15/x86_64-redhat-linux/bits/c++allocator.h:
 
-/usr/include/bits/cpu-set.h:
-
-/usr/include/c++/15/utility:
-
-/usr/include/c++/15/backward/binders.h:
-
-/usr/include/c++/15/x86_64-redhat-linux/bits/ctype_base.h:
-
-/usr/include/c++/15/streambuf:
-
-/usr/include/c++/15/bits/basic_string.h:
-
-/usr/include/c++/15/bits/cpp_type_traits.h:
-
-/usr/include/c++/15/bits/uses_allocator_args.h:
-
-/usr/include/c++/15/bits/exception_ptr.h:
-
-/usr/include/c++/15/cstddef:
-
 /usr/include/c++/15/bits/exception_defines.h:
 
 /usr/lib/clang/20/include/stddef.h:
 
 /usr/include/c++/15/bits/predefined_ops.h:
 
-/usr/lib/clang/20/include/__stddef_size_t.h:
+/usr/include/c++/15/bits/allocator.h:
+
+/usr/include/c++/15/bits/stl_iterator_base_types.h:
+
+/usr/include/bits/stdint-uintn.h:
 
 /usr/lib/clang/20/include/__stddef_offsetof.h:
 
-/usr/include/bits/stdint-uintn.h:
+/usr/lib/clang/20/include/__stddef_size_t.h:
+
+/usr/include/c++/15/ext/atomicity.h:
+
+/usr/include/c++/15/bits/enable_special_members.h:
+
+/usr/include/c++/15/bits/stl_iterator_base_funcs.h:
 
 /usr/include/bits/types/mbstate_t.h:
 
@@ -917,6 +1296,10 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 /usr/include/c++/15/bits/concept_check.h:
 
 /usr/include/c++/15/bits/version.h:
+
+/usr/include/bits/stdint-intn.h:
+
+/usr/include/c++/15/bits/utility.h:
 
 /usr/include/c++/15/cerrno:
 
@@ -988,6 +1371,8 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 
 /usr/include/c++/15/vector:
 
+/home/flicky/itmo/Impulse-JIT/frontend/src/lowering.cpp:
+
 /usr/include/c++/15/x86_64-redhat-linux/bits/c++locale.h:
 
 /usr/include/c++/15/x86_64-redhat-linux/bits/error_constants.h:
@@ -1014,8 +1399,6 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 
 /usr/include/bits/endian.h:
 
-/usr/include/bits/atomic_wide_counter.h:
-
 /usr/include/features.h:
 
 /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/frontend.h:
@@ -1032,10 +1415,6 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 
 /usr/include/bits/long-double.h:
 
-/usr/include/c++/15/bits/utility.h:
-
-/usr/include/bits/stdint-intn.h:
-
 /usr/include/c++/15/bits/move.h:
 
 /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/parser.h:
@@ -1049,13 +1428,3 @@ frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o: /home/flicky/itmo/Imp
 /usr/include/bits/types/__mbstate_t.h:
 
 /usr/include/bits/stdio_lim.h:
-
-/usr/include/bits/types/struct_itimerspec.h:
-
-/usr/include/bits/struct_rwlock.h:
-
-/usr/include/bits/thread-shared-types.h:
-
-/usr/include/bits/stdlib-float.h:
-
-/usr/include/bits/time64.h:

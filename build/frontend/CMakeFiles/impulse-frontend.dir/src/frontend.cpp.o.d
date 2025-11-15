@@ -25,7 +25,6 @@ frontend/CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o: \
   /usr/include/string.h /usr/include/bits/libc-header-start.h \
   /usr/include/bits/types/locale_t.h \
   /usr/include/bits/types/__locale_t.h /usr/include/strings.h \
-  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/parser.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/string \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/requires_hosted.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/stringfwd.h \
@@ -128,6 +127,7 @@ frontend/CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o: \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/uses_allocator.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/uses_allocator_args.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/tuple \
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lowering.h \
   /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/ast.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/cstdint \
   /usr/bin/../lib/clang/20/include/stdint.h /usr/include/stdint.h \
@@ -144,4 +144,7 @@ frontend/CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o: \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/stl_vector.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/stl_bvector.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/vector.tcc \
-  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lexer.h
+  /home/flicky/itmo/Impulse-JIT/ir/include/impulse/ir/ir.h \
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/parser.h \
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lexer.h \
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/semantic.h

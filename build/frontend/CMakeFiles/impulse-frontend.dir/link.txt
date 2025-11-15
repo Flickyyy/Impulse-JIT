@@ -1,2 +1,2 @@
-/usr/bin/ar qc libimpulse-frontend.a "CMakeFiles/impulse-frontend.dir/src/lexer.cpp.o" "CMakeFiles/impulse-frontend.dir/src/parser.cpp.o" "CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o"
+/usr/bin/ar qc libimpulse-frontend.a "CMakeFiles/impulse-frontend.dir/src/lexer.cpp.o" "CMakeFiles/impulse-frontend.dir/src/parser.cpp.o" "CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o" "CMakeFiles/impulse-frontend.dir/src/lowering.cpp.o" "CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o"
 /usr/bin/ranlib libimpulse-frontend.a

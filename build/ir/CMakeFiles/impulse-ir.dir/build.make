@@ -86,17 +86,49 @@ ir/CMakeFiles/impulse-ir.dir/src/placeholder.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/impulse-ir.dir/src/placeholder.cpp.s"
 	cd /home/flicky/itmo/Impulse-JIT/build/ir && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/flicky/itmo/Impulse-JIT/ir/src/placeholder.cpp -o CMakeFiles/impulse-ir.dir/src/placeholder.cpp.s
 
+ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.o: ir/CMakeFiles/impulse-ir.dir/flags.make
+ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.o: /home/flicky/itmo/Impulse-JIT/ir/src/printer.cpp
+ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.o: ir/CMakeFiles/impulse-ir.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/flicky/itmo/Impulse-JIT/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.o"
+	cd /home/flicky/itmo/Impulse-JIT/build/ir && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.o -MF CMakeFiles/impulse-ir.dir/src/printer.cpp.o.d -o CMakeFiles/impulse-ir.dir/src/printer.cpp.o -c /home/flicky/itmo/Impulse-JIT/ir/src/printer.cpp
+
+ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/impulse-ir.dir/src/printer.cpp.i"
+	cd /home/flicky/itmo/Impulse-JIT/build/ir && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/flicky/itmo/Impulse-JIT/ir/src/printer.cpp > CMakeFiles/impulse-ir.dir/src/printer.cpp.i
+
+ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/impulse-ir.dir/src/printer.cpp.s"
+	cd /home/flicky/itmo/Impulse-JIT/build/ir && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/flicky/itmo/Impulse-JIT/ir/src/printer.cpp -o CMakeFiles/impulse-ir.dir/src/printer.cpp.s
+
+ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.o: ir/CMakeFiles/impulse-ir.dir/flags.make
+ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.o: /home/flicky/itmo/Impulse-JIT/ir/src/builder.cpp
+ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.o: ir/CMakeFiles/impulse-ir.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/flicky/itmo/Impulse-JIT/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.o"
+	cd /home/flicky/itmo/Impulse-JIT/build/ir && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.o -MF CMakeFiles/impulse-ir.dir/src/builder.cpp.o.d -o CMakeFiles/impulse-ir.dir/src/builder.cpp.o -c /home/flicky/itmo/Impulse-JIT/ir/src/builder.cpp
+
+ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/impulse-ir.dir/src/builder.cpp.i"
+	cd /home/flicky/itmo/Impulse-JIT/build/ir && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/flicky/itmo/Impulse-JIT/ir/src/builder.cpp > CMakeFiles/impulse-ir.dir/src/builder.cpp.i
+
+ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/impulse-ir.dir/src/builder.cpp.s"
+	cd /home/flicky/itmo/Impulse-JIT/build/ir && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/flicky/itmo/Impulse-JIT/ir/src/builder.cpp -o CMakeFiles/impulse-ir.dir/src/builder.cpp.s
+
 # Object files for target impulse-ir
 impulse__ir_OBJECTS = \
-"CMakeFiles/impulse-ir.dir/src/placeholder.cpp.o"
+"CMakeFiles/impulse-ir.dir/src/placeholder.cpp.o" \
+"CMakeFiles/impulse-ir.dir/src/printer.cpp.o" \
+"CMakeFiles/impulse-ir.dir/src/builder.cpp.o"
 
 # External object files for target impulse-ir
 impulse__ir_EXTERNAL_OBJECTS =
 
 ir/libimpulse-ir.a: ir/CMakeFiles/impulse-ir.dir/src/placeholder.cpp.o
+ir/libimpulse-ir.a: ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.o
+ir/libimpulse-ir.a: ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.o
 ir/libimpulse-ir.a: ir/CMakeFiles/impulse-ir.dir/build.make
 ir/libimpulse-ir.a: ir/CMakeFiles/impulse-ir.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/flicky/itmo/Impulse-JIT/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX static library libimpulse-ir.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/flicky/itmo/Impulse-JIT/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX static library libimpulse-ir.a"
 	cd /home/flicky/itmo/Impulse-JIT/build/ir && $(CMAKE_COMMAND) -P CMakeFiles/impulse-ir.dir/cmake_clean_target.cmake
 	cd /home/flicky/itmo/Impulse-JIT/build/ir && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/impulse-ir.dir/link.txt --verbose=$(VERBOSE)
 

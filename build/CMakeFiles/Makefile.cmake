@@ -49,16 +49,16 @@ set(CMAKE_MAKEFILE_OUTPUTS
 # Byproducts of CMake generate step:
 set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/CMakeDirectoryInformation.cmake"
-  "frontend/CMakeFiles/CMakeDirectoryInformation.cmake"
   "ir/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "frontend/CMakeFiles/CMakeDirectoryInformation.cmake"
   "runtime/CMakeFiles/CMakeDirectoryInformation.cmake"
   "tests/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "frontend/CMakeFiles/impulse-frontend.dir/DependInfo.cmake"
   "ir/CMakeFiles/impulse-ir.dir/DependInfo.cmake"
+  "frontend/CMakeFiles/impulse-frontend.dir/DependInfo.cmake"
   "runtime/CMakeFiles/impulse-runtime.dir/DependInfo.cmake"
   "tests/CMakeFiles/impulse-tests.dir/DependInfo.cmake"
   )

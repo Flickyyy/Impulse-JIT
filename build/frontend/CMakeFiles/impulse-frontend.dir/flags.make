@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/clang++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/flicky/itmo/Impulse-JIT/frontend/include
+CXX_INCLUDES = -I/home/flicky/itmo/Impulse-JIT/frontend/include -I/home/flicky/itmo/Impulse-JIT/ir/include
 
 CXX_FLAGS = -g -std=gnu++17
 

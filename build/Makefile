@@ -117,19 +117,6 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named impulse-frontend
-
-# Build rule for target.
-impulse-frontend: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 impulse-frontend
-.PHONY : impulse-frontend
-
-# fast build rule for target.
-impulse-frontend/fast:
-	$(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/build
-.PHONY : impulse-frontend/fast
-
-#=============================================================================
 # Target rules for targets named impulse-ir
 
 # Build rule for target.
@@ -141,6 +128,19 @@ impulse-ir: cmake_check_build_system
 impulse-ir/fast:
 	$(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/build
 .PHONY : impulse-ir/fast
+
+#=============================================================================
+# Target rules for targets named impulse-frontend
+
+# Build rule for target.
+impulse-frontend: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 impulse-frontend
+.PHONY : impulse-frontend
+
+# fast build rule for target.
+impulse-frontend/fast:
+	$(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/build
+.PHONY : impulse-frontend/fast
 
 #=============================================================================
 # Target rules for targets named impulse-runtime

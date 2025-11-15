@@ -22,21 +22,6 @@
 					"source" : "."
 				},
 				{
-					"build" : "frontend",
-					"jsonFile" : "directory-frontend-Debug-b40a0bdb4e36631bd821.json",
-					"minimumCMakeVersion" : 
-					{
-						"string" : "3.24"
-					},
-					"parentIndex" : 0,
-					"projectIndex" : 0,
-					"source" : "frontend",
-					"targetIndexes" : 
-					[
-						0
-					]
-				},
-				{
 					"build" : "ir",
 					"jsonFile" : "directory-ir-Debug-cf42322932682f82fa30.json",
 					"minimumCMakeVersion" : 
@@ -49,6 +34,21 @@
 					"targetIndexes" : 
 					[
 						1
+					]
+				},
+				{
+					"build" : "frontend",
+					"jsonFile" : "directory-frontend-Debug-b40a0bdb4e36631bd821.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.24"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "frontend",
+					"targetIndexes" : 
+					[
+						0
 					]
 				},
 				{
@@ -107,16 +107,16 @@
 			"targets" : 
 			[
 				{
-					"directoryIndex" : 1,
+					"directoryIndex" : 2,
 					"id" : "impulse-frontend::@73e8a6b9a3e1c0d3809b",
-					"jsonFile" : "target-impulse-frontend-Debug-4d3d79c288cbba5410fe.json",
+					"jsonFile" : "target-impulse-frontend-Debug-7c1cad7f0bef31b35e02.json",
 					"name" : "impulse-frontend",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 2,
+					"directoryIndex" : 1,
 					"id" : "impulse-ir::@d424d1cf9c0b1dfbc6dd",
-					"jsonFile" : "target-impulse-ir-Debug-36e6202ef54a537fdf1b.json",
+					"jsonFile" : "target-impulse-ir-Debug-937fab35202bbad51789.json",
 					"name" : "impulse-ir",
 					"projectIndex" : 0
 				},
@@ -130,7 +130,7 @@
 				{
 					"directoryIndex" : 4,
 					"id" : "impulse-tests::@a44f0ac069e85531cdee",
-					"jsonFile" : "target-impulse-tests-Debug-c1a04cb999214c715835.json",
+					"jsonFile" : "target-impulse-tests-Debug-6da06d9484c1934eb1b2.json",
 					"name" : "impulse-tests",
 					"projectIndex" : 0
 				}

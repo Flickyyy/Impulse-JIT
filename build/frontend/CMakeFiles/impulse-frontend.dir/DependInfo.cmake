@@ -10,7 +10,9 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/flicky/itmo/Impulse-JIT/frontend/src/frontend.cpp" "frontend/CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o" "gcc" "frontend/CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o.d"
   "/home/flicky/itmo/Impulse-JIT/frontend/src/lexer.cpp" "frontend/CMakeFiles/impulse-frontend.dir/src/lexer.cpp.o" "gcc" "frontend/CMakeFiles/impulse-frontend.dir/src/lexer.cpp.o.d"
+  "/home/flicky/itmo/Impulse-JIT/frontend/src/lowering.cpp" "frontend/CMakeFiles/impulse-frontend.dir/src/lowering.cpp.o" "gcc" "frontend/CMakeFiles/impulse-frontend.dir/src/lowering.cpp.o.d"
   "/home/flicky/itmo/Impulse-JIT/frontend/src/parser.cpp" "frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o" "gcc" "frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o.d"
+  "/home/flicky/itmo/Impulse-JIT/frontend/src/semantic.cpp" "frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o" "gcc" "frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

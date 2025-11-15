@@ -47,11 +47,32 @@ struct Parameter {
     Identifier type_name;
 };
 
+struct InterfaceMethod {
+    Identifier name;
+    std::vector<Parameter> parameters;
+    std::optional<Identifier> return_type;
+};
+
 struct BindingDecl {
     BindingKind kind = BindingKind::Let;
     Identifier name;
     Identifier type_name;
     Snippet initializer;
+};
+
+struct FieldDecl {
+    Identifier name;
+    Identifier type_name;
+};
+
+struct StructDecl {
+    Identifier name;
+    std::vector<FieldDecl> fields;
+};
+
+struct InterfaceDecl {
+    Identifier name;
+    std::vector<InterfaceMethod> methods;
 };
 
 struct FunctionDecl {
@@ -65,10 +86,15 @@ struct Declaration {
     enum class Kind : std::uint8_t {
         Binding,
         Function,
+        Struct,
+        Interface,
     } kind = Kind::Binding;
 
+    bool exported = false;
     BindingDecl binding;
     FunctionDecl function;
+    StructDecl structure;
+    InterfaceDecl interface_decl;
 };
 
 struct Module {

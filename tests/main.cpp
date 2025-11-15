@@ -6,6 +6,8 @@
 
 #include "../frontend/include/impulse/frontend/lexer.h"
 #include "../frontend/include/impulse/frontend/parser.h"
+#include "../frontend/include/impulse/frontend/lowering.h"
+#include "../frontend/include/impulse/frontend/semantic.h"
 
 using impulse::frontend::Lexer;
 using impulse::frontend::ParseResult;
@@ -13,6 +15,7 @@ using impulse::frontend::Parser;
 using impulse::frontend::BindingKind;
 using impulse::frontend::Token;
 using impulse::frontend::TokenKind;
+using impulse::frontend::Declaration;
 
 namespace {
 
@@ -178,6 +181,153 @@ func add(a: int, b: int) -> int {
     assert(func.body.text.find("return") != std::string::npos);
 }
 
+void testStructDeclaration() {
+    const std::string source = R"(module demo;
+struct Vec2 {
+    x: float;
+    y: float;
+}
+)";
+
+    Parser parser(source);
+    ParseResult result = parser.parseModule();
+    assert(result.success);
+    assert(result.module.declarations.size() == 1);
+
+    const auto& decl = result.module.declarations.front();
+    assert(decl.kind == Declaration::Kind::Struct);
+    const auto& structure = decl.structure;
+    assert(structure.name.value == "Vec2");
+    assert(structure.fields.size() == 2);
+    assert(structure.fields[0].name.value == "x");
+    assert(structure.fields[0].type_name.value == "float");
+    assert(structure.fields[1].name.value == "y");
+    assert(structure.fields[1].type_name.value == "float");
+}
+
+void testInterfaceDeclaration() {
+    const std::string source = R"(module demo;
+interface Display {
+    func toString(self: string) -> string;
+    func reset(ctx: Display);
+}
+)";
+
+    Parser parser(source);
+    ParseResult result = parser.parseModule();
+    assert(result.success);
+    assert(result.module.declarations.size() == 1);
+
+    const auto& decl = result.module.declarations.front();
+    assert(decl.kind == Declaration::Kind::Interface);
+    const auto& interfaceDecl = decl.interface_decl;
+    assert(interfaceDecl.name.value == "Display");
+    assert(interfaceDecl.methods.size() == 2);
+    assert(interfaceDecl.methods[0].name.value == "toString");
+    assert(interfaceDecl.methods[0].parameters.size() == 1);
+    assert(interfaceDecl.methods[0].parameters[0].type_name.value == "string");
+    assert(interfaceDecl.methods[0].return_type.has_value());
+    assert(interfaceDecl.methods[0].return_type->value == "string");
+    assert(!interfaceDecl.methods[1].return_type.has_value());
+}
+
+void testStructDiagnostics() {
+    const std::string source = R"(module demo;
+struct Broken {
+    x: int
+)
+)";
+
+    Parser parser(source);
+    ParseResult result = parser.parseModule();
+    assert(!result.success);
+    assert(!result.diagnostics.empty());
+}
+
+void testEmitIrText() {
+    const std::string source = R"(module demo;
+func main() -> int {
+    return 0;
+}
+)";
+
+    Parser parser(source);
+    ParseResult result = parser.parseModule();
+    assert(result.success);
+
+    const auto irText = impulse::frontend::emit_ir_text(result.module);
+    assert(irText.find("^entry") != std::string::npos);
+    assert(irText.find("return") != std::string::npos || irText.find('#') != std::string::npos);
+}
+
+void testInterfaceIrEmission() {
+    const std::string source = R"(module demo;
+interface Display {
+    func show(self: Display) -> string;
+}
+)";
+
+    Parser parser(source);
+    ParseResult result = parser.parseModule();
+    assert(result.success);
+
+    const auto irText = impulse::frontend::emit_ir_text(result.module);
+    assert(irText.find("interface Display") != std::string::npos);
+    assert(irText.find("func show") != std::string::npos);
+}
+
+void testExportedDeclarations() {
+    const std::string source = R"(module demo;
+export let value: int = 1;
+export func main() -> int {
+    return value;
+}
+export struct Point {
+    x: int;
+}
+export interface Display {
+    func show(self: Display);
+}
+)";
+
+    Parser parser(source);
+    ParseResult result = parser.parseModule();
+    assert(result.success);
+    assert(result.module.declarations.size() == 4);
+    for (const auto& decl : result.module.declarations) {
+        assert(decl.exported);
+    }
+
+    const auto irText = impulse::frontend::emit_ir_text(result.module);
+    assert(irText.find("export let value") != std::string::npos);
+    assert(irText.find("export func main") != std::string::npos);
+    assert(irText.find("export struct Point") != std::string::npos);
+    assert(irText.find("export interface Display") != std::string::npos);
+}
+
+void testSemanticDuplicates() {
+    const std::string source = R"(module demo;
+let value: int = 1;
+let value: int = 2;
+struct Vec2 {
+    x: float;
+    x: float;
+}
+interface Display {
+    func show(self: Display);
+    func show(self: Display);
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+    assert(!semantic.success);
+    assert(!semantic.diagnostics.empty());
+}
+
 }  // namespace
 
 auto main() -> int {
@@ -188,6 +338,13 @@ auto main() -> int {
     testParserDiagnostics();
     testConstAndVarBindings();
     testFunctionDeclaration();
+    testStructDeclaration();
+    testInterfaceDeclaration();
+    testStructDiagnostics();
+    testEmitIrText();
+    testInterfaceIrEmission();
+    testExportedDeclarations();
+    testSemanticDuplicates();
 
     std::cout << "All frontend tests passed\n";
     return 0;

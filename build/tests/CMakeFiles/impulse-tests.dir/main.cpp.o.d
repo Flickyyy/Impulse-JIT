@@ -195,4 +195,7 @@ tests/CMakeFiles/impulse-tests.dir/main.cpp.o: \
   /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/ast.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/optional \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/enable_special_members.h \
-  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lexer.h
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lexer.h \
+  /home/flicky/itmo/Impulse-JIT/tests/../frontend/include/impulse/frontend/lowering.h \
+  /home/flicky/itmo/Impulse-JIT/ir/include/impulse/ir/ir.h \
+  /home/flicky/itmo/Impulse-JIT/tests/../frontend/include/impulse/frontend/semantic.h

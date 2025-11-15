@@ -138,10 +138,10 @@
 			"path" : "/usr/share/cmake/Modules/Platform/Linker/GNU.cmake"
 		},
 		{
-			"path" : "frontend/CMakeLists.txt"
+			"path" : "ir/CMakeLists.txt"
 		},
 		{
-			"path" : "ir/CMakeLists.txt"
+			"path" : "frontend/CMakeLists.txt"
 		},
 		{
 			"path" : "runtime/CMakeLists.txt"

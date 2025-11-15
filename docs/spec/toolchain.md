@@ -47,7 +47,31 @@ Impulse-JIT/
 	cli/
 	tools/
 	docs/spec/
+	tests/
+	benchmarks/
+	scripts/
+	cmake/
 ```
-> TODO: описать схему ветвления и релизные артефакты.
 
-> TODO: описать структуру репозитория, принятую схему ветвления и релизные артефакты.
+## 8. Git workflow и релизы
+- Основная ветка `main` всегда зелёная, защищена (требует review + прохождение CI).
+- Фичи разрабатываются в ветках `feature/<name>`; крупные работы делятся на несколько PR.
+- Для каждой итерации roadmap создаём milestone и релизные теги `v0.x.y`.
+- Релизный артефакт: архив с `impulsec`, `impulse-vm`, stdlib и примерами.
+- Файлы автогенерации (Docs, схемы) собираются в `docs/build/`, не коммитятся.
+
+## 9. CI/CD
+- GitHub Actions: матрица по Ubuntu 22.04 / clang++17.
+- Джобы: `fmt-check`, `lint`, `build`, `tests`, `benchmarks` (smoke), `docs-lint`.
+- При merge в `main` автоматически публикуем nightly-артефакты (через GitHub Releases).
+
+## 10. Настройка окружения
+- Требуется установленный clang++17, CMake ≥ 3.24, Go 1.22.
+- Для локальной разработки: `scripts/bootstrap.sh` — ставит pre-commit hooks, подтягивает зависимости.
+- Предусмотрим Dockerfile со всем стеком для CI/локальных запусков.
+
+## 11. План на TODO
+- **Опкоды IR** → `docs/spec/ir.md` (таблица, бинарный формат).
+- **ABI/FFI подробности** → `docs/spec/runtime.md`.
+- **`.clang-format`, `.clang-tidy`, `.golangci.yml`** — добавить в корень.
+- **CMake skeleton**: `cmake/toolchain.cmake`, `CMakeLists.txt` в каждом модуле.

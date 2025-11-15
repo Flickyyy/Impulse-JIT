@@ -33,6 +33,22 @@ Impulse — учебно-практический язык и рантайм с 
 | `docs/spec/runtime.md` | VM, GC, модель модулей, ошибки |
 | `docs/spec/toolchain.md` | Технологический стек, схемы сборки, правила CI |
 
+## Структура репозитория
+
+```
+Impulse-JIT/
+	frontend/     # C++ lexer/parser/typechecker
+	ir/           # SSA builder и оптимизации
+	runtime/      # VM, GC, JIT
+	cli/          # Go CLI obёртка (impulsec)
+	tools/        # tooling, генераторы тестов
+	tests/        # e2e и golden тесты
+	benchmarks/   # factorial/sort/primes и др.
+	docs/spec/    # спецификации
+```
+
+Workflow и CI описаны в `docs/spec/toolchain.md`.
+
 ## Снимок языка
 
 Every file is a module: первая строка `module ...;`, далее импорты и объявления. Ниже минимальный пример, отражающий текущую спецификацию (см. `docs/spec/grammar.md`):

@@ -1,13 +1,16 @@
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "../frontend/include/impulse/frontend/lexer.h"
 #include "../frontend/include/impulse/frontend/parser.h"
 #include "../frontend/include/impulse/frontend/lowering.h"
 #include "../frontend/include/impulse/frontend/semantic.h"
+#include "../ir/include/impulse/ir/interpreter.h"
 
 using impulse::frontend::Lexer;
 using impulse::frontend::ParseResult;
@@ -276,6 +279,25 @@ interface Display {
     assert(irText.find("func show") != std::string::npos);
 }
 
+void testBindingExpressionLowering() {
+    const std::string source = R"(module demo;
+let value: int = 1 + 2 * 3;
+)";
+
+    Parser parser(source);
+    ParseResult result = parser.parseModule();
+    assert(result.success);
+
+    const auto irText = impulse::frontend::emit_ir_text(result.module);
+    assert(irText.find("let value: int = (1 + (2 * 3));  # = 7") != std::string::npos);
+    assert(irText.find("literal 1") != std::string::npos);
+    assert(irText.find("literal 2") != std::string::npos);
+    assert(irText.find("literal 3") != std::string::npos);
+    assert(irText.find("binary +") != std::string::npos);
+    assert(irText.find("binary *") != std::string::npos);
+    assert(irText.find("store value") != std::string::npos);
+}
+
 void testExportedDeclarations() {
     const std::string source = R"(module demo;
 export let value: int = 1;
@@ -328,6 +350,96 @@ interface Display {
     assert(!semantic.diagnostics.empty());
 }
 
+void testImportSemanticDiagnostics() {
+    const std::string source = R"(module demo;
+import std::io;
+import std::io;
+import std::fs as fs;
+import std::net as fs;
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+    assert(!semantic.success);
+    assert(semantic.diagnostics.size() >= 2);
+}
+
+void testConstRequiresConstantInitializer() {
+    const std::string source = R"(module demo;
+let value: int = 1;
+const answer: int = value;
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+    assert(!semantic.success);
+    bool found = false;
+    for (const auto& diag : semantic.diagnostics) {
+        if (diag.message.find("const binding 'answer'") != std::string::npos) {
+            found = true;
+            break;
+        }
+    }
+    assert(found && "Expected diagnostic for non-constant const initializer");
+}
+
+void testConstDivisionByZeroDiagnostic() {
+    const std::string source = R"(module demo;
+const broken: int = 1 / 0;
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+    assert(!semantic.success);
+    bool found = false;
+    for (const auto& diag : semantic.diagnostics) {
+        if (diag.message.find("Division by zero") != std::string::npos) {
+            found = true;
+            break;
+        }
+    }
+    assert(found && "Expected division-by-zero diagnostic");
+}
+
+void testIrBindingInterpreter() {
+    const std::string source = R"(module demo;
+let a: int = 2;
+let b: int = a * 5 + 3;
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    std::unordered_map<std::string, double> environment;
+    bool foundB = false;
+
+    for (const auto& binding : lowered.bindings) {
+        const auto eval = impulse::ir::interpret_binding(binding, environment);
+        if (eval.status == impulse::ir::EvalStatus::Success && eval.value.has_value()) {
+            environment.emplace(binding.name, *eval.value);
+        }
+        if (binding.name == "b") {
+            assert(eval.status == impulse::ir::EvalStatus::Success);
+            assert(eval.value.has_value());
+            assert(std::abs(*eval.value - 13.0) < 1e-9);
+            foundB = true;
+        }
+    }
+
+    assert(foundB && "Interpreter did not evaluate binding 'b'");
+}
+
 }  // namespace
 
 auto main() -> int {
@@ -343,8 +455,13 @@ auto main() -> int {
     testStructDiagnostics();
     testEmitIrText();
     testInterfaceIrEmission();
+    testBindingExpressionLowering();
     testExportedDeclarations();
     testSemanticDuplicates();
+    testImportSemanticDiagnostics();
+    testConstRequiresConstantInitializer();
+    testConstDivisionByZeroDiagnostic();
+    testIrBindingInterpreter();
 
     std::cout << "All frontend tests passed\n";
     return 0;

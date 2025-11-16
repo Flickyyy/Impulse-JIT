@@ -1,0 +1,1 @@
+/usr/bin/clang++ -g -Xlinker --dependency-file=CMakeFiles/impulse-cpp.dir/link.d "CMakeFiles/impulse-cpp.dir/main.cpp.o" -o impulse-cpp  ../../frontend/libimpulse-frontend.a ../../ir/libimpulse-ir.a

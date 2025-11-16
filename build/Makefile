@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /home/flicky/itmo/Impulse-JIT/build
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running tests..."
+	/usr/bin/ctest --force-new-ctest-process $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running CMake cache editor..."
@@ -168,6 +178,19 @@ impulse-tests/fast:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/impulse-tests.dir/build.make tests/CMakeFiles/impulse-tests.dir/build
 .PHONY : impulse-tests/fast
 
+#=============================================================================
+# Target rules for targets named impulse-cpp
+
+# Build rule for target.
+impulse-cpp: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 impulse-cpp
+.PHONY : impulse-cpp
+
+# fast build rule for target.
+impulse-cpp/fast:
+	$(MAKE) $(MAKESILENT) -f tools/cpp-cli/CMakeFiles/impulse-cpp.dir/build.make tools/cpp-cli/CMakeFiles/impulse-cpp.dir/build
+.PHONY : impulse-cpp/fast
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -176,6 +199,8 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... test"
+	@echo "... impulse-cpp"
 	@echo "... impulse-frontend"
 	@echo "... impulse-ir"
 	@echo "... impulse-runtime"

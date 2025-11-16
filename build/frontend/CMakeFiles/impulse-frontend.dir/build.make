@@ -128,10 +128,24 @@ frontend/CMakeFiles/impulse-frontend.dir/src/lowering.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/impulse-frontend.dir/src/lowering.cpp.s"
 	cd /home/flicky/itmo/Impulse-JIT/build/frontend && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/flicky/itmo/Impulse-JIT/frontend/src/lowering.cpp -o CMakeFiles/impulse-frontend.dir/src/lowering.cpp.s
 
+frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o: frontend/CMakeFiles/impulse-frontend.dir/flags.make
+frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o: /home/flicky/itmo/Impulse-JIT/frontend/src/expression_eval.cpp
+frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o: frontend/CMakeFiles/impulse-frontend.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/flicky/itmo/Impulse-JIT/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o"
+	cd /home/flicky/itmo/Impulse-JIT/build/frontend && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o -MF CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o.d -o CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o -c /home/flicky/itmo/Impulse-JIT/frontend/src/expression_eval.cpp
+
+frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.i"
+	cd /home/flicky/itmo/Impulse-JIT/build/frontend && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/flicky/itmo/Impulse-JIT/frontend/src/expression_eval.cpp > CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.i
+
+frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.s"
+	cd /home/flicky/itmo/Impulse-JIT/build/frontend && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/flicky/itmo/Impulse-JIT/frontend/src/expression_eval.cpp -o CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.s
+
 frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o: frontend/CMakeFiles/impulse-frontend.dir/flags.make
 frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o: /home/flicky/itmo/Impulse-JIT/frontend/src/semantic.cpp
 frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o: frontend/CMakeFiles/impulse-frontend.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/flicky/itmo/Impulse-JIT/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/flicky/itmo/Impulse-JIT/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o"
 	cd /home/flicky/itmo/Impulse-JIT/build/frontend && /usr/bin/clang++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o -MF CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o.d -o CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o -c /home/flicky/itmo/Impulse-JIT/frontend/src/semantic.cpp
 
 frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.i: cmake_force
@@ -148,6 +162,7 @@ impulse__frontend_OBJECTS = \
 "CMakeFiles/impulse-frontend.dir/src/parser.cpp.o" \
 "CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o" \
 "CMakeFiles/impulse-frontend.dir/src/lowering.cpp.o" \
+"CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o" \
 "CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o"
 
 # External object files for target impulse-frontend
@@ -157,10 +172,11 @@ frontend/libimpulse-frontend.a: frontend/CMakeFiles/impulse-frontend.dir/src/lex
 frontend/libimpulse-frontend.a: frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o
 frontend/libimpulse-frontend.a: frontend/CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o
 frontend/libimpulse-frontend.a: frontend/CMakeFiles/impulse-frontend.dir/src/lowering.cpp.o
+frontend/libimpulse-frontend.a: frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o
 frontend/libimpulse-frontend.a: frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o
 frontend/libimpulse-frontend.a: frontend/CMakeFiles/impulse-frontend.dir/build.make
 frontend/libimpulse-frontend.a: frontend/CMakeFiles/impulse-frontend.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/flicky/itmo/Impulse-JIT/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX static library libimpulse-frontend.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/flicky/itmo/Impulse-JIT/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX static library libimpulse-frontend.a"
 	cd /home/flicky/itmo/Impulse-JIT/build/frontend && $(CMAKE_COMMAND) -P CMakeFiles/impulse-frontend.dir/cmake_clean_target.cmake
 	cd /home/flicky/itmo/Impulse-JIT/build/frontend && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/impulse-frontend.dir/link.txt --verbose=$(VERBOSE)
 

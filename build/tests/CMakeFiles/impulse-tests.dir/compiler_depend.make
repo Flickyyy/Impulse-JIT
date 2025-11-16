@@ -18,15 +18,21 @@ tests/CMakeFiles/impulse-tests.dir/main.cpp.o: /home/flicky/itmo/Impulse-JIT/tes
   /usr/lib/clang/20/include/__stddef_ptrdiff_t.h \
   /usr/lib/clang/20/include/__stddef_size_t.h \
   /usr/lib/clang/20/include/__stddef_wchar_t.h \
+  /usr/lib/clang/20/include/sanitizer/tsan_interface.h \
   /usr/lib/clang/20/include/stdarg.h \
   /usr/lib/clang/20/include/stddef.h \
   /usr/lib/clang/20/include/stdint.h \
   /usr/include/c++/15/algorithm \
+  /usr/include/c++/15/backward/auto_ptr.h \
   /usr/include/c++/15/backward/binders.h \
   /usr/include/c++/15/bit \
   /usr/include/c++/15/bits/algorithmfwd.h \
+  /usr/include/c++/15/bits/align.h \
   /usr/include/c++/15/bits/alloc_traits.h \
+  /usr/include/c++/15/bits/allocated_ptr.h \
   /usr/include/c++/15/bits/allocator.h \
+  /usr/include/c++/15/bits/atomic_base.h \
+  /usr/include/c++/15/bits/atomic_lockfree_defines.h \
   /usr/include/c++/15/bits/basic_ios.h \
   /usr/include/c++/15/bits/basic_ios.tcc \
   /usr/include/c++/15/bits/basic_string.h \
@@ -66,6 +72,9 @@ tests/CMakeFiles/impulse-tests.dir/main.cpp.o: /home/flicky/itmo/Impulse-JIT/tes
   /usr/include/c++/15/bits/range_access.h \
   /usr/include/c++/15/bits/refwrap.h \
   /usr/include/c++/15/bits/requires_hosted.h \
+  /usr/include/c++/15/bits/shared_ptr.h \
+  /usr/include/c++/15/bits/shared_ptr_atomic.h \
+  /usr/include/c++/15/bits/shared_ptr_base.h \
   /usr/include/c++/15/bits/std_abs.h \
   /usr/include/c++/15/bits/stl_algo.h \
   /usr/include/c++/15/bits/stl_algobase.h \
@@ -77,6 +86,7 @@ tests/CMakeFiles/impulse-tests.dir/main.cpp.o: /home/flicky/itmo/Impulse-JIT/tes
   /usr/include/c++/15/bits/stl_iterator_base_funcs.h \
   /usr/include/c++/15/bits/stl_iterator_base_types.h \
   /usr/include/c++/15/bits/stl_pair.h \
+  /usr/include/c++/15/bits/stl_raw_storage_iter.h \
   /usr/include/c++/15/bits/stl_tempbuf.h \
   /usr/include/c++/15/bits/stl_uninitialized.h \
   /usr/include/c++/15/bits/stl_vector.h \
@@ -85,6 +95,7 @@ tests/CMakeFiles/impulse-tests.dir/main.cpp.o: /home/flicky/itmo/Impulse-JIT/tes
   /usr/include/c++/15/bits/string_view.tcc \
   /usr/include/c++/15/bits/stringfwd.h \
   /usr/include/c++/15/bits/uniform_int_dist.h \
+  /usr/include/c++/15/bits/unique_ptr.h \
   /usr/include/c++/15/bits/uses_allocator.h \
   /usr/include/c++/15/bits/uses_allocator_args.h \
   /usr/include/c++/15/bits/utility.h \
@@ -104,8 +115,10 @@ tests/CMakeFiles/impulse-tests.dir/main.cpp.o: /home/flicky/itmo/Impulse-JIT/tes
   /usr/include/c++/15/debug/assertions.h \
   /usr/include/c++/15/debug/debug.h \
   /usr/include/c++/15/exception \
+  /usr/include/c++/15/ext/aligned_buffer.h \
   /usr/include/c++/15/ext/alloc_traits.h \
   /usr/include/c++/15/ext/atomicity.h \
+  /usr/include/c++/15/ext/concurrence.h \
   /usr/include/c++/15/ext/numeric_traits.h \
   /usr/include/c++/15/ext/string_conversions.h \
   /usr/include/c++/15/ext/type_traits.h \
@@ -114,11 +127,13 @@ tests/CMakeFiles/impulse-tests.dir/main.cpp.o: /home/flicky/itmo/Impulse-JIT/tes
   /usr/include/c++/15/iosfwd \
   /usr/include/c++/15/iostream \
   /usr/include/c++/15/istream \
+  /usr/include/c++/15/memory \
   /usr/include/c++/15/new \
   /usr/include/c++/15/optional \
   /usr/include/c++/15/ostream \
   /usr/include/c++/15/pstl/execution_defs.h \
   /usr/include/c++/15/pstl/glue_algorithm_defs.h \
+  /usr/include/c++/15/pstl/glue_memory_defs.h \
   /usr/include/c++/15/pstl/pstl_config.h \
   /usr/include/c++/15/stdexcept \
   /usr/include/c++/15/streambuf \
@@ -265,21 +280,33 @@ tests/impulse-tests: frontend/libimpulse-frontend.a \
 
 tests/CMakeFiles/impulse-tests.dir/main.cpp.o:
 
-/usr/include/c++/15/vector:
+/usr/lib/gcc/x86_64-redhat-linux/15/libgcc.a:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/crtbegin.o:
+
+/usr/lib64/libm.so:
+
+/usr/lib64/crt1.o:
+
+/lib64/libmvec.so.1:
+
+/lib64/libgcc_s.so.1:
+
+/lib64/libc.so.6:
+
+/usr/include/c++/15/memory:
 
 /usr/include/c++/15/bits/stl_iterator.h:
 
-/usr/include/c++/15/string_view:
-
-/usr/include/c++/15/string:
-
-/usr/include/c++/15/pstl/pstl_config.h:
+/usr/include/c++/15/vector:
 
 /usr/include/c++/15/iosfwd:
 
 /usr/include/c++/15/initializer_list:
 
-/usr/include/c++/15/pstl/execution_defs.h:
+/usr/lib64/libc_nonshared.a:
+
+/usr/include/c++/15/ext/numeric_traits.h:
 
 /usr/include/c++/15/ext/atomicity.h:
 
@@ -311,8 +338,6 @@ ir/libimpulse-ir.a:
 
 /usr/include/c++/15/bits/stl_algobase.h:
 
-/usr/lib64/libm.so:
-
 /usr/include/c++/15/bits/stl_bvector.h:
 
 /usr/include/c++/15/bits/stl_pair.h:
@@ -320,6 +345,8 @@ ir/libimpulse-ir.a:
 /usr/include/c++/15/cerrno:
 
 /usr/include/c++/15/bits/utility.h:
+
+/usr/include/c++/15/bits/unique_ptr.h:
 
 /usr/include/c++/15/ios:
 
@@ -331,23 +358,27 @@ ir/libimpulse-ir.a:
 
 /usr/include/c++/15/cassert:
 
-/usr/include/c++/15/bits/stl_uninitialized.h:
-
 /usr/include/bits/types/mbstate_t.h:
 
 frontend/libimpulse-frontend.a:
 
 /usr/include/c++/15/bits/stl_tempbuf.h:
 
+/usr/include/c++/15/bits/stl_raw_storage_iter.h:
+
+/usr/include/assert.h:
+
+/usr/include/c++/15/ext/aligned_buffer.h:
+
+/usr/include/bits/select.h:
+
+/usr/include/c++/15/bits/std_abs.h:
+
 /usr/include/bits/stdint-intn.h:
 
 /usr/include/bits/types/clockid_t.h:
 
 /usr/include/c++/15/typeinfo:
-
-/usr/include/c++/15/bits/std_abs.h:
-
-/usr/include/bits/select.h:
 
 /usr/include/c++/15/bits/refwrap.h:
 
@@ -367,13 +398,19 @@ frontend/libimpulse-frontend.a:
 
 /usr/lib/clang/20/include/stddef.h:
 
-/usr/include/c++/15/bits/version.h:
+/usr/include/c++/15/bits/postypes.h:
 
-/usr/include/c++/15/bits/concept_check.h:
+/usr/include/bits/timex.h:
 
-/usr/lib64/crt1.o:
+/usr/include/c++/15/bits/ostream.tcc:
 
-/usr/include/c++/15/bits/basic_ios.h:
+/lib64/ld-linux-x86-64.so.2:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/crtend.o:
+
+/usr/include/c++/15/bits/stl_iterator_base_types.h:
+
+/usr/include/c++/15/bits/align.h:
 
 /usr/lib/clang/20/include/stdarg.h:
 
@@ -387,15 +424,21 @@ frontend/libimpulse-frontend.a:
 
 /usr/lib/clang/20/include/__stddef_wchar_t.h:
 
+/usr/include/c++/15/bits/shared_ptr.h:
+
+/usr/include/c++/15/bits/stringfwd.h:
+
 /usr/lib/clang/20/include/__stddef_size_t.h:
 
 /usr/lib/clang/20/include/__stddef_offsetof.h:
 
-/usr/include/c++/15/stdexcept:
+/usr/include/c++/15/bits/stl_uninitialized.h:
+
+/usr/include/c++/15/bits/shared_ptr_base.h:
+
+/usr/include/c++/15/bits/allocated_ptr.h:
 
 /usr/include/c++/15/bits/istream.tcc:
-
-/usr/include/c++/15/bits/basic_ios.tcc:
 
 /usr/include/c++/15/cwchar:
 
@@ -405,27 +448,27 @@ frontend/libimpulse-frontend.a:
 
 /usr/include/c++/15/bits/algorithmfwd.h:
 
-/usr/include/bits/timex.h:
-
 /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lexer.h:
 
+/usr/include/c++/15/bits/atomic_base.h:
+
 /home/flicky/itmo/Impulse-JIT/ir/include/impulse/ir/ir.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/libstdc++.so:
+
+/usr/lib/clang/20/include/__stddef_max_align_t.h:
 
 /usr/include/c++/15/bits/memoryfwd.h:
 
 /usr/include/asm-generic/int-ll64.h:
 
-/usr/lib/gcc/x86_64-redhat-linux/15/crtbegin.o:
-
-/usr/include/c++/15/system_error:
-
-/usr/include/bits/endian.h:
-
 /usr/include/c++/15/bits/locale_classes.tcc:
 
-/usr/include/c++/15/bits/postypes.h:
+/lib64/libm.so.6:
 
-/usr/include/c++/15/bits/stringfwd.h:
+/usr/include/c++/15/algorithm:
+
+/usr/include/c++/15/bits/hash_bytes.h:
 
 /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/lowering.h:
 
@@ -447,27 +490,41 @@ frontend/libimpulse-frontend.a:
 
 /usr/include/bits/time64.h:
 
-/usr/include/c++/15/bits/exception.h:
-
-/usr/include/c++/15/ostream:
-
 /usr/lib/clang/20/include/__stdarg___gnuc_va_list.h:
 
 /usr/include/bits/types/cookie_io_functions_t.h:
+
+/usr/include/c++/15/pstl/pstl_config.h:
 
 /usr/include/pthread.h:
 
 /usr/include/c++/15/bits/memory_resource.h:
 
+/usr/include/c++/15/bits/atomic_lockfree_defines.h:
+
+/usr/include/c++/15/bits/version.h:
+
+/usr/include/c++/15/bits/concept_check.h:
+
+/usr/include/c++/15/bits/basic_ios.h:
+
+/usr/lib/clang/20/include/sanitizer/tsan_interface.h:
+
+/usr/include/c++/15/bits/locale_facets.h:
+
+/usr/include/bits/types/wint_t.h:
+
+/usr/include/c++/15/bits/basic_ios.tcc:
+
+/usr/include/c++/15/ext/string_conversions.h:
+
+/usr/include/c++/15/bits/ostream.h:
+
+/usr/include/c++/15/bits/streambuf.tcc:
+
+/usr/include/c++/15/bits/basic_string.tcc:
+
 /usr/include/asm/bitsperlong.h:
-
-/usr/include/c++/15/streambuf:
-
-/usr/include/c++/15/bits/basic_string.h:
-
-/usr/include/c++/15/istream:
-
-/usr/include/c++/15/x86_64-redhat-linux/bits/ctype_base.h:
 
 /usr/include/c++/15/bits/uses_allocator_args.h:
 
@@ -477,13 +534,31 @@ frontend/libimpulse-frontend.a:
 
 /usr/include/bits/cpu-set.h:
 
-/usr/include/c++/15/tuple:
+/usr/include/c++/15/bits/basic_string.h:
+
+/usr/include/c++/15/streambuf:
+
+/usr/include/c++/15/istream:
+
+/usr/include/c++/15/x86_64-redhat-linux/bits/ctype_base.h:
 
 /usr/include/c++/15/bits/stl_algo.h:
+
+/usr/include/c++/15/bits/shared_ptr_atomic.h:
+
+/usr/lib/gcc/x86_64-redhat-linux/15/libgcc_s.so:
+
+/usr/include/c++/15/bits/cxxabi_forced.h:
+
+/usr/include/c++/15/bits/vector.tcc:
+
+/usr/include/c++/15/iostream:
 
 /usr/include/bits/pthread_stack_min-dynamic.h:
 
 /usr/include/c++/15/bits/exception_defines.h:
+
+/usr/include/c++/15/backward/auto_ptr.h:
 
 /usr/include/bits/types/timer_t.h:
 
@@ -497,6 +572,10 @@ frontend/libimpulse-frontend.a:
 
 /usr/include/bits/waitflags.h:
 
+/usr/lib64/libc.so:
+
+/usr/include/ctype.h:
+
 /usr/include/c++/15/bits/char_traits.h:
 
 /usr/include/bits/setjmp.h:
@@ -507,35 +586,47 @@ frontend/libimpulse-frontend.a:
 
 /usr/include/bits/stdint-least.h:
 
-/usr/include/c++/15/iostream:
-
-/usr/include/c++/15/bits/vector.tcc:
-
-/lib64/ld-linux-x86-64.so.2:
-
 /usr/include/c++/15/bits/alloc_traits.h:
 
 /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/ast.h:
+
+/usr/lib64/crtn.o:
+
+/usr/include/c++/15/bits/ios_base.h:
 
 /usr/include/wchar.h:
 
 /usr/include/bits/types/locale_t.h:
 
-/usr/include/c++/15/ext/string_conversions.h:
-
 /usr/include/c++/15/bits/stl_vector.h:
-
-/usr/include/c++/15/bits/functexcept.h:
 
 /usr/include/c++/15/x86_64-redhat-linux/bits/os_defines.h:
 
-/usr/include/c++/15/bits/streambuf.tcc:
+/usr/include/c++/15/bits/functexcept.h:
 
-/usr/include/c++/15/bits/basic_string.tcc:
+/usr/include/c++/15/bits/exception.h:
 
-/usr/include/c++/15/bits/ostream.h:
+/usr/include/c++/15/ostream:
 
-/usr/include/c++/15/bits/ostream.tcc:
+/usr/include/c++/15/pstl/execution_defs.h:
+
+/usr/include/c++/15/pstl/glue_memory_defs.h:
+
+/usr/include/c++/15/cctype:
+
+/usr/include/bits/types/struct_FILE.h:
+
+/usr/include/c++/15/stdexcept:
+
+/usr/include/c++/15/string:
+
+/usr/include/c++/15/string_view:
+
+/usr/include/bits/endian.h:
+
+/usr/include/c++/15/system_error:
+
+/usr/include/c++/15/tuple:
 
 /usr/include/c++/15/x86_64-redhat-linux/bits/atomic_word.h:
 
@@ -565,11 +656,13 @@ frontend/libimpulse-frontend.a:
 
 /usr/include/c++/15/bits/exception_ptr.h:
 
+/usr/include/c++/15/ext/concurrence.h:
+
 /usr/include/bits/floatn-common.h:
 
-/usr/lib/clang/20/include/__stddef_null.h:
-
 /usr/include/bits/stdlib-float.h:
+
+/usr/lib/clang/20/include/__stddef_null.h:
 
 /usr/include/c++/15/x86_64-redhat-linux/bits/gthr-default.h:
 
@@ -601,15 +694,7 @@ frontend/libimpulse-frontend.a:
 
 /usr/include/asm/types.h:
 
-/usr/include/assert.h:
-
 /usr/include/bits/atomic_wide_counter.h:
-
-/usr/include/c++/15/algorithm:
-
-/usr/include/c++/15/bits/hash_bytes.h:
-
-/lib64/libm.so.6:
 
 /usr/include/bits/byteswap.h:
 
@@ -626,8 +711,6 @@ frontend/libimpulse-frontend.a:
 /usr/include/gnu/stubs.h:
 
 /usr/include/bits/pthreadtypes.h:
-
-/lib64/libmvec.so.1:
 
 /usr/lib/clang/20/include/stdint.h:
 
@@ -673,10 +756,6 @@ runtime/libimpulse-runtime.a:
 
 /usr/include/bits/types/sigset_t.h:
 
-/usr/include/c++/15/cctype:
-
-/usr/include/bits/types/struct_FILE.h:
-
 /usr/include/c++/15/bits/enable_special_members.h:
 
 /usr/include/bits/wchar.h:
@@ -692,10 +771,6 @@ runtime/libimpulse-runtime.a:
 /usr/include/bits/types/struct_tm.h:
 
 /usr/include/bits/types/time_t.h:
-
-/usr/include/c++/15/bits/locale_facets.h:
-
-/usr/include/bits/types/wint_t.h:
 
 /usr/include/bits/typesizes.h:
 
@@ -729,6 +804,12 @@ runtime/libimpulse-runtime.a:
 
 /usr/include/sched.h:
 
+/usr/lib64/crti.o:
+
+/usr/include/bits/wordsize.h:
+
+/usr/include/stdio.h:
+
 /usr/include/stdlib.h:
 
 /usr/include/sys/select.h:
@@ -742,39 +823,3 @@ runtime/libimpulse-runtime.a:
 /usr/lib/clang/20/include/__stddef_ptrdiff_t.h:
 
 /usr/include/time.h:
-
-/lib64/libc.so.6:
-
-/lib64/libgcc_s.so.1:
-
-/usr/include/bits/wordsize.h:
-
-/usr/include/stdio.h:
-
-/usr/lib64/crti.o:
-
-/usr/include/c++/15/bits/ios_base.h:
-
-/usr/lib64/crtn.o:
-
-/usr/include/ctype.h:
-
-/usr/lib64/libc.so:
-
-/usr/include/c++/15/bits/stl_iterator_base_types.h:
-
-/usr/lib/gcc/x86_64-redhat-linux/15/crtend.o:
-
-/usr/lib/gcc/x86_64-redhat-linux/15/libgcc.a:
-
-/usr/include/c++/15/bits/cxxabi_forced.h:
-
-/usr/lib/gcc/x86_64-redhat-linux/15/libgcc_s.so:
-
-/usr/lib/clang/20/include/__stddef_max_align_t.h:
-
-/usr/lib/gcc/x86_64-redhat-linux/15/libstdc++.so:
-
-/usr/include/c++/15/ext/numeric_traits.h:
-
-/usr/lib64/libc_nonshared.a:

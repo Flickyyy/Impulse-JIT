@@ -18,6 +18,10 @@ struct Instruction;
 enum class InstructionKind : std::uint8_t {
     Comment,
     Return,
+    Literal,
+    Reference,
+    Binary,
+    Store,
 };
 
 struct Instruction {
@@ -41,7 +45,9 @@ struct Binding {
     std::string name;
     std::string type;
     std::string initializer;
+    std::optional<std::string> constant_value;
     bool exported = false;
+    std::vector<Instruction> initializer_instructions;
 };
 
 struct FunctionParameter {

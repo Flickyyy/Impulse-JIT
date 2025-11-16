@@ -3,7 +3,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "ir/libimpulse-ir.a"
+			"path" : "frontend/libimpulse-frontend.a"
 		}
 	],
 	"backtrace" : 1,
@@ -12,11 +12,12 @@
 		"commands" : 
 		[
 			"add_library",
+			"target_link_libraries",
 			"target_include_directories"
 		],
 		"files" : 
 		[
-			"ir/CMakeLists.txt"
+			"frontend/CMakeLists.txt"
 		],
 		"nodes" : 
 		[
@@ -32,7 +33,13 @@
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 7,
+				"line" : 12,
+				"parent" : 0
+			},
+			{
+				"command" : 2,
+				"file" : 0,
+				"line" : 10,
 				"parent" : 0
 			}
 		]
@@ -48,6 +55,10 @@
 			],
 			"includes" : 
 			[
+				{
+					"backtrace" : 3,
+					"path" : "/home/flicky/itmo/Impulse-JIT/frontend/include"
+				},
 				{
 					"backtrace" : 2,
 					"path" : "/home/flicky/itmo/Impulse-JIT/ir/include"
@@ -66,17 +77,27 @@
 			[
 				0,
 				1,
-				2
+				2,
+				3,
+				4,
+				5
 			]
 		}
 	],
-	"id" : "impulse-ir::@d424d1cf9c0b1dfbc6dd",
-	"name" : "impulse-ir",
-	"nameOnDisk" : "libimpulse-ir.a",
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "impulse-ir::@d424d1cf9c0b1dfbc6dd"
+		}
+	],
+	"id" : "impulse-frontend::@73e8a6b9a3e1c0d3809b",
+	"name" : "impulse-frontend",
+	"nameOnDisk" : "libimpulse-frontend.a",
 	"paths" : 
 	{
-		"build" : "ir",
-		"source" : "ir"
+		"build" : "frontend",
+		"source" : "frontend"
 	},
 	"sourceGroups" : 
 	[
@@ -86,7 +107,10 @@
 			[
 				0,
 				1,
-				2
+				2,
+				3,
+				4,
+				5
 			]
 		}
 	],
@@ -95,19 +119,37 @@
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "ir/src/placeholder.cpp",
+			"path" : "frontend/src/lexer.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "ir/src/printer.cpp",
+			"path" : "frontend/src/parser.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "ir/src/builder.cpp",
+			"path" : "frontend/src/frontend.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "frontend/src/lowering.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "frontend/src/expression_eval.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "frontend/src/semantic.cpp",
 			"sourceGroupIndex" : 0
 		}
 	],

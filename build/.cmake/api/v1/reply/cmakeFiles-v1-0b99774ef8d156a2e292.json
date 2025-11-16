@@ -148,6 +148,9 @@
 		},
 		{
 			"path" : "tests/CMakeLists.txt"
+		},
+		{
+			"path" : "tools/cpp-cli/CMakeLists.txt"
 		}
 	],
 	"kind" : "cmakeFiles",

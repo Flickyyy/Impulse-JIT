@@ -1,7 +1,14 @@
 #include "impulse/frontend/lowering.h"
 
+#include <cmath>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
+#include "impulse/frontend/expression_eval.h"
 #include "impulse/ir/builder.h"
 #include "impulse/ir/printer.h"
 
@@ -23,6 +30,62 @@ namespace {
     return ir::StorageClass::Let;
 }
 
+[[nodiscard]] auto format_constant(double value) -> std::string {
+    if (!std::isfinite(value)) {
+        return {};
+    }
+    const double rounded = std::round(value);
+    if (std::abs(value - rounded) < 1e-9) {
+        return std::to_string(static_cast<long long>(rounded));
+    }
+    std::ostringstream out;
+    out << std::setprecision(12) << value;
+    return out.str();
+}
+
+[[nodiscard]] auto binary_operator_token(Expression::BinaryOperator op) -> std::string_view {
+    switch (op) {
+        case Expression::BinaryOperator::Add:
+            return "+";
+        case Expression::BinaryOperator::Subtract:
+            return "-";
+        case Expression::BinaryOperator::Multiply:
+            return "*";
+        case Expression::BinaryOperator::Divide:
+            return "/";
+    }
+    return "?";
+}
+
+void lower_expression_to_stack(const Expression& expr, std::vector<ir::Instruction>& instructions) {
+    switch (expr.kind) {
+        case Expression::Kind::Literal:
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Literal,
+                .operands = std::vector<std::string>{expr.literal_value},
+            });
+            break;
+        case Expression::Kind::Identifier:
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Reference,
+                .operands = std::vector<std::string>{expr.identifier.value},
+            });
+            break;
+        case Expression::Kind::Binary:
+            if (expr.left) {
+                lower_expression_to_stack(*expr.left, instructions);
+            }
+            if (expr.right) {
+                lower_expression_to_stack(*expr.right, instructions);
+            }
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Binary,
+                .operands = std::vector<std::string>{std::string{binary_operator_token(expr.binary_operator)}},
+            });
+            break;
+    }
+}
+
 }  // namespace
 
 auto lower_to_ir(const Module& module) -> ir::Module {
@@ -39,7 +102,23 @@ auto lower_to_ir(const Module& module) -> ir::Module {
                 binding.storage = to_storage(decl.binding.kind);
                 binding.name = decl.binding.name.value;
                 binding.type = decl.binding.type_name.value;
-                binding.initializer = decl.binding.initializer.text;
+                if (decl.binding.initializer_expr) {
+                    binding.initializer = printExpression(*decl.binding.initializer_expr);
+                    const auto evaluation = evaluateNumericExpression(*decl.binding.initializer_expr);
+                    if (evaluation.status == ExpressionEvalStatus::Constant && evaluation.value.has_value()) {
+                        const auto formatted = format_constant(*evaluation.value);
+                        if (!formatted.empty()) {
+                            binding.constant_value = formatted;
+                        }
+                    }
+                    lower_expression_to_stack(*decl.binding.initializer_expr, binding.initializer_instructions);
+                    binding.initializer_instructions.push_back(ir::Instruction{
+                        .kind = ir::InstructionKind::Store,
+                        .operands = std::vector<std::string>{decl.binding.name.value},
+                    });
+                } else {
+                    binding.initializer = decl.binding.initializer.text;
+                }
                 binding.exported = decl.exported;
                 lowered.bindings.push_back(std::move(binding));
                 break;

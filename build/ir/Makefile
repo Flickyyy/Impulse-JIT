@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /home/flicky/itmo/Impulse-JIT/build
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running tests..."
+	/usr/bin/ctest --force-new-ctest-process $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running CMake cache editor..."
@@ -154,6 +164,30 @@ src/builder.cpp.s:
 	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.s
 .PHONY : src/builder.cpp.s
 
+src/interpreter.o: src/interpreter.cpp.o
+.PHONY : src/interpreter.o
+
+# target to build an object file
+src/interpreter.cpp.o:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/src/interpreter.cpp.o
+.PHONY : src/interpreter.cpp.o
+
+src/interpreter.i: src/interpreter.cpp.i
+.PHONY : src/interpreter.i
+
+# target to preprocess a source file
+src/interpreter.cpp.i:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/src/interpreter.cpp.i
+.PHONY : src/interpreter.cpp.i
+
+src/interpreter.s: src/interpreter.cpp.s
+.PHONY : src/interpreter.s
+
+# target to generate assembly for a file
+src/interpreter.cpp.s:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f ir/CMakeFiles/impulse-ir.dir/build.make ir/CMakeFiles/impulse-ir.dir/src/interpreter.cpp.s
+.PHONY : src/interpreter.cpp.s
+
 src/placeholder.o: src/placeholder.cpp.o
 .PHONY : src/placeholder.o
 
@@ -210,10 +244,14 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... test"
 	@echo "... impulse-ir"
 	@echo "... src/builder.o"
 	@echo "... src/builder.i"
 	@echo "... src/builder.s"
+	@echo "... src/interpreter.o"
+	@echo "... src/interpreter.i"
+	@echo "... src/interpreter.s"
 	@echo "... src/placeholder.o"
 	@echo "... src/placeholder.i"
 	@echo "... src/placeholder.s"

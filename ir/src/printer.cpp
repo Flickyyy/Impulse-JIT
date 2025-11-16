@@ -49,6 +49,30 @@ namespace {
                 out << ' ' << inst.operands.front();
             }
             break;
+        case InstructionKind::Literal:
+            out << "literal";
+            if (!inst.operands.empty()) {
+                out << ' ' << inst.operands.front();
+            }
+            break;
+        case InstructionKind::Reference:
+            out << "reference";
+            if (!inst.operands.empty()) {
+                out << ' ' << inst.operands.front();
+            }
+            break;
+        case InstructionKind::Binary:
+            out << "binary";
+            if (!inst.operands.empty()) {
+                out << ' ' << inst.operands.front();
+            }
+            break;
+        case InstructionKind::Store:
+            out << "store";
+            if (!inst.operands.empty()) {
+                out << ' ' << inst.operands.front();
+            }
+            break;
     }
     return out.str();
 }
@@ -106,7 +130,18 @@ auto print_module(const Module& module) -> std::string {
             if (!binding.initializer.empty()) {
                 out << " = " << binding.initializer;
             }
-            out << ";\n";
+            out << ";";
+            if (binding.constant_value.has_value()) {
+                out << "  # = " << *binding.constant_value;
+            }
+            out << "\n";
+            if (!binding.initializer_instructions.empty()) {
+                out << "  {\n";
+                for (const auto& inst : binding.initializer_instructions) {
+                    out << "    " << format_instruction(inst) << "\n";
+                }
+                out << "  }\n";
+            }
         }
         out << "\n";
     }

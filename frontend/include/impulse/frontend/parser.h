@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <memory>
 
 #include "impulse/frontend/ast.h"
 #include "impulse/frontend/lexer.h"
@@ -37,6 +38,11 @@ class Parser {
     [[nodiscard]] auto parseInterfaceMethod() -> std::optional<InterfaceMethod>;
     [[nodiscard]] auto parseParameterList() -> std::vector<Parameter>;
     [[nodiscard]] auto parsePath(const char* context) -> std::vector<Identifier>;
+    [[nodiscard]] auto parseExpression() -> std::unique_ptr<Expression>;
+    [[nodiscard]] auto parseBinaryExpression(int minPrecedence) -> std::unique_ptr<Expression>;
+    [[nodiscard]] auto parsePrimaryExpression() -> std::unique_ptr<Expression>;
+    [[nodiscard]] static auto binaryPrecedence(TokenKind kind) -> int;
+    [[nodiscard]] static auto toBinaryOperator(TokenKind kind) -> Expression::BinaryOperator;
 
     void reportError(const Token& token, std::string message);
     [[nodiscard]] auto makeIdentifier(const Token& token) const -> Identifier;

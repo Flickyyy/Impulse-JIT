@@ -41,12 +41,29 @@ struct ImpulseSemanticResult {
     size_t diagnostic_count;
 };
 
+struct ImpulseBindingValue {
+    char* name;
+    bool evaluated;
+    double value;
+    char* message;
+};
+
+struct ImpulseEvalResult {
+    bool success;
+    struct ImpulseParseDiagnostic* diagnostics;
+    size_t diagnostic_count;
+    struct ImpulseBindingValue* bindings;
+    size_t binding_count;
+};
+
 #ifndef __cplusplus
 typedef struct ImpulseParseOptions ImpulseParseOptions;
 typedef struct ImpulseParseDiagnostic ImpulseParseDiagnostic;
 typedef struct ImpulseParseResult ImpulseParseResult;
 typedef struct ImpulseIrResult ImpulseIrResult;
 typedef struct ImpulseSemanticResult ImpulseSemanticResult;
+typedef struct ImpulseBindingValue ImpulseBindingValue;
+typedef struct ImpulseEvalResult ImpulseEvalResult;
 #endif
 
 #ifdef __cplusplus
@@ -80,6 +97,17 @@ struct ImpulseSemanticResult impulse_check_module(const struct ImpulseParseOptio
 void impulse_free_semantic_result(ImpulseSemanticResult* result);
 #else
 void impulse_free_semantic_result(struct ImpulseSemanticResult* result);
+#endif
+
+#ifdef __cplusplus
+[[nodiscard]] auto impulse_evaluate_bindings(const ImpulseParseOptions* options) -> ImpulseEvalResult;
+#else
+struct ImpulseEvalResult impulse_evaluate_bindings(const struct ImpulseParseOptions* options);
+#endif
+#ifdef __cplusplus
+void impulse_free_eval_result(ImpulseEvalResult* result);
+#else
+void impulse_free_eval_result(struct ImpulseEvalResult* result);
 #endif
 
 #ifdef __cplusplus

@@ -75,16 +75,14 @@ frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o: \
   /usr/include/bits/typesizes.h /usr/include/bits/time64.h \
   /usr/include/bits/wchar.h /usr/include/bits/stdint-intn.h \
   /usr/include/bits/stdint-uintn.h /usr/include/bits/stdint-least.h \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/optional \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/exception \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/exception_ptr.h \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/cxxabi_init_exception.h \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/typeinfo \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/nested_exception.h \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/enable_special_members.h \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/string \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/memory \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/stl_tempbuf.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/stl_raw_storage_iter.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/align.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/unique_ptr.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/shared_ptr.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/iosfwd \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/stringfwd.h \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/char_traits.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/postypes.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/cwchar \
   /usr/include/wchar.h /usr/include/bits/floatn.h \
@@ -95,14 +93,63 @@ frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o: \
   /usr/include/bits/types/__mbstate_t.h /usr/include/bits/types/__FILE.h \
   /usr/include/bits/types/FILE.h /usr/include/bits/types/locale_t.h \
   /usr/include/bits/types/__locale_t.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/shared_ptr_base.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/typeinfo \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/allocated_ptr.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/ext/aligned_buffer.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/ext/atomicity.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/x86_64-redhat-linux/bits/gthr.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/x86_64-redhat-linux/bits/gthr-default.h \
+  /usr/include/pthread.h /usr/include/sched.h \
+  /usr/include/bits/types/time_t.h \
+  /usr/include/bits/types/struct_timespec.h /usr/include/bits/endian.h \
+  /usr/include/bits/endianness.h /usr/include/bits/sched.h \
+  /usr/include/linux/sched/types.h /usr/include/linux/types.h \
+  /usr/include/asm/types.h /usr/include/asm-generic/types.h \
+  /usr/include/asm-generic/int-ll64.h /usr/include/asm/bitsperlong.h \
+  /usr/include/asm-generic/bitsperlong.h \
+  /usr/include/linux/posix_types.h /usr/include/linux/stddef.h \
+  /usr/include/asm/posix_types.h /usr/include/asm/posix_types_64.h \
+  /usr/include/asm-generic/posix_types.h \
+  /usr/include/bits/types/struct_sched_param.h \
+  /usr/include/bits/cpu-set.h /usr/include/time.h \
+  /usr/include/bits/time.h /usr/include/bits/timex.h \
+  /usr/include/bits/types/struct_timeval.h \
+  /usr/include/bits/types/clock_t.h /usr/include/bits/types/struct_tm.h \
+  /usr/include/bits/types/clockid_t.h /usr/include/bits/types/timer_t.h \
+  /usr/include/bits/types/struct_itimerspec.h \
+  /usr/include/bits/pthreadtypes.h \
+  /usr/include/bits/thread-shared-types.h \
+  /usr/include/bits/pthreadtypes-arch.h \
+  /usr/include/bits/atomic_wide_counter.h \
+  /usr/include/bits/struct_mutex.h /usr/include/bits/struct_rwlock.h \
+  /usr/include/bits/setjmp.h /usr/include/bits/types/__sigset_t.h \
+  /usr/include/bits/types/struct___jmp_buf_tag.h \
+  /usr/include/bits/pthread_stack_min-dynamic.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/x86_64-redhat-linux/bits/atomic_word.h \
+  /usr/include/sys/single_threaded.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/ext/concurrence.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/exception \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/exception_ptr.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/cxxabi_init_exception.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/nested_exception.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/shared_ptr_atomic.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/atomic_base.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/atomic_lockfree_defines.h \
+  /usr/bin/../lib/clang/20/include/sanitizer/tsan_interface.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/backward/auto_ptr.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/pstl/glue_memory_defs.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/pstl/execution_defs.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/optional \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/enable_special_members.h \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/string \
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/char_traits.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/localefwd.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/x86_64-redhat-linux/bits/c++locale.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/clocale \
   /usr/include/locale.h /usr/include/bits/locale.h \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/iosfwd \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/cctype \
-  /usr/include/ctype.h /usr/include/bits/endian.h \
-  /usr/include/bits/endianness.h \
+  /usr/include/ctype.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/ostream_insert.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/cxxabi_forced.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/basic_string.h \
@@ -112,19 +159,9 @@ frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o: \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/cstdlib \
   /usr/include/stdlib.h /usr/include/bits/waitflags.h \
   /usr/include/bits/waitstatus.h /usr/include/sys/types.h \
-  /usr/include/bits/types/clock_t.h /usr/include/bits/types/clockid_t.h \
-  /usr/include/bits/types/time_t.h /usr/include/bits/types/timer_t.h \
   /usr/include/endian.h /usr/include/bits/byteswap.h \
   /usr/include/bits/uintn-identity.h /usr/include/sys/select.h \
   /usr/include/bits/select.h /usr/include/bits/types/sigset_t.h \
-  /usr/include/bits/types/__sigset_t.h \
-  /usr/include/bits/types/struct_timeval.h \
-  /usr/include/bits/types/struct_timespec.h \
-  /usr/include/bits/pthreadtypes.h \
-  /usr/include/bits/thread-shared-types.h \
-  /usr/include/bits/pthreadtypes-arch.h \
-  /usr/include/bits/atomic_wide_counter.h \
-  /usr/include/bits/struct_mutex.h /usr/include/bits/struct_rwlock.h \
   /usr/include/alloca.h /usr/include/bits/stdlib-float.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/std_abs.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/cstdio \
@@ -144,6 +181,6 @@ frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o: \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/unordered_map.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/hashtable.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/hashtable_policy.h \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/ext/aligned_buffer.h \
   /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/node_handle.h \
-  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/erase_if.h
+  /usr/bin/../lib/gcc/x86_64-redhat-linux/15/../../../../include/c++/15/bits/erase_if.h \
+  /home/flicky/itmo/Impulse-JIT/frontend/include/impulse/frontend/expression_eval.h

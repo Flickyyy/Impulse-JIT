@@ -2,10 +2,15 @@
 
 #include <cstring>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "impulse/frontend/lowering.h"
 #include "impulse/frontend/parser.h"
 #include "impulse/frontend/semantic.h"
+#include "impulse/ir/interpreter.h"
+
+namespace ir = ::impulse::ir;
 
 namespace {
 
@@ -17,6 +22,18 @@ namespace {
 
 struct CopiedDiagnostics {
     ImpulseParseDiagnostic* data = nullptr;
+    size_t count = 0;
+};
+
+struct BindingEvaluation {
+    std::string name;
+    bool evaluated = false;
+    double value = 0.0;
+    std::string message;
+};
+
+struct CopiedBindings {
+    ImpulseBindingValue* data = nullptr;
     size_t count = 0;
 };
 
@@ -46,6 +63,34 @@ void free_diagnostics(ImpulseParseDiagnostic* diagnostics, size_t count) {
         delete[] diagnostics[i].message;
     }
     delete[] diagnostics;
+}
+
+[[nodiscard]] auto copy_binding_values(const std::vector<BindingEvaluation>& values) -> CopiedBindings {
+    if (values.empty()) {
+        return {};
+    }
+    auto* buffer = new ImpulseBindingValue[values.size()];
+    for (size_t i = 0; i < values.size(); ++i) {
+        const auto& value = values[i];
+        buffer[i] = ImpulseBindingValue{
+            .name = copy_message(value.name),
+            .evaluated = value.evaluated,
+            .value = value.value,
+            .message = value.message.empty() ? nullptr : copy_message(value.message),
+        };
+    }
+    return CopiedBindings{buffer, values.size()};
+}
+
+void free_binding_values(ImpulseBindingValue* values, size_t count) {
+    if (values == nullptr) {
+        return;
+    }
+    for (size_t i = 0; i < count; ++i) {
+        delete[] values[i].name;
+        delete[] values[i].message;
+    }
+    delete[] values;
 }
 
 }  // namespace
@@ -158,4 +203,82 @@ void impulse_free_semantic_result(ImpulseSemanticResult* result) {
     free_diagnostics(result->diagnostics, result->diagnostic_count);
     result->diagnostics = nullptr;
     result->diagnostic_count = 0;
+}
+
+auto impulse_evaluate_bindings(const ImpulseParseOptions* options) -> ImpulseEvalResult {
+    if (options == nullptr || options->source == nullptr) {
+        return ImpulseEvalResult{
+            .success = false,
+            .diagnostics = nullptr,
+            .diagnostic_count = 0,
+            .bindings = nullptr,
+            .binding_count = 0,
+        };
+    }
+
+    impulse::frontend::Parser parser(options->source);
+    auto parseResult = parser.parseModule();
+
+    std::vector<impulse::frontend::Diagnostic> combinedDiagnostics = parseResult.diagnostics;
+    bool overallSuccess = parseResult.success;
+    std::vector<BindingEvaluation> bindingValues;
+
+    if (parseResult.success) {
+        auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+        overallSuccess = overallSuccess && semantic.success;
+        combinedDiagnostics.insert(combinedDiagnostics.end(), semantic.diagnostics.begin(), semantic.diagnostics.end());
+
+        if (semantic.success) {
+            const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+            std::unordered_map<std::string, double> environment;
+            bindingValues.reserve(lowered.bindings.size());
+            for (const auto& binding : lowered.bindings) {
+                BindingEvaluation evaluation;
+                evaluation.name = binding.name;
+                const auto eval = ir::interpret_binding(binding, environment);
+                switch (eval.status) {
+                    case ir::EvalStatus::Success:
+                        if (eval.value.has_value()) {
+                            evaluation.evaluated = true;
+                            evaluation.value = *eval.value;
+                            environment[binding.name] = *eval.value;
+                        } else {
+                            evaluation.message = "No value produced";
+                        }
+                        break;
+                    case ir::EvalStatus::NonConstant:
+                        evaluation.message = eval.message.empty() ? std::string{"Expression depends on unevaluated bindings"}
+                                                                  : eval.message;
+                        break;
+                    case ir::EvalStatus::Error:
+                        overallSuccess = false;
+                        evaluation.message = eval.message.empty() ? std::string{"Evaluation error"} : eval.message;
+                        break;
+                }
+                bindingValues.push_back(std::move(evaluation));
+            }
+        }
+    }
+
+    const auto copiedDiagnostics = copy_diagnostics(combinedDiagnostics);
+    const auto copiedValues = copy_binding_values(bindingValues);
+    return ImpulseEvalResult{
+        .success = overallSuccess,
+        .diagnostics = copiedDiagnostics.data,
+        .diagnostic_count = copiedDiagnostics.count,
+        .bindings = copiedValues.data,
+        .binding_count = copiedValues.count,
+    };
+}
+
+void impulse_free_eval_result(ImpulseEvalResult* result) {
+    if (result == nullptr) {
+        return;
+    }
+    free_diagnostics(result->diagnostics, result->diagnostic_count);
+    result->diagnostics = nullptr;
+    result->diagnostic_count = 0;
+    free_binding_values(result->bindings, result->binding_count);
+    result->bindings = nullptr;
+    result->binding_count = 0;
 }

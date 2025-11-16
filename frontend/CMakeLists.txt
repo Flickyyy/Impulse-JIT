@@ -3,6 +3,7 @@ add_library(impulse-frontend STATIC
 	src/parser.cpp
 	src/frontend.cpp
 	src/lowering.cpp
+	src/expression_eval.cpp
 	src/semantic.cpp
 )
 

@@ -197,10 +197,13 @@ auto Parser::parseBindingDecl(BindingKind kind) -> BindingDecl {
     (void)equal;
 
     const size_t exprStart = current_;
-    while (!check(TokenKind::Semicolon) && !check(TokenKind::EndOfFile)) {
-        (void)advance();
-    }
+    auto expression = parseExpression();
     const size_t exprEnd = current_;
+    if (!expression) {
+        while (!check(TokenKind::Semicolon) && !check(TokenKind::EndOfFile)) {
+            (void)advance();
+        }
+    }
     const Token* terminator = consume(TokenKind::Semicolon, semicolonMessage);
     (void)terminator;
 
@@ -213,6 +216,7 @@ auto Parser::parseBindingDecl(BindingKind kind) -> BindingDecl {
         decl.type_name = makeIdentifier(*typeName);
     }
     decl.initializer = makeSnippet(TokenRange{exprStart, exprEnd});
+    decl.initializer_expr = std::move(expression);
     return decl;
 }
 
@@ -439,6 +443,102 @@ auto Parser::parsePath(const char* context) -> std::vector<Identifier> {
     }
 
     return path;
+}
+
+auto Parser::parseExpression() -> std::unique_ptr<Expression> { return parseBinaryExpression(0); }
+
+auto Parser::parseBinaryExpression(int minPrecedence) -> std::unique_ptr<Expression> {
+    auto left = parsePrimaryExpression();
+    if (left == nullptr) {
+        return nullptr;
+    }
+
+    while (true) {
+        const int precedence = binaryPrecedence(peek().kind);
+        if (precedence < minPrecedence) {
+            break;
+        }
+
+        const Token op = advance();
+        auto right = parseBinaryExpression(precedence + 1);
+        if (right == nullptr) {
+            return left;
+        }
+
+        auto binary = std::make_unique<Expression>();
+        binary->kind = Expression::Kind::Binary;
+        binary->location = SourceLocation{op.line, op.column};
+        binary->binary_operator = toBinaryOperator(op.kind);
+        binary->left = std::move(left);
+        binary->right = std::move(right);
+        left = std::move(binary);
+    }
+
+    return left;
+}
+
+auto Parser::parsePrimaryExpression() -> std::unique_ptr<Expression> {
+    if (match(TokenKind::IntegerLiteral) || match(TokenKind::FloatLiteral)) {
+        const Token literal = previous();
+        auto expr = std::make_unique<Expression>();
+        expr->kind = Expression::Kind::Literal;
+        expr->location = SourceLocation{literal.line, literal.column};
+        expr->literal_value = literal.lexeme;
+        return expr;
+    }
+
+    if (match(TokenKind::Identifier)) {
+        const Token ident = previous();
+        auto expr = std::make_unique<Expression>();
+        expr->kind = Expression::Kind::Identifier;
+        expr->location = SourceLocation{ident.line, ident.column};
+        expr->identifier = makeIdentifier(ident);
+        return expr;
+    }
+
+    if (match(TokenKind::LParen)) {
+        const Token lparen = previous();
+        auto expr = parseExpression();
+        const Token* rparen = consume(TokenKind::RParen, "Expected ')' after expression");
+        if (expr != nullptr && rparen != nullptr) {
+            expr->location = SourceLocation{lparen.line, lparen.column};
+        }
+        return expr;
+    }
+
+    reportError(peek(), "Expected expression");
+    if (!isAtEnd()) {
+        advance();
+    }
+    return nullptr;
+}
+
+auto Parser::binaryPrecedence(TokenKind kind) -> int {
+    switch (kind) {
+        case TokenKind::Plus:
+        case TokenKind::Minus:
+            return 10;
+        case TokenKind::Star:
+        case TokenKind::Slash:
+            return 20;
+        default:
+            return -1;
+    }
+}
+
+auto Parser::toBinaryOperator(TokenKind kind) -> Expression::BinaryOperator {
+    switch (kind) {
+        case TokenKind::Plus:
+            return Expression::BinaryOperator::Add;
+        case TokenKind::Minus:
+            return Expression::BinaryOperator::Subtract;
+        case TokenKind::Star:
+            return Expression::BinaryOperator::Multiply;
+        case TokenKind::Slash:
+            return Expression::BinaryOperator::Divide;
+        default:
+            return Expression::BinaryOperator::Add;
+    }
 }
 
 void Parser::reportError(const Token& token, std::string message) {

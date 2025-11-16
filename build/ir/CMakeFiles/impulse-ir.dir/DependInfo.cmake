@@ -9,6 +9,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/flicky/itmo/Impulse-JIT/ir/src/builder.cpp" "ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.o" "gcc" "ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.o.d"
+  "/home/flicky/itmo/Impulse-JIT/ir/src/interpreter.cpp" "ir/CMakeFiles/impulse-ir.dir/src/interpreter.cpp.o" "gcc" "ir/CMakeFiles/impulse-ir.dir/src/interpreter.cpp.o.d"
   "/home/flicky/itmo/Impulse-JIT/ir/src/placeholder.cpp" "ir/CMakeFiles/impulse-ir.dir/src/placeholder.cpp.o" "gcc" "ir/CMakeFiles/impulse-ir.dir/src/placeholder.cpp.o.d"
   "/home/flicky/itmo/Impulse-JIT/ir/src/printer.cpp" "ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.o" "gcc" "ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.o.d"
   )

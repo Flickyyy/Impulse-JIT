@@ -14,6 +14,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/home/flicky/itmo/Impulse-JIT/ir/CMakeLists.txt"
   "/home/flicky/itmo/Impulse-JIT/runtime/CMakeLists.txt"
   "/home/flicky/itmo/Impulse-JIT/tests/CMakeLists.txt"
+  "/home/flicky/itmo/Impulse-JIT/tools/cpp-cli/CMakeLists.txt"
   "/usr/share/cmake/Modules/CMakeCXXInformation.cmake"
   "/usr/share/cmake/Modules/CMakeCommonLanguageInclude.cmake"
   "/usr/share/cmake/Modules/CMakeGenericSystem.cmake"
@@ -53,6 +54,7 @@ set(CMAKE_MAKEFILE_PRODUCTS
   "frontend/CMakeFiles/CMakeDirectoryInformation.cmake"
   "runtime/CMakeFiles/CMakeDirectoryInformation.cmake"
   "tests/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "tools/cpp-cli/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
@@ -61,4 +63,5 @@ set(CMAKE_DEPEND_INFO_FILES
   "frontend/CMakeFiles/impulse-frontend.dir/DependInfo.cmake"
   "runtime/CMakeFiles/impulse-runtime.dir/DependInfo.cmake"
   "tests/CMakeFiles/impulse-tests.dir/DependInfo.cmake"
+  "tools/cpp-cli/CMakeFiles/impulse-cpp.dir/DependInfo.cmake"
   )

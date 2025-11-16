@@ -12,6 +12,8 @@ func main() {
 	sourcePath := flag.String("file", "", "Impulse source file to parse")
 	emitIR := flag.Bool("emit-ir", false, "Emit textual IR after parsing")
 	check := flag.Bool("check", false, "Run semantic checks")
+	evaluate := flag.Bool("evaluate", false, "Evaluate constant bindings and print their values")
+	evalBinding := flag.String("eval-binding", "", "Evaluate only the specified binding (implies --evaluate)")
 	flag.Parse()
 
 	if *sourcePath == "" {
@@ -38,7 +40,6 @@ func main() {
 		}
 		fmt.Println(irResult.IR)
 		return
-		return
 	}
 
 	if *check {
@@ -53,6 +54,33 @@ func main() {
 			os.Exit(2)
 		}
 		fmt.Println("Semantic checks passed")
+		return
+	}
+
+	if *evaluate || *evalBinding != "" {
+		bindingName := *evalBinding
+		evalResult, err := frontend.EvaluateBindings(string(source))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "evaluation error: %v\n", err)
+			os.Exit(1)
+		}
+		if !evalResult.Success {
+			fmt.Fprintf(os.Stderr, "evaluation failed with %d diagnostics:\n", len(evalResult.Diagnostics))
+			printDiagnostics(evalResult.Diagnostics)
+			os.Exit(2)
+		}
+		if len(evalResult.Diagnostics) > 0 {
+			printDiagnostics(evalResult.Diagnostics)
+		}
+
+		if bindingName != "" {
+			if !printSingleBinding(evalResult.Bindings, bindingName) {
+				fmt.Fprintf(os.Stderr, "binding %q not found\n", bindingName)
+				os.Exit(3)
+			}
+		} else {
+			printAllBindings(evalResult.Bindings)
+		}
 		return
 	}
 
@@ -75,4 +103,35 @@ func printDiagnostics(diags []frontend.Diagnostic) {
 	for _, diag := range diags {
 		fmt.Fprintf(os.Stderr, "[%d:%d] %s\n", diag.Line, diag.Column, diag.Message)
 	}
+}
+
+func printAllBindings(bindings []frontend.BindingValue) {
+	for _, binding := range bindings {
+		printBinding(binding)
+	}
+}
+
+func printSingleBinding(bindings []frontend.BindingValue, name string) bool {
+	found := false
+	for _, binding := range bindings {
+		if binding.Name != name {
+			continue
+		}
+		printBinding(binding)
+		found = true
+		break
+	}
+	return found
+}
+
+func printBinding(binding frontend.BindingValue) {
+	if binding.Evaluated {
+		fmt.Printf("%s = %g\n", binding.Name, binding.Value)
+		return
+	}
+	message := "not constant"
+	if binding.Message != "" {
+		message = binding.Message
+	}
+	fmt.Printf("%s = <unevaluated> (%s)\n", binding.Name, message)
 }

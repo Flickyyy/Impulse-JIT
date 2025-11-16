@@ -77,3 +77,37 @@ func TestCheckModuleDuplicates(t *testing.T) {
 		t.Fatal("expected diagnostics for duplicates")
 	}
 }
+
+func TestEvaluateBindingsSuccess(t *testing.T) {
+	source := "module demo;\nlet a: int = 5;\nlet b: int = a + 3;"
+
+	result, err := EvaluateBindings(source)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Success {
+		t.Fatalf("expected success, got diagnostics: %+v", result.Diagnostics)
+	}
+	if len(result.Bindings) != 2 {
+		t.Fatalf("expected two bindings, got %d", len(result.Bindings))
+	}
+	byName := make(map[string]float64)
+	for _, binding := range result.Bindings {
+		if !binding.Evaluated {
+			t.Fatalf("binding %s not evaluated: %+v", binding.Name, binding)
+		}
+		byName[binding.Name] = binding.Value
+	}
+	if v := byName["a"]; v != 5 {
+		t.Fatalf("expected a=5, got %g", v)
+	}
+	if v := byName["b"]; v != 8 {
+		t.Fatalf("expected b=8, got %g", v)
+	}
+}
+
+func TestEvaluateBindingsEmptySource(t *testing.T) {
+	if _, err := EvaluateBindings(""); err == nil {
+		t.Fatal("expected error for empty source")
+	}
+}

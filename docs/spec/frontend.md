@@ -77,7 +77,7 @@ Identifiers capture both the string value and source location (line/column). Exp
 - `frontend/include/impulse/frontend/parser.h` – parser API (`parse_module(std::string_view)` returning `ParseResult`).
 - `frontend/src/parser.cpp` – implementation using the existing lexer.
 - `frontend/include/impulse/frontend/lowering.h` + `frontend/src/lowering.cpp` – упрощённый lowering в текстовый IR для CLI.
-- `frontend/include/impulse/frontend/semantic.h` + `frontend/src/semantic.cpp` – семантические проверки (дубликаты имён, поля структур, методы интерфейсов).
+- `frontend/include/impulse/frontend/semantic.h` + `frontend/src/semantic.cpp` – семантические проверки (дубликаты имён, поля структур, методы интерфейсов, повторные import'ы и alias'ы).
 - Unit tests under `tests/` verifying module/import/binding/function parsing and representative diagnostics.
 
 This keeps the repository shippable (build + tests stay green) while giving us a concrete foundation for the next parser features.

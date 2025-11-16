@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -42,6 +43,29 @@ enum class BindingKind : std::uint8_t {
     Var,
 };
 
+struct Expression {
+    enum class Kind : std::uint8_t {
+        Literal,
+        Identifier,
+        Binary,
+    };
+
+    Kind kind = Kind::Literal;
+    enum class BinaryOperator : std::uint8_t {
+        Add,
+        Subtract,
+        Multiply,
+        Divide,
+    };
+
+    SourceLocation location;
+    std::string literal_value;
+    Identifier identifier;
+    BinaryOperator binary_operator = BinaryOperator::Add;
+    std::unique_ptr<Expression> left;
+    std::unique_ptr<Expression> right;
+};
+
 struct Parameter {
     Identifier name;
     Identifier type_name;
@@ -58,6 +82,7 @@ struct BindingDecl {
     Identifier name;
     Identifier type_name;
     Snippet initializer;
+    std::unique_ptr<Expression> initializer_expr;
 };
 
 struct FieldDecl {

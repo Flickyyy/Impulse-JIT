@@ -65,6 +65,16 @@ CMAKE_BINARY_DIR = /home/flicky/itmo/Impulse-JIT/build
 #=============================================================================
 # Targets provided globally by CMake.
 
+# Special rule for the target test
+test:
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running tests..."
+	/usr/bin/ctest --force-new-ctest-process $(ARGS)
+.PHONY : test
+
+# Special rule for the target test
+test/fast: test
+.PHONY : test/fast
+
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Running CMake cache editor..."
@@ -129,6 +139,30 @@ impulse-frontend: frontend/CMakeFiles/impulse-frontend.dir/rule
 impulse-frontend/fast:
 	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/build
 .PHONY : impulse-frontend/fast
+
+src/expression_eval.o: src/expression_eval.cpp.o
+.PHONY : src/expression_eval.o
+
+# target to build an object file
+src/expression_eval.cpp.o:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o
+.PHONY : src/expression_eval.cpp.o
+
+src/expression_eval.i: src/expression_eval.cpp.i
+.PHONY : src/expression_eval.i
+
+# target to preprocess a source file
+src/expression_eval.cpp.i:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.i
+.PHONY : src/expression_eval.cpp.i
+
+src/expression_eval.s: src/expression_eval.cpp.s
+.PHONY : src/expression_eval.s
+
+# target to generate assembly for a file
+src/expression_eval.cpp.s:
+	cd /home/flicky/itmo/Impulse-JIT/build && $(MAKE) $(MAKESILENT) -f frontend/CMakeFiles/impulse-frontend.dir/build.make frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.s
+.PHONY : src/expression_eval.cpp.s
 
 src/frontend.o: src/frontend.cpp.o
 .PHONY : src/frontend.o
@@ -258,7 +292,11 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... test"
 	@echo "... impulse-frontend"
+	@echo "... src/expression_eval.o"
+	@echo "... src/expression_eval.i"
+	@echo "... src/expression_eval.s"
 	@echo "... src/frontend.o"
 	@echo "... src/frontend.i"
 	@echo "... src/frontend.s"

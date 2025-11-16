@@ -11,7 +11,8 @@
 						1,
 						2,
 						3,
-						4
+						4,
+						5
 					],
 					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
 					"minimumCMakeVersion" : 
@@ -33,7 +34,7 @@
 					"source" : "ir",
 					"targetIndexes" : 
 					[
-						1
+						2
 					]
 				},
 				{
@@ -48,7 +49,7 @@
 					"source" : "frontend",
 					"targetIndexes" : 
 					[
-						0
+						1
 					]
 				},
 				{
@@ -63,7 +64,7 @@
 					"source" : "runtime",
 					"targetIndexes" : 
 					[
-						2
+						3
 					]
 				},
 				{
@@ -78,7 +79,22 @@
 					"source" : "tests",
 					"targetIndexes" : 
 					[
-						3
+						4
+					]
+				},
+				{
+					"build" : "tools/cpp-cli",
+					"jsonFile" : "directory-tools.cpp-cli-Debug-459ce81e0952c0d626e1.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.24"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "tools/cpp-cli",
+					"targetIndexes" : 
+					[
+						0
 					]
 				}
 			],
@@ -92,7 +108,8 @@
 						1,
 						2,
 						3,
-						4
+						4,
+						5
 					],
 					"name" : "ImpulseJIT",
 					"targetIndexes" : 
@@ -100,23 +117,31 @@
 						0,
 						1,
 						2,
-						3
+						3,
+						4
 					]
 				}
 			],
 			"targets" : 
 			[
 				{
+					"directoryIndex" : 5,
+					"id" : "impulse-cpp::@793801c980eed3bd098c",
+					"jsonFile" : "target-impulse-cpp-Debug-71c45aeddeefa69798cd.json",
+					"name" : "impulse-cpp",
+					"projectIndex" : 0
+				},
+				{
 					"directoryIndex" : 2,
 					"id" : "impulse-frontend::@73e8a6b9a3e1c0d3809b",
-					"jsonFile" : "target-impulse-frontend-Debug-7c1cad7f0bef31b35e02.json",
+					"jsonFile" : "target-impulse-frontend-Debug-6da5095a1a9361ecc112.json",
 					"name" : "impulse-frontend",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 1,
 					"id" : "impulse-ir::@d424d1cf9c0b1dfbc6dd",
-					"jsonFile" : "target-impulse-ir-Debug-937fab35202bbad51789.json",
+					"jsonFile" : "target-impulse-ir-Debug-b945a111646480921111.json",
 					"name" : "impulse-ir",
 					"projectIndex" : 0
 				},

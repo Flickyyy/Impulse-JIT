@@ -21,6 +21,7 @@ enum class InstructionKind : std::uint8_t {
     Literal,
     Reference,
     Binary,
+    Unary,
     Store,
 };
 

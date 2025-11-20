@@ -490,7 +490,7 @@ auto Parser::parsePath(const char* context) -> std::vector<Identifier> {
 auto Parser::parseExpression() -> std::unique_ptr<Expression> { return parseBinaryExpression(0); }
 
 auto Parser::parseBinaryExpression(int minPrecedence) -> std::unique_ptr<Expression> {
-    auto left = parsePrimaryExpression();
+    auto left = parseUnaryExpression();
     if (left == nullptr) {
         return nullptr;
     }
@@ -517,6 +517,38 @@ auto Parser::parseBinaryExpression(int minPrecedence) -> std::unique_ptr<Express
     }
 
     return left;
+}
+
+auto Parser::parseUnaryExpression() -> std::unique_ptr<Expression> {
+    if (match(TokenKind::Bang)) {
+        const Token op = previous();
+        auto operand = parseUnaryExpression();
+        if (operand == nullptr) {
+            return nullptr;
+        }
+        auto unary = std::make_unique<Expression>();
+        unary->kind = Expression::Kind::Unary;
+        unary->location = SourceLocation{op.line, op.column};
+        unary->unary_operator = Expression::UnaryOperator::LogicalNot;
+        unary->operand = std::move(operand);
+        return unary;
+    }
+
+    if (match(TokenKind::Minus)) {
+        const Token op = previous();
+        auto operand = parseUnaryExpression();
+        if (operand == nullptr) {
+            return nullptr;
+        }
+        auto unary = std::make_unique<Expression>();
+        unary->kind = Expression::Kind::Unary;
+        unary->location = SourceLocation{op.line, op.column};
+        unary->unary_operator = Expression::UnaryOperator::Negate;
+        unary->operand = std::move(operand);
+        return unary;
+    }
+
+    return parsePrimaryExpression();
 }
 
 auto Parser::parsePrimaryExpression() -> std::unique_ptr<Expression> {
@@ -557,20 +589,25 @@ auto Parser::parsePrimaryExpression() -> std::unique_ptr<Expression> {
 
 auto Parser::binaryPrecedence(TokenKind kind) -> int {
     switch (kind) {
-        case TokenKind::Plus:
-        case TokenKind::Minus:
-            return 20;
-        case TokenKind::Star:
-        case TokenKind::Slash:
-            return 30;
+        case TokenKind::PipePipe:
+            return 5;
+        case TokenKind::AmpersandAmpersand:
+            return 8;
+        case TokenKind::EqualEqual:
+        case TokenKind::BangEqual:
+            return 10;
         case TokenKind::Less:
         case TokenKind::LessEqual:
         case TokenKind::Greater:
         case TokenKind::GreaterEqual:
             return 15;
-        case TokenKind::EqualEqual:
-        case TokenKind::BangEqual:
-            return 10;
+        case TokenKind::Plus:
+        case TokenKind::Minus:
+            return 20;
+        case TokenKind::Star:
+        case TokenKind::Slash:
+        case TokenKind::Percent:
+            return 30;
         default:
             return -1;
     }
@@ -586,6 +623,8 @@ auto Parser::toBinaryOperator(TokenKind kind) -> Expression::BinaryOperator {
             return Expression::BinaryOperator::Multiply;
         case TokenKind::Slash:
             return Expression::BinaryOperator::Divide;
+        case TokenKind::Percent:
+            return Expression::BinaryOperator::Modulo;
         case TokenKind::EqualEqual:
             return Expression::BinaryOperator::Equal;
         case TokenKind::BangEqual:
@@ -598,6 +637,10 @@ auto Parser::toBinaryOperator(TokenKind kind) -> Expression::BinaryOperator {
             return Expression::BinaryOperator::Greater;
         case TokenKind::GreaterEqual:
             return Expression::BinaryOperator::GreaterEqual;
+        case TokenKind::AmpersandAmpersand:
+            return Expression::BinaryOperator::LogicalAnd;
+        case TokenKind::PipePipe:
+            return Expression::BinaryOperator::LogicalOr;
         default:
             return Expression::BinaryOperator::Add;
     }

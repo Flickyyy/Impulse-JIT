@@ -48,6 +48,7 @@ struct Expression {
         Literal,
         Identifier,
         Binary,
+        Unary,
     };
 
     Kind kind = Kind::Literal;
@@ -56,20 +57,30 @@ struct Expression {
         Subtract,
         Multiply,
         Divide,
+        Modulo,
         Equal,
         NotEqual,
         Less,
         LessEqual,
         Greater,
         GreaterEqual,
+        LogicalAnd,
+        LogicalOr,
+    };
+
+    enum class UnaryOperator : std::uint8_t {
+        LogicalNot,
+        Negate,
     };
 
     SourceLocation location;
     std::string literal_value;
     Identifier identifier;
     BinaryOperator binary_operator = BinaryOperator::Add;
+    UnaryOperator unary_operator = UnaryOperator::LogicalNot;
     std::unique_ptr<Expression> left;
     std::unique_ptr<Expression> right;
+    std::unique_ptr<Expression> operand;
 };
 
 struct Parameter {

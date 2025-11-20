@@ -131,6 +131,13 @@ auto interpret_binding(const Binding& binding, const std::unordered_map<std::str
                             return make_error("division by zero during interpretation");
                         }
                         stack.push_back(left / right);
+                    } else if (op == "%") {
+                        if (std::abs(right) < kEpsilon) {
+                            return make_error("modulo by zero during interpretation");
+                        }
+                        const int leftInt = static_cast<int>(left);
+                        const int rightInt = static_cast<int>(right);
+                        stack.push_back(static_cast<double>(leftInt % rightInt));
                     } else if (op == "==") {
                         stack.push_back((left == right) ? 1.0 : 0.0);
                     } else if (op == "!=") {
@@ -143,9 +150,32 @@ auto interpret_binding(const Binding& binding, const std::unordered_map<std::str
                         stack.push_back((left > right) ? 1.0 : 0.0);
                     } else if (op == ">=") {
                         stack.push_back((left >= right) ? 1.0 : 0.0);
+                    } else if (op == "&&") {
+                        stack.push_back((left != 0.0 && right != 0.0) ? 1.0 : 0.0);
+                    } else if (op == "||") {
+                        stack.push_back((left != 0.0 || right != 0.0) ? 1.0 : 0.0);
                     } else {
                         return make_error("unsupported binary operator '" + op + "'");
                     }
+                break;
+            }
+            case InstructionKind::Unary: {
+                if (inst.operands.empty()) {
+                    return make_error("unary instruction missing operator");
+                }
+                if (stack.empty()) {
+                    return make_error("unary instruction requires one operand");
+                }
+                const double operand = stack.back();
+                stack.pop_back();
+                const std::string& op = inst.operands.front();
+                if (op == "!") {
+                    stack.push_back((operand == 0.0) ? 1.0 : 0.0);
+                } else if (op == "-") {
+                    stack.push_back(-operand);
+                } else {
+                    return make_error("unsupported unary operator '" + op + "'");
+                }
                 break;
             }
             case InstructionKind::Store: {
@@ -256,6 +286,13 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
                             return make_function_error("division by zero during interpretation");
                         }
                         stack.push_back(left / right);
+                    } else if (op == "%") {
+                        if (std::abs(right) < kEpsilon) {
+                            return make_function_error("modulo by zero during interpretation");
+                        }
+                        const int leftInt = static_cast<int>(left);
+                        const int rightInt = static_cast<int>(right);
+                        stack.push_back(static_cast<double>(leftInt % rightInt));
                     } else if (op == "==") {
                         stack.push_back((left == right) ? 1.0 : 0.0);
                     } else if (op == "!=") {
@@ -268,8 +305,31 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
                         stack.push_back((left > right) ? 1.0 : 0.0);
                     } else if (op == ">=") {
                         stack.push_back((left >= right) ? 1.0 : 0.0);
+                    } else if (op == "&&") {
+                        stack.push_back((left != 0.0 && right != 0.0) ? 1.0 : 0.0);
+                    } else if (op == "||") {
+                        stack.push_back((left != 0.0 || right != 0.0) ? 1.0 : 0.0);
                     } else {
                         return make_function_error("unsupported binary operator '" + op + "'");
+                    }
+                    break;
+                }
+                case InstructionKind::Unary: {
+                    if (inst.operands.empty()) {
+                        return make_function_error("unary instruction missing operator");
+                    }
+                    if (stack.empty()) {
+                        return make_function_error("unary instruction requires one operand");
+                    }
+                    const double operand = stack.back();
+                    stack.pop_back();
+                    const std::string& op = inst.operands.front();
+                    if (op == "!") {
+                        stack.push_back((operand == 0.0) ? 1.0 : 0.0);
+                    } else if (op == "-") {
+                        stack.push_back(-operand);
+                    } else {
+                        return make_function_error("unsupported unary operator '" + op + "'");
                     }
                     break;
                 }

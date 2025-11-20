@@ -67,6 +67,12 @@ namespace {
                 out << ' ' << inst.operands.front();
             }
             break;
+        case InstructionKind::Unary:
+            out << "unary";
+            if (!inst.operands.empty()) {
+                out << ' ' << inst.operands.front();
+            }
+            break;
         case InstructionKind::Store:
             out << "store";
             if (!inst.operands.empty()) {

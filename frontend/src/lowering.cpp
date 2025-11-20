@@ -53,6 +53,8 @@ namespace {
             return "*";
         case Expression::BinaryOperator::Divide:
             return "/";
+        case Expression::BinaryOperator::Modulo:
+            return "%";
         case Expression::BinaryOperator::Equal:
             return "==";
         case Expression::BinaryOperator::NotEqual:
@@ -65,6 +67,10 @@ namespace {
             return ">";
         case Expression::BinaryOperator::GreaterEqual:
             return ">=";
+        case Expression::BinaryOperator::LogicalAnd:
+            return "&&";
+        case Expression::BinaryOperator::LogicalOr:
+            return "||";
     }
     return "?";
 }
@@ -93,6 +99,17 @@ void lower_expression_to_stack(const Expression& expr, std::vector<ir::Instructi
             instructions.push_back(ir::Instruction{
                 .kind = ir::InstructionKind::Binary,
                 .operands = std::vector<std::string>{std::string{binary_operator_token(expr.binary_operator)}},
+            });
+            break;
+        case Expression::Kind::Unary:
+            if (expr.operand) {
+                lower_expression_to_stack(*expr.operand, instructions);
+            }
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Unary,
+                .operands = std::vector<std::string>{
+                    expr.unary_operator == Expression::UnaryOperator::LogicalNot ? "!" : "-"
+                },
             });
             break;
     }

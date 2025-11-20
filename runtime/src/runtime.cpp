@@ -204,6 +204,13 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
                             return make_result(VmStatus::RuntimeError, "division by zero during execution");
                         }
                         stack.push_back(left / right);
+                    } else if (op == "%") {
+                        if (std::abs(right) < kEpsilon) {
+                            return make_result(VmStatus::RuntimeError, "modulo by zero during execution");
+                        }
+                        const int leftInt = static_cast<int>(left);
+                        const int rightInt = static_cast<int>(right);
+                        stack.push_back(static_cast<double>(leftInt % rightInt));
                     } else if (op == "==") {
                         stack.push_back((left == right) ? 1.0 : 0.0);
                     } else if (op == "!=") {
@@ -216,8 +223,31 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
                         stack.push_back((left > right) ? 1.0 : 0.0);
                     } else if (op == ">=") {
                         stack.push_back((left >= right) ? 1.0 : 0.0);
+                    } else if (op == "&&") {
+                        stack.push_back((left != 0.0 && right != 0.0) ? 1.0 : 0.0);
+                    } else if (op == "||") {
+                        stack.push_back((left != 0.0 || right != 0.0) ? 1.0 : 0.0);
                     } else {
                         return make_result(VmStatus::ModuleError, "unsupported binary operator '" + op + "'");
+                    }
+                    break;
+                }
+                case ir::InstructionKind::Unary: {
+                    if (inst.operands.empty()) {
+                        return make_result(VmStatus::ModuleError, "unary instruction missing operator");
+                    }
+                    if (stack.empty()) {
+                        return make_result(VmStatus::RuntimeError, "unary instruction requires one operand");
+                    }
+                    const double operand = stack.back();
+                    stack.pop_back();
+                    const std::string& op = inst.operands.front();
+                    if (op == "!") {
+                        stack.push_back((operand == 0.0) ? 1.0 : 0.0);
+                    } else if (op == "-") {
+                        stack.push_back(-operand);
+                    } else {
+                        return make_result(VmStatus::ModuleError, "unsupported unary operator '" + op + "'");
                     }
                     break;
                 }

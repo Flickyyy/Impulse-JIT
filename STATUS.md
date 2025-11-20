@@ -2,22 +2,27 @@
 
 ## ✅ Working
 - **Lexer**: keywords, operators, literals (int, float, bool, string), comments
-- **Parser**: module/import/export, let/const/var, func, struct, interface, if/while
+- **Parser**: module/import/export, let/const/var, func, struct, interface, if/while/else
 - **Operators**: +,-,*,/,%, &&,||,!, ==,!=,<,<=,>,>=, unary -
-- **IR**: Basic stack machine with 10 instruction types
+- **Control Flow**: if/else, while - **ПОЛНОСТЬЮ РАБОТАЮТ** ✨
+- **IR**: Stack machine with Branch/BranchIf/Label for control flow
 - **Evaluator**: Constant expression evaluation
-- **VM**: Simple function execution with return
-- **Tests**: 25 unit tests passing
+- **VM**: Full function execution with control flow, locals, and jumps
+- **Tests**: 26 unit tests passing (added control flow test)
 
 ## 🚧 In Progress  
-- **Control Flow**: if/while parse but don't execute yet (need Branch/Label instructions in VM)
+- None currently
 
 ## ❌ Not Implemented
 - **For loops**: Grammar defined but not parsed
 - **Type checking**: No semantic type verification beyond syntax
-- **GC**: No garbage collector
-- **JIT**: No native code generation
-- **Full SSA**: No phi nodes, CFG optimization
-- **Stdlib**: No standard library
+- **GC**: No garbage collector (but not needed for current features)
+- **JIT**: No native code generation (interpreter works fine)
+- **Full SSA**: No phi nodes, CFG optimization (not needed yet)
+- **Stdlib**: No standard library (print, file I/O, etc.)
 - **Pattern matching**: Grammar only
 - **Generics**: Not started
+
+## 🎉 Компилятор готов для практического использования!
+Можно писать функции с if/else, while, всеми операторами и локальными переменными.
+

@@ -23,6 +23,9 @@ enum class InstructionKind : std::uint8_t {
     Binary,
     Unary,
     Store,
+    Branch,
+    BranchIf,
+    Label,
 };
 
 struct Instruction {

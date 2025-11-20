@@ -196,6 +196,24 @@ auto lower_to_ir(const Module& module) -> ir::Module {
                                     });
                                 }
                                 break;
+                            case Statement::Kind::If:
+                                entry.instructions.push_back(ir::Instruction{
+                                    .kind = ir::InstructionKind::Comment,
+                                    .operands = std::vector<std::string>{"if statement (not yet lowered)"},
+                                });
+                                break;
+                            case Statement::Kind::While:
+                                entry.instructions.push_back(ir::Instruction{
+                                    .kind = ir::InstructionKind::Comment,
+                                    .operands = std::vector<std::string>{"while statement (not yet lowered)"},
+                                });
+                                break;
+                            case Statement::Kind::ExprStmt:
+                                entry.instructions.push_back(ir::Instruction{
+                                    .kind = ir::InstructionKind::Comment,
+                                    .operands = std::vector<std::string>{"expression statement (not yet lowered)"},
+                                });
+                                break;
                         }
                     }
                 } else if (!function.body_snippet.empty()) {

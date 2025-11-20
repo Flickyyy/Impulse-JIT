@@ -300,6 +300,79 @@ auto Parser::parseStatement() -> std::optional<Statement> {
         return statement;
     };
 
+    if (match(TokenKind::KwIf)) {
+        Statement statement;
+        statement.kind = Statement::Kind::If;
+        const Token& keyword = previous();
+        statement.location = SourceLocation{keyword.line, keyword.column};
+        
+        statement.condition = parseExpression();
+        if (!statement.condition) {
+            reportError(peek(), "Expected condition after 'if'");
+            return std::nullopt;
+        }
+        
+        if (!consume(TokenKind::LBrace, "Expected '{' after if condition")) {
+            return std::nullopt;
+        }
+        
+        while (!check(TokenKind::RBrace) && !isAtEnd()) {
+            if (auto stmt = parseStatement()) {
+                statement.then_body.push_back(std::move(*stmt));
+            }
+        }
+        
+        if (!consume(TokenKind::RBrace, "Expected '}' after if body")) {
+            return std::nullopt;
+        }
+        
+        if (match(TokenKind::KwElse)) {
+            if (!consume(TokenKind::LBrace, "Expected '{' after else")) {
+                return std::nullopt;
+            }
+            
+            while (!check(TokenKind::RBrace) && !isAtEnd()) {
+                if (auto stmt = parseStatement()) {
+                    statement.else_body.push_back(std::move(*stmt));
+                }
+            }
+            
+            if (!consume(TokenKind::RBrace, "Expected '}' after else body")) {
+                return std::nullopt;
+            }
+        }
+        
+        return statement;
+    }
+
+    if (match(TokenKind::KwWhile)) {
+        Statement statement;
+        statement.kind = Statement::Kind::While;
+        const Token& keyword = previous();
+        statement.location = SourceLocation{keyword.line, keyword.column};
+        
+        statement.condition = parseExpression();
+        if (!statement.condition) {
+            reportError(peek(), "Expected condition after 'while'");
+            return std::nullopt;
+        }
+        
+        if (!consume(TokenKind::LBrace, "Expected '{' after while condition")) {
+            return std::nullopt;
+        }
+        
+        while (!check(TokenKind::RBrace) && !isAtEnd()) {
+            if (auto stmt = parseStatement()) {
+                statement.then_body.push_back(std::move(*stmt));
+            }
+        }
+        
+        if (!consume(TokenKind::RBrace, "Expected '}' after while body")) {
+            return std::nullopt;
+        }
+        return statement;
+    }
+
     if (auto stmt = bindingStatement(TokenKind::KwLet, BindingKind::Let)) {
         return stmt;
     }
@@ -310,7 +383,7 @@ auto Parser::parseStatement() -> std::optional<Statement> {
         return stmt;
     }
 
-    reportError(peek(), "Only return/let/const/var statements are supported in function bodies");
+    reportError(peek(), "Expected statement");
     return std::nullopt;
 }
 

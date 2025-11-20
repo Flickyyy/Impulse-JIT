@@ -782,38 +782,159 @@ func test_while() -> int {
     assert(std::abs(result_while.value - 5.0) < 1e-9);
 }
 
+void testFunctionCalls() {
+    const std::string source = R"(module demo;
+
+func identity(x: int) -> int {
+    return x;
+}
+
+func add(a: int, b: int) -> int {
+    return a + b;
+}
+
+func multiply(x: int, y: int) -> int {
+    return x * y;
+}
+
+func test_identity() -> int {
+    return identity(42);
+}
+
+func test_add() -> int {
+    return add(10, 20);
+}
+
+func test_multiply() -> int {
+    return multiply(5, 7);
+}
+
+func test_nested() -> int {
+    return add(multiply(2, 3), identity(4));
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+    
+    const auto result_identity = vm.run("demo", "test_identity");
+    assert(result_identity.status == impulse::runtime::VmStatus::Success);
+    assert(result_identity.has_value);
+    assert(std::abs(result_identity.value - 42.0) < 1e-9);
+    
+    const auto result_add = vm.run("demo", "test_add");
+    assert(result_add.status == impulse::runtime::VmStatus::Success);
+    assert(result_add.has_value);
+    assert(std::abs(result_add.value - 30.0) < 1e-9);
+    
+    const auto result_multiply = vm.run("demo", "test_multiply");
+    assert(result_multiply.status == impulse::runtime::VmStatus::Success);
+    assert(result_multiply.has_value);
+    assert(std::abs(result_multiply.value - 35.0) < 1e-9);
+    
+    const auto result_nested = vm.run("demo", "test_nested");
+    assert(result_nested.status == impulse::runtime::VmStatus::Success);
+    assert(result_nested.has_value);
+    assert(std::abs(result_nested.value - 10.0) < 1e-9);
+}
+
 }  // namespace
 
-auto main() -> int {
+// =============================================================================
+// TEST GROUPS
+// =============================================================================
+
+void runLexerTests() {
+    std::cout << "[Lexer Tests]\n";
     testModuleHeader();
     testNumericLiterals();
     testStringsAndComments();
+    std::cout << "  ✓ 3 tests passed\n\n";
+}
+
+void runParserTests() {
+    std::cout << "[Parser Tests]\n";
     testParserHappyPath();
     testParserDiagnostics();
+    std::cout << "  ✓ 2 tests passed\n\n";
+}
+
+void runSemanticTests() {
+    std::cout << "[Semantic Tests]\n";
     testConstAndVarBindings();
     testFunctionDeclaration();
     testStructDeclaration();
     testInterfaceDeclaration();
     testStructDiagnostics();
-    testEmitIrText();
-    testInterfaceIrEmission();
-    testBindingExpressionLowering();
-    testExportedDeclarations();
     testSemanticDuplicates();
     testImportSemanticDiagnostics();
     testConstRequiresConstantInitializer();
     testConstDivisionByZeroDiagnostic();
+    std::cout << "  ✓ 9 tests passed\n\n";
+}
+
+void runIRTests() {
+    std::cout << "[IR Tests]\n";
+    testEmitIrText();
+    testInterfaceIrEmission();
+    testBindingExpressionLowering();
+    testExportedDeclarations();
     testIrBindingInterpreter();
-    testRuntimeVmExecution();
-    testFunctionLocals();
+    std::cout << "  ✓ 5 tests passed\n\n";
+}
+
+void runOperatorTests() {
+    std::cout << "[Operator Tests]\n";
     testBooleanComparisons();
     testModuloOperator();
     testLogicalOperators();
     testUnaryOperators();
     testOperatorPrecedence();
     testModuloByZero();
-    testControlFlow();
+    std::cout << "  ✓ 6 tests passed\n\n";
+}
 
-    std::cout << "All frontend tests passed\n";
+void runControlFlowTests() {
+    std::cout << "[Control Flow Tests]\n";
+    testControlFlow();
+    std::cout << "  ✓ 1 test passed\n\n";
+}
+
+void runRuntimeTests() {
+    std::cout << "[Runtime Tests]\n";
+    testRuntimeVmExecution();
+    testFunctionLocals();
+    std::cout << "  ✓ 2 tests passed\n\n";
+}
+
+void runFunctionCallTests() {
+    std::cout << "[Function Call Tests]\n";
+    testFunctionCalls();
+    std::cout << "  ✓ 1 test passed\n\n";
+}
+
+auto main() -> int {
+    std::cout << "==============================================\n";
+    std::cout << "Impulse Compiler Test Suite\n";
+    std::cout << "==============================================\n\n";
+    
+    runLexerTests();
+    runParserTests();
+    runSemanticTests();
+    runIRTests();
+    runOperatorTests();
+    runControlFlowTests();
+    runRuntimeTests();
+    runFunctionCallTests();
+
+    std::cout << "==============================================\n";
+    std::cout << "All 29 tests passed! ✓\n";
+    std::cout << "==============================================\n";
     return 0;
 }

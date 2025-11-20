@@ -1,0 +1,2 @@
+/usr/bin/ar qc libimpulse-runtime.a "CMakeFiles/impulse-runtime.dir/src/runtime.cpp.o"
+/usr/bin/ranlib libimpulse-runtime.a

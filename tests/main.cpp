@@ -11,6 +11,7 @@
 #include "../frontend/include/impulse/frontend/lowering.h"
 #include "../frontend/include/impulse/frontend/semantic.h"
 #include "../ir/include/impulse/ir/interpreter.h"
+#include "../runtime/include/impulse/runtime/runtime.h"
 
 using impulse::frontend::Lexer;
 using impulse::frontend::ParseResult;
@@ -440,6 +441,117 @@ let b: int = a * 5 + 3;
     assert(foundB && "Interpreter did not evaluate binding 'b'");
 }
 
+void testRuntimeVmExecution() {
+    const std::string source = R"(module demo;
+let seed: int = 10;
+func main() -> int {
+    return seed + 5;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    if (!loadResult.success) {
+        for (const auto& diag : loadResult.diagnostics) {
+            std::cerr << "runtime load error: " << diag << '\n';
+        }
+    }
+    assert(loadResult.success);
+
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 15.0) < 1e-9);
+}
+
+void testFunctionLocals() {
+    const std::string source = R"(module demo;
+let seed: int = 2;
+func main() -> int {
+    let base: int = seed * 3;
+    let extra: int = base + 4;
+    return extra;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+
+    std::unordered_map<std::string, double> environment;
+    for (const auto& binding : lowered.bindings) {
+        const auto eval = impulse::ir::interpret_binding(binding, environment);
+        if (eval.status == impulse::ir::EvalStatus::Success && eval.value.has_value()) {
+            environment.emplace(binding.name, *eval.value);
+        }
+    }
+
+    assert(!lowered.functions.empty());
+    const auto evalFunction = impulse::ir::interpret_function(lowered.functions.front(), environment, {});
+    assert(evalFunction.status == impulse::ir::EvalStatus::Success);
+    assert(evalFunction.value.has_value());
+    assert(std::abs(*evalFunction.value - 10.0) < 1e-9);
+
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 10.0) < 1e-9);
+}
+
+void testBooleanComparisons() {
+    const std::string source = R"(module demo;
+let eq: int = true == false;
+let neq: int = 1 != 2;
+let lt: int = 1 < 2;
+let ge: int = 3 >= 2;
+func main() -> int {
+    return (eq + neq) + (lt + ge) + (1 == 1) + (2 > 3);
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto irText = impulse::frontend::emit_ir_text(parseResult.module);
+    assert(irText.find("literal true") != std::string::npos);
+    assert(irText.find("binary ==") != std::string::npos);
+    assert(irText.find("binary >=") != std::string::npos);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    std::unordered_map<std::string, double> environment;
+    for (const auto& binding : lowered.bindings) {
+        const auto eval = impulse::ir::interpret_binding(binding, environment);
+        if (eval.status == impulse::ir::EvalStatus::Success && eval.value.has_value()) {
+            environment.emplace(binding.name, *eval.value);
+        }
+    }
+
+    assert(!lowered.functions.empty());
+    const auto evalFunction = impulse::ir::interpret_function(lowered.functions.front(), environment, {});
+    assert(evalFunction.status == impulse::ir::EvalStatus::Success);
+    assert(evalFunction.value.has_value());
+    assert(std::abs(*evalFunction.value - 4.0) < 1e-9);
+
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 4.0) < 1e-9);
+}
+
 }  // namespace
 
 auto main() -> int {
@@ -462,6 +574,9 @@ auto main() -> int {
     testConstRequiresConstantInitializer();
     testConstDivisionByZeroDiagnostic();
     testIrBindingInterpreter();
+    testRuntimeVmExecution();
+    testFunctionLocals();
+    testBooleanComparisons();
 
     std::cout << "All frontend tests passed\n";
     return 0;

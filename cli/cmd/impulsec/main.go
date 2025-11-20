@@ -14,11 +14,17 @@ func main() {
 	check := flag.Bool("check", false, "Run semantic checks")
 	evaluate := flag.Bool("evaluate", false, "Evaluate constant bindings and print their values")
 	evalBinding := flag.String("eval-binding", "", "Evaluate only the specified binding (implies --evaluate)")
+	runModule := flag.Bool("run", false, "Run the module by treating a constant binding as the entry point")
+	entryBinding := flag.String("entry-binding", "", "Binding name to use as the entry point (defaults to 'main')")
 	flag.Parse()
 
 	if *sourcePath == "" {
 		fmt.Fprintln(os.Stderr, "usage: impulsec --file <path>")
 		os.Exit(1)
+	}
+
+	if *entryBinding != "" {
+		*runModule = true
 	}
 
 	source, err := os.ReadFile(*sourcePath)
@@ -54,6 +60,40 @@ func main() {
 			os.Exit(2)
 		}
 		fmt.Println("Semantic checks passed")
+		return
+	}
+
+	if *runModule {
+		entry := *entryBinding
+		if entry == "" {
+			entry = "main"
+		}
+		runResult, err := frontend.RunModule(string(source), entry)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "run error: %v\n", err)
+			os.Exit(1)
+		}
+		if !runResult.Success {
+			fmt.Fprintf(os.Stderr, "run failed\n")
+			if len(runResult.Diagnostics) > 0 {
+				printDiagnostics(runResult.Diagnostics)
+			}
+			if runResult.Message != "" {
+				fmt.Fprintf(os.Stderr, "%s\n", runResult.Message)
+			}
+			os.Exit(2)
+		}
+		if len(runResult.Diagnostics) > 0 {
+			printDiagnostics(runResult.Diagnostics)
+		}
+		if runResult.HasExitCode {
+			fmt.Printf("Program exited with %d\n", runResult.ExitCode)
+		} else {
+			fmt.Println("Program ran successfully")
+		}
+		if runResult.Message != "" {
+			fmt.Println(runResult.Message)
+		}
 		return
 	}
 

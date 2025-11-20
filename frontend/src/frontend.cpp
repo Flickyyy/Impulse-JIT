@@ -1,6 +1,10 @@
 #include "../include/impulse/frontend/frontend.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstring>
+#include <optional>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -9,8 +13,10 @@
 #include "impulse/frontend/parser.h"
 #include "impulse/frontend/semantic.h"
 #include "impulse/ir/interpreter.h"
+#include "impulse/runtime/runtime.h"
 
 namespace ir = ::impulse::ir;
+namespace runtime = ::impulse::runtime;
 
 namespace {
 
@@ -36,6 +42,28 @@ struct CopiedBindings {
     ImpulseBindingValue* data = nullptr;
     size_t count = 0;
 };
+
+struct EvaluationSummary {
+    bool success = false;
+    std::vector<impulse::frontend::Diagnostic> diagnostics;
+    std::vector<BindingEvaluation> bindings;
+    std::unordered_map<std::string, double> environment;
+    std::optional<ir::Module> lowered_module;
+};
+
+[[nodiscard]] auto module_name_from_lowered(const ir::Module& module) -> std::string {
+    if (module.path.empty()) {
+        return "<anonymous>";
+    }
+    std::ostringstream builder;
+    for (size_t i = 0; i < module.path.size(); ++i) {
+        if (i != 0) {
+            builder << "::";
+        }
+        builder << module.path[i];
+    }
+    return builder.str();
+}
 
 [[nodiscard]] auto copy_diagnostics(const std::vector<impulse::frontend::Diagnostic>& diagnostics)
     -> CopiedDiagnostics {
@@ -91,6 +119,66 @@ void free_binding_values(ImpulseBindingValue* values, size_t count) {
         delete[] values[i].message;
     }
     delete[] values;
+}
+
+[[nodiscard]] auto evaluate_module_internal(const ImpulseParseOptions* options) -> EvaluationSummary {
+    EvaluationSummary summary;
+    if (options == nullptr || options->source == nullptr) {
+        return summary;
+    }
+
+    impulse::frontend::Parser parser(options->source);
+    auto parseResult = parser.parseModule();
+
+    summary.diagnostics = parseResult.diagnostics;
+    summary.success = parseResult.success;
+
+    if (!parseResult.success) {
+        return summary;
+    }
+
+    auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+    summary.success = summary.success && semantic.success;
+    summary.diagnostics.insert(summary.diagnostics.end(), semantic.diagnostics.begin(), semantic.diagnostics.end());
+
+    if (!semantic.success) {
+        return summary;
+    }
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    summary.lowered_module = lowered;
+    std::unordered_map<std::string, double> environment;
+    summary.bindings.reserve(lowered.bindings.size());
+
+    for (const auto& binding : lowered.bindings) {
+        BindingEvaluation evaluation;
+        evaluation.name = binding.name;
+        const auto eval = ir::interpret_binding(binding, environment);
+        switch (eval.status) {
+            case ir::EvalStatus::Success:
+                if (eval.value.has_value()) {
+                    evaluation.evaluated = true;
+                    evaluation.value = *eval.value;
+                    environment[binding.name] = *eval.value;
+                } else {
+                    evaluation.message = "No value produced";
+                }
+                break;
+            case ir::EvalStatus::NonConstant:
+                evaluation.message = eval.message.empty() ? std::string{"Expression depends on unevaluated bindings"}
+                                                          : eval.message;
+                break;
+            case ir::EvalStatus::Error:
+                summary.success = false;
+                evaluation.message = eval.message.empty() ? std::string{"Evaluation error"} : eval.message;
+                break;
+        }
+        summary.bindings.push_back(std::move(evaluation));
+    }
+
+    summary.environment = environment;
+
+    return summary;
 }
 
 }  // namespace
@@ -216,54 +304,11 @@ auto impulse_evaluate_bindings(const ImpulseParseOptions* options) -> ImpulseEva
         };
     }
 
-    impulse::frontend::Parser parser(options->source);
-    auto parseResult = parser.parseModule();
-
-    std::vector<impulse::frontend::Diagnostic> combinedDiagnostics = parseResult.diagnostics;
-    bool overallSuccess = parseResult.success;
-    std::vector<BindingEvaluation> bindingValues;
-
-    if (parseResult.success) {
-        auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-        overallSuccess = overallSuccess && semantic.success;
-        combinedDiagnostics.insert(combinedDiagnostics.end(), semantic.diagnostics.begin(), semantic.diagnostics.end());
-
-        if (semantic.success) {
-            const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
-            std::unordered_map<std::string, double> environment;
-            bindingValues.reserve(lowered.bindings.size());
-            for (const auto& binding : lowered.bindings) {
-                BindingEvaluation evaluation;
-                evaluation.name = binding.name;
-                const auto eval = ir::interpret_binding(binding, environment);
-                switch (eval.status) {
-                    case ir::EvalStatus::Success:
-                        if (eval.value.has_value()) {
-                            evaluation.evaluated = true;
-                            evaluation.value = *eval.value;
-                            environment[binding.name] = *eval.value;
-                        } else {
-                            evaluation.message = "No value produced";
-                        }
-                        break;
-                    case ir::EvalStatus::NonConstant:
-                        evaluation.message = eval.message.empty() ? std::string{"Expression depends on unevaluated bindings"}
-                                                                  : eval.message;
-                        break;
-                    case ir::EvalStatus::Error:
-                        overallSuccess = false;
-                        evaluation.message = eval.message.empty() ? std::string{"Evaluation error"} : eval.message;
-                        break;
-                }
-                bindingValues.push_back(std::move(evaluation));
-            }
-        }
-    }
-
-    const auto copiedDiagnostics = copy_diagnostics(combinedDiagnostics);
-    const auto copiedValues = copy_binding_values(bindingValues);
+    const auto summary = evaluate_module_internal(options);
+    const auto copiedDiagnostics = copy_diagnostics(summary.diagnostics);
+    const auto copiedValues = copy_binding_values(summary.bindings);
     return ImpulseEvalResult{
-        .success = overallSuccess,
+        .success = summary.success,
         .diagnostics = copiedDiagnostics.data,
         .diagnostic_count = copiedDiagnostics.count,
         .bindings = copiedValues.data,
@@ -281,4 +326,96 @@ void impulse_free_eval_result(ImpulseEvalResult* result) {
     free_binding_values(result->bindings, result->binding_count);
     result->bindings = nullptr;
     result->binding_count = 0;
+}
+
+auto impulse_run_module(const ImpulseParseOptions* options, const char* entry_binding) -> ImpulseRunResult {
+    if (options == nullptr || options->source == nullptr) {
+        return ImpulseRunResult{
+            .success = false,
+            .diagnostics = nullptr,
+            .diagnostic_count = 0,
+            .has_exit_code = false,
+            .exit_code = 0,
+            .message = copy_message("Invalid options supplied"),
+        };
+    }
+
+    const auto summary = evaluate_module_internal(options);
+    const auto copiedDiagnostics = copy_diagnostics(summary.diagnostics);
+
+    ImpulseRunResult result{
+        .success = false,
+        .diagnostics = copiedDiagnostics.data,
+        .diagnostic_count = copiedDiagnostics.count,
+        .has_exit_code = false,
+        .exit_code = 0,
+        .message = nullptr,
+    };
+
+    if (!summary.success) {
+        result.message = copy_message("Module contains errors; unable to run");
+        return result;
+    }
+
+    const std::string entry = (entry_binding != nullptr && entry_binding[0] != '\0') ? std::string(entry_binding)
+                                                                                      : std::string("main");
+
+    if (summary.lowered_module.has_value()) {
+        runtime::Vm vm;
+        const auto loadResult = vm.load(*summary.lowered_module);
+        if (!loadResult.success) {
+            const std::string reason = loadResult.diagnostics.empty() ? std::string{"Runtime load failed"}
+                                                                     : loadResult.diagnostics.front();
+            result.message = copy_message(reason);
+            return result;
+        }
+
+        const auto moduleName = module_name_from_lowered(*summary.lowered_module);
+        const auto vmResult = vm.run(moduleName, entry);
+        if (vmResult.status == runtime::VmStatus::Success && vmResult.has_value) {
+            result.success = true;
+            result.has_exit_code = true;
+            result.exit_code = static_cast<int>(std::llround(vmResult.value));
+            return result;
+        }
+
+        if (vmResult.status != runtime::VmStatus::MissingSymbol) {
+            const std::string reason = vmResult.message.empty() ? std::string{"Runtime execution failed"}
+                                                                : vmResult.message;
+            result.message = copy_message(reason);
+            return result;
+        }
+    }
+
+    const auto bindingIt = std::find_if(summary.bindings.begin(), summary.bindings.end(),
+                                        [&](const BindingEvaluation& value) { return value.name == entry; });
+
+    if (bindingIt == summary.bindings.end()) {
+        result.message = copy_message("Symbol '" + entry + "' not found");
+        return result;
+    }
+
+    if (!bindingIt->evaluated) {
+        const std::string reason = bindingIt->message.empty() ? std::string{"Binding is not constant"} : bindingIt->message;
+        result.message = copy_message(reason);
+        return result;
+    }
+
+    result.success = true;
+    result.has_exit_code = true;
+    result.exit_code = static_cast<int>(std::llround(bindingIt->value));
+    return result;
+}
+
+void impulse_free_run_result(ImpulseRunResult* result) {
+    if (result == nullptr) {
+        return;
+    }
+    free_diagnostics(result->diagnostics, result->diagnostic_count);
+    result->diagnostics = nullptr;
+    result->diagnostic_count = 0;
+    if (result->message != nullptr) {
+        delete[] result->message;
+        result->message = nullptr;
+    }
 }

@@ -1,7 +1,9 @@
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -10,6 +12,7 @@
 #include "impulse/frontend/parser.h"
 #include "impulse/frontend/semantic.h"
 #include "impulse/ir/interpreter.h"
+#include "impulse/runtime/runtime.h"
 
 namespace {
 
@@ -18,11 +21,13 @@ struct Options {
     bool emitIR = false;
     bool check = false;
     bool evaluate = false;
+    bool run = false;
     std::optional<std::string> evalBinding;
+    std::optional<std::string> entryBinding;
 };
 
 void printUsage() {
-    std::cout << "Usage: impulse-cpp --file <path> [--emit-ir] [--check] [--evaluate] [--eval-binding <name>]\n";
+    std::cout << "Usage: impulse-cpp --file <path> [--emit-ir] [--check] [--evaluate] [--eval-binding <name>] [--run] [--entry-binding <name>]\n";
 }
 
 auto parseArgs(int argc, char** argv) -> std::optional<Options> {
@@ -56,6 +61,19 @@ auto parseArgs(int argc, char** argv) -> std::optional<Options> {
             }
             opts.evalBinding = argv[++i];
             opts.evaluate = true;
+            continue;
+        }
+        if (arg == "--run") {
+            opts.run = true;
+            continue;
+        }
+        if (arg == "--entry-binding") {
+            if (i + 1 >= argc) {
+                std::cerr << "Missing value for --entry-binding\n";
+                return std::nullopt;
+            }
+            opts.entryBinding = argv[++i];
+            opts.run = true;
             continue;
         }
         if (arg == "--help" || arg == "-h") {
@@ -104,6 +122,20 @@ void printBindingResult(const std::string& name, const impulse::ir::BindingEvalR
     std::cout << name << " = <unevaluated> (" << message << ")\n";
 }
 
+auto joinModulePath(const std::vector<std::string>& path) -> std::string {
+    if (path.empty()) {
+        return "<anonymous>";
+    }
+    std::ostringstream builder;
+    for (size_t i = 0; i < path.size(); ++i) {
+        if (i != 0) {
+            builder << "::";
+        }
+        builder << path[i];
+    }
+    return builder.str();
+}
+
 }  // namespace
 
 auto main(int argc, char** argv) -> int {
@@ -142,24 +174,20 @@ auto main(int argc, char** argv) -> int {
         return semantic;
     };
 
-    if (options->check) {
-        const auto semantic = runSemantic();
-        if (!semantic.has_value()) {
-            return 2;
+    std::optional<impulse::ir::Module> loweredModule;
+    auto ensureLoweredModule = [&]() -> const impulse::ir::Module& {
+        if (!loweredModule.has_value()) {
+            loweredModule = impulse::frontend::lower_to_ir(parseResult.module);
         }
-        std::cout << "Semantic checks passed\n";
-        return 0;
-    }
+        return *loweredModule;
+    };
 
-    if (options->evaluate || options->evalBinding.has_value()) {
-        const auto semantic = runSemantic();
-        if (!semantic.has_value()) {
-            return 2;
-        }
-
-        const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
-        std::unordered_map<std::string, double> environment;
-        std::vector<std::pair<std::string, impulse::ir::BindingEvalResult>> evaluations;
+    std::unordered_map<std::string, double> environment;
+    std::vector<std::pair<std::string, impulse::ir::BindingEvalResult>> evaluations;
+    auto interpretAllBindings = [&]() -> bool {
+        const auto& lowered = ensureLoweredModule();
+        environment.clear();
+        evaluations.clear();
         evaluations.reserve(lowered.bindings.size());
         bool evalSuccess = true;
 
@@ -172,6 +200,90 @@ auto main(int argc, char** argv) -> int {
             }
             evaluations.emplace_back(binding.name, std::move(eval));
         }
+        return evalSuccess;
+    };
+
+    if (options->check) {
+        const auto semantic = runSemantic();
+        if (!semantic.has_value()) {
+            return 2;
+        }
+        std::cout << "Semantic checks passed\n";
+        return 0;
+    }
+
+    if (options->run || options->entryBinding.has_value()) {
+        const auto semantic = runSemantic();
+        if (!semantic.has_value()) {
+            return 2;
+        }
+
+        const bool evalSuccess = interpretAllBindings();
+        const std::string entry = options->entryBinding.value_or("main");
+
+        bool triedRuntime = false;
+        if (loweredModule.has_value()) {
+            impulse::runtime::Vm vm;
+            const auto loadResult = vm.load(*loweredModule);
+            if (!loadResult.success) {
+                for (const auto& diag : loadResult.diagnostics) {
+                    std::cerr << "runtime load error: " << diag << '\n';
+                }
+            } else {
+                triedRuntime = true;
+                const auto moduleName = joinModulePath(loweredModule->path);
+                const auto vmResult = vm.run(moduleName, entry);
+                if (vmResult.status == impulse::runtime::VmStatus::Success && vmResult.has_value) {
+                    const int exitCode = static_cast<int>(std::llround(vmResult.value));
+                    std::cout << "Program exited with " << exitCode << '\n';
+                    return evalSuccess ? 0 : 2;
+                }
+                if (vmResult.status != impulse::runtime::VmStatus::MissingSymbol) {
+                    std::string reason = vmResult.message;
+                    if (reason.empty()) {
+                        reason = "runtime execution failed";
+                    }
+                    std::cerr << "Entry function '" << entry << "' failed: " << reason << '\n';
+                    return 2;
+                }
+            }
+        }
+
+        const auto it = std::find_if(evaluations.begin(), evaluations.end(), [&](const auto& pair) {
+            return pair.first == entry;
+        });
+
+        if (it == evaluations.end()) {
+            if (triedRuntime) {
+                std::cerr << "Symbol '" << entry << "' not found\n";
+            } else {
+                std::cerr << "Binding '" << entry << "' not found\n";
+            }
+            return 3;
+        }
+
+        if (it->second.status == impulse::ir::EvalStatus::Success && it->second.value.has_value()) {
+            const int exitCode = static_cast<int>(std::llround(*it->second.value));
+            std::cout << "Program exited with " << exitCode << '\n';
+            return evalSuccess ? 0 : 2;
+        }
+
+        std::string reason = it->second.message;
+        if (reason.empty()) {
+            reason = (it->second.status == impulse::ir::EvalStatus::NonConstant) ? "binding is not constant"
+                                                                                : "evaluation error";
+        }
+        std::cerr << "Entry binding '" << entry << "' failed: " << reason << '\n';
+        return 2;
+    }
+
+    if (options->evaluate || options->evalBinding.has_value()) {
+        const auto semantic = runSemantic();
+        if (!semantic.has_value()) {
+            return 2;
+        }
+
+        const bool evalSuccess = interpretAllBindings();
 
         if (options->evalBinding.has_value()) {
             const auto& name = *options->evalBinding;

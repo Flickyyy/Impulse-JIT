@@ -242,34 +242,76 @@ auto Parser::parseFunctionDecl() -> FunctionDecl {
     }
 
     const Token* lbrace = consume(TokenKind::LBrace, "Expected '{' to start function body");
-    size_t bodyStart = current_;
-    size_t bodyEnd = current_;
+    const size_t bodyStart = current_;
 
     if (lbrace != nullptr) {
-        size_t depth = 1;
-        while (!isAtEnd() && depth > 0) {
-            const Token& token = peek();
-            (void)advance();
-            if (token.kind == TokenKind::LBrace) {
-                ++depth;
-            } else if (token.kind == TokenKind::RBrace) {
-                --depth;
+        while (!check(TokenKind::RBrace) && !check(TokenKind::EndOfFile)) {
+            if (auto statement = parseStatement()) {
+                decl.parsed_body.statements.push_back(std::move(*statement));
+            } else {
+                // simple synchronization: advance until next semicolon or closing brace
+                while (!check(TokenKind::Semicolon) && !check(TokenKind::RBrace) && !check(TokenKind::EndOfFile)) {
+                    (void)advance();
+                }
+                if (check(TokenKind::Semicolon)) {
+                    advance();
+                }
             }
-        }
-
-        if (depth == 0) {
-            bodyEnd = (current_ > 0) ? current_ - 1 : current_;
-        } else {
-            reportError(previous(), "Unterminated function body");
-            bodyEnd = current_;
         }
     }
 
+    const Token* rbrace = consume(TokenKind::RBrace, "Expected '}' after function body");
+    size_t bodyEnd = (rbrace != nullptr && current_ > 0) ? current_ - 1 : current_;
     if (bodyEnd < bodyStart) {
         bodyEnd = bodyStart;
     }
     decl.body = makeSnippet(TokenRange{bodyStart, bodyEnd});
     return decl;
+}
+
+auto Parser::parseStatement() -> std::optional<Statement> {
+    if (match(TokenKind::KwReturn)) {
+        Statement statement;
+        statement.kind = Statement::Kind::Return;
+        const Token& keyword = previous();
+        statement.location = SourceLocation{keyword.line, keyword.column};
+
+        auto expression = parseExpression();
+        if (!expression) {
+            reportError(peek(), "Expected expression after 'return'");
+            return std::nullopt;
+        }
+        statement.return_expression = std::move(expression);
+
+        const Token* terminator = consume(TokenKind::Semicolon, "Expected ';' after return statement");
+        (void)terminator;
+        return statement;
+    }
+
+    const auto bindingStatement = [this](TokenKind keyword, BindingKind kind) -> std::optional<Statement> {
+        if (!match(keyword)) {
+            return std::nullopt;
+        }
+        const Token keywordToken = previous();
+        Statement statement;
+        statement.kind = Statement::Kind::Binding;
+        statement.location = SourceLocation{keywordToken.line, keywordToken.column};
+        statement.binding = parseBindingDecl(kind);
+        return statement;
+    };
+
+    if (auto stmt = bindingStatement(TokenKind::KwLet, BindingKind::Let)) {
+        return stmt;
+    }
+    if (auto stmt = bindingStatement(TokenKind::KwConst, BindingKind::Const)) {
+        return stmt;
+    }
+    if (auto stmt = bindingStatement(TokenKind::KwVar, BindingKind::Var)) {
+        return stmt;
+    }
+
+    reportError(peek(), "Only return/let/const/var statements are supported in function bodies");
+    return std::nullopt;
 }
 
 auto Parser::parseStructDecl() -> StructDecl {
@@ -478,7 +520,7 @@ auto Parser::parseBinaryExpression(int minPrecedence) -> std::unique_ptr<Express
 }
 
 auto Parser::parsePrimaryExpression() -> std::unique_ptr<Expression> {
-    if (match(TokenKind::IntegerLiteral) || match(TokenKind::FloatLiteral)) {
+    if (match(TokenKind::IntegerLiteral) || match(TokenKind::FloatLiteral) || match(TokenKind::BooleanLiteral)) {
         const Token literal = previous();
         auto expr = std::make_unique<Expression>();
         expr->kind = Expression::Kind::Literal;
@@ -517,10 +559,18 @@ auto Parser::binaryPrecedence(TokenKind kind) -> int {
     switch (kind) {
         case TokenKind::Plus:
         case TokenKind::Minus:
-            return 10;
+            return 20;
         case TokenKind::Star:
         case TokenKind::Slash:
-            return 20;
+            return 30;
+        case TokenKind::Less:
+        case TokenKind::LessEqual:
+        case TokenKind::Greater:
+        case TokenKind::GreaterEqual:
+            return 15;
+        case TokenKind::EqualEqual:
+        case TokenKind::BangEqual:
+            return 10;
         default:
             return -1;
     }
@@ -536,6 +586,18 @@ auto Parser::toBinaryOperator(TokenKind kind) -> Expression::BinaryOperator {
             return Expression::BinaryOperator::Multiply;
         case TokenKind::Slash:
             return Expression::BinaryOperator::Divide;
+        case TokenKind::EqualEqual:
+            return Expression::BinaryOperator::Equal;
+        case TokenKind::BangEqual:
+            return Expression::BinaryOperator::NotEqual;
+        case TokenKind::Less:
+            return Expression::BinaryOperator::Less;
+        case TokenKind::LessEqual:
+            return Expression::BinaryOperator::LessEqual;
+        case TokenKind::Greater:
+            return Expression::BinaryOperator::Greater;
+        case TokenKind::GreaterEqual:
+            return Expression::BinaryOperator::GreaterEqual;
         default:
             return Expression::BinaryOperator::Add;
     }

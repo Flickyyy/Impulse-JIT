@@ -111,3 +111,57 @@ func TestEvaluateBindingsEmptySource(t *testing.T) {
 		t.Fatal("expected error for empty source")
 	}
 }
+
+func TestRunModuleMainBinding(t *testing.T) {
+	source := "module demo;\nlet main: int = 3 + 4;"
+
+	result, err := RunModule(source, "main")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Success {
+		t.Fatalf("expected success, got diagnostics: %+v, message=%s", result.Diagnostics, result.Message)
+	}
+	if !result.HasExitCode || result.ExitCode != 7 {
+		t.Fatalf("expected exit code 7, got %+v", result)
+	}
+}
+
+func TestRunModuleMissingEntry(t *testing.T) {
+	source := "module demo;\nlet value: int = 1;"
+	result, err := RunModule(source, "main")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.Success {
+		t.Fatalf("expected failure for missing entry, got %+v", result)
+	}
+	if result.Message == "" {
+		t.Fatal("expected explanatory message for missing entry")
+	}
+}
+
+func TestRunModuleEmptySource(t *testing.T) {
+	if _, err := RunModule("", "main"); err == nil {
+		t.Fatal("expected error for empty source")
+	}
+}
+
+func TestRunModuleFunctionEntry(t *testing.T) {
+	source := `module demo;
+let seed: int = 5;
+func main() -> int {
+    return seed + 2;
+}`
+
+	result, err := RunModule(source, "main")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Success {
+		t.Fatalf("expected success running function, got diagnostics: %+v message=%s", result.Diagnostics, result.Message)
+	}
+	if !result.HasExitCode || result.ExitCode != 7 {
+		t.Fatalf("expected exit code 7, got %+v", result)
+	}
+}

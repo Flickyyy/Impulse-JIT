@@ -32,6 +32,7 @@ class Parser {
     [[nodiscard]] auto parseDeclaration() -> std::optional<Declaration>;
     [[nodiscard]] auto parseBindingDecl(BindingKind kind) -> BindingDecl;
     [[nodiscard]] auto parseFunctionDecl() -> FunctionDecl;
+    [[nodiscard]] auto parseStatement() -> std::optional<Statement>;
     [[nodiscard]] auto parseStructDecl() -> StructDecl;
     [[nodiscard]] auto parseFieldDecl() -> std::optional<FieldDecl>;
     [[nodiscard]] auto parseInterfaceDecl() -> InterfaceDecl;

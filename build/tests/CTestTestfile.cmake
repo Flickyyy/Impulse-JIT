@@ -1,8 +1,0 @@
-# CMake generated Testfile for 
-# Source directory: /home/flicky/itmo/Impulse-JIT/tests
-# Build directory: /home/flicky/itmo/Impulse-JIT/build/tests
-# 
-# This file includes the relevant testing commands required for 
-# testing this directory and lists subdirectories to be tested as well.
-add_test([=[impulse-tests]=] "/home/flicky/itmo/Impulse-JIT/build/tests/impulse-tests")
-set_tests_properties([=[impulse-tests]=] PROPERTIES  _BACKTRACE_TRIPLES "/home/flicky/itmo/Impulse-JIT/tests/CMakeLists.txt;7;add_test;/home/flicky/itmo/Impulse-JIT/tests/CMakeLists.txt;0;")

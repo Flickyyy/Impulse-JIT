@@ -39,6 +39,15 @@ type CheckResult struct {
 	Diagnostics []Diagnostic
 }
 
+// RunResult represents the outcome of running a module via constant bindings.
+type RunResult struct {
+	Success     bool
+	Diagnostics []Diagnostic
+	HasExitCode bool
+	ExitCode    int
+	Message     string
+}
+
 func convertDiagnostics(ptr *C.struct_ImpulseParseDiagnostic, count C.size_t) []Diagnostic {
 	if ptr == nil || count == 0 {
 		return nil
@@ -131,4 +140,39 @@ func CheckModule(source string) (CheckResult, error) {
 		Success:     bool(cResult.success),
 		Diagnostics: convertDiagnostics(cResult.diagnostics, cResult.diagnostic_count),
 	}, nil
+}
+
+// RunModule evaluates bindings and treats the specified entry binding as the program's exit code.
+func RunModule(source, entry string) (RunResult, error) {
+	if source == "" {
+		return RunResult{}, errors.New("empty source")
+	}
+
+	cSource := C.CString(source)
+	defer C.free(unsafe.Pointer(cSource))
+
+	var cEntry *C.char
+	if entry != "" {
+		cEntry = C.CString(entry)
+		defer C.free(unsafe.Pointer(cEntry))
+	}
+
+	options := C.struct_ImpulseParseOptions{
+		path:   nil,
+		source: cSource,
+	}
+
+	cResult := C.impulse_run_module(&options, cEntry)
+	defer C.impulse_free_run_result(&cResult)
+
+	result := RunResult{
+		Success:     bool(cResult.success),
+		Diagnostics: convertDiagnostics(cResult.diagnostics, cResult.diagnostic_count),
+		HasExitCode: bool(cResult.has_exit_code),
+		ExitCode:    int(cResult.exit_code),
+	}
+	if cResult.message != nil {
+		result.Message = C.GoString(cResult.message)
+	}
+	return result, nil
 }

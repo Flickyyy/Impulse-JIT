@@ -7,7 +7,7 @@ For the first parser increments we only need to support the top-level constructs
 1. **Module header** – `module <ident {:: ident}>;`
 2. **Import list** – `import <ident {:: ident}> [as ident];`
 3. **Bindings** – `let|const|var name: Type = expr;`
-4. **Function declarations** – `func name(params) -> Type { ... }` (body is captured as an opaque snippet for now)
+4. **Function declarations** – `func name(params) -> Type { ... }` with a minimal statement list (return + let/const/var)
 5. **Struct declarations** – `struct Name { field: Type; ... }` with field lists captured as identifiers
 6. **Interface declarations** – `interface Name { func method(params) -> Type; }` signatures only (no bodies)
 7. **Exports** – optional `export` modifier that can precede any top-level declaration.
@@ -43,7 +43,16 @@ FunctionDecl
  ├─ name: Identifier
  ├─ params: vector<Parameter>
  ├─ return_type: optional<Identifier>
- └─ body: Snippet (raw tokens between braces)
+ ├─ body: Snippet (raw tokens between braces)
+ └─ parsed_body: FunctionBody { statements: vector<Statement> }
+
+Statement (function-local)
+ ├─ Return: `return expr;`
+ └─ Binding: `let|const|var name: Type = expr;`
+
+Expressions (v0)
+ ├─ Literals: numeric + `true`/`false`
+ └─ Binary operators: `+ - * / == != < <= > >=`
 
 StructDecl
  ├─ name: Identifier

@@ -53,6 +53,18 @@ namespace {
             return "*";
         case Expression::BinaryOperator::Divide:
             return "/";
+        case Expression::BinaryOperator::Equal:
+            return "==";
+        case Expression::BinaryOperator::NotEqual:
+            return "!=";
+        case Expression::BinaryOperator::Less:
+            return "<";
+        case Expression::BinaryOperator::LessEqual:
+            return "<=";
+        case Expression::BinaryOperator::Greater:
+            return ">";
+        case Expression::BinaryOperator::GreaterEqual:
+            return ">=";
     }
     return "?";
 }
@@ -138,7 +150,38 @@ auto lower_to_ir(const Module& module) -> ir::Module {
                 }
                 function.body_snippet = decl.function.body.text;
 
-                if (!function.body_snippet.empty()) {
+                if (!decl.function.parsed_body.statements.empty()) {
+                    ir::FunctionBuilder builder(function);
+                    auto& entry = builder.entry();
+                    for (const auto& statement : decl.function.parsed_body.statements) {
+                        switch (statement.kind) {
+                            case Statement::Kind::Return:
+                                if (statement.return_expression) {
+                                    lower_expression_to_stack(*statement.return_expression, entry.instructions);
+                                }
+                                entry.instructions.push_back(ir::Instruction{
+                                    .kind = ir::InstructionKind::Return,
+                                    .operands = {},
+                                });
+                                break;
+                            case Statement::Kind::Binding:
+                                if (statement.binding.initializer_expr) {
+                                    lower_expression_to_stack(*statement.binding.initializer_expr, entry.instructions);
+                                    entry.instructions.push_back(ir::Instruction{
+                                        .kind = ir::InstructionKind::Store,
+                                        .operands = std::vector<std::string>{statement.binding.name.value},
+                                    });
+                                } else {
+                                    entry.instructions.push_back(ir::Instruction{
+                                        .kind = ir::InstructionKind::Comment,
+                                        .operands = std::vector<std::string>{std::string{"unlowered binding "} +
+                                                                             statement.binding.name.value},
+                                    });
+                                }
+                                break;
+                        }
+                    }
+                } else if (!function.body_snippet.empty()) {
                     ir::FunctionBuilder builder(function);
                     builder.appendComment(function.body_snippet);
                 }

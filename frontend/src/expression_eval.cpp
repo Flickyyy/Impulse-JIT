@@ -22,6 +22,18 @@ constexpr double kEpsilon = 1e-12;
             return "*";
         case Expression::BinaryOperator::Divide:
             return "/";
+        case Expression::BinaryOperator::Equal:
+            return "==";
+        case Expression::BinaryOperator::NotEqual:
+            return "!=";
+        case Expression::BinaryOperator::Less:
+            return "<";
+        case Expression::BinaryOperator::LessEqual:
+            return "<=";
+        case Expression::BinaryOperator::Greater:
+            return ">";
+        case Expression::BinaryOperator::GreaterEqual:
+            return ">=";
     }
     return "+";
 }
@@ -37,13 +49,20 @@ constexpr double kEpsilon = 1e-12;
     return sanitized;
 }
 
-[[nodiscard]] auto parse_numeric_literal(const std::string& literal) -> ExpressionEvalResult {
+[[nodiscard]] auto parse_literal_value(const std::string& literal) -> ExpressionEvalResult {
     if (literal.empty()) {
         return ExpressionEvalResult{
             .status = ExpressionEvalStatus::Error,
             .value = std::nullopt,
             .message = std::string{"Empty numeric literal"},
         };
+    }
+
+    if (literal == "true") {
+        return ExpressionEvalResult{ExpressionEvalStatus::Constant, 1.0, std::nullopt};
+    }
+    if (literal == "false") {
+        return ExpressionEvalResult{ExpressionEvalStatus::Constant, 0.0, std::nullopt};
     }
 
     try {
@@ -113,6 +132,18 @@ constexpr double kEpsilon = 1e-12;
                 };
             }
             return ExpressionEvalResult{ExpressionEvalStatus::Constant, left / right, std::nullopt};
+        case Expression::BinaryOperator::Equal:
+            return ExpressionEvalResult{ExpressionEvalStatus::Constant, (left == right) ? 1.0 : 0.0, std::nullopt};
+        case Expression::BinaryOperator::NotEqual:
+            return ExpressionEvalResult{ExpressionEvalStatus::Constant, (left != right) ? 1.0 : 0.0, std::nullopt};
+        case Expression::BinaryOperator::Less:
+            return ExpressionEvalResult{ExpressionEvalStatus::Constant, (left < right) ? 1.0 : 0.0, std::nullopt};
+        case Expression::BinaryOperator::LessEqual:
+            return ExpressionEvalResult{ExpressionEvalStatus::Constant, (left <= right) ? 1.0 : 0.0, std::nullopt};
+        case Expression::BinaryOperator::Greater:
+            return ExpressionEvalResult{ExpressionEvalStatus::Constant, (left > right) ? 1.0 : 0.0, std::nullopt};
+        case Expression::BinaryOperator::GreaterEqual:
+            return ExpressionEvalResult{ExpressionEvalStatus::Constant, (left >= right) ? 1.0 : 0.0, std::nullopt};
     }
     return ExpressionEvalResult{
         .status = ExpressionEvalStatus::Error,
@@ -150,7 +181,7 @@ auto printExpression(const Expression& expr) -> std::string {
 auto evaluateNumericExpression(const Expression& expr) -> ExpressionEvalResult {
     switch (expr.kind) {
         case Expression::Kind::Literal:
-            return parse_numeric_literal(expr.literal_value);
+            return parse_literal_value(expr.literal_value);
         case Expression::Kind::Identifier:
             return ExpressionEvalResult{
                 .status = ExpressionEvalStatus::NonConstant,

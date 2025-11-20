@@ -56,6 +56,15 @@ struct ImpulseEvalResult {
     size_t binding_count;
 };
 
+struct ImpulseRunResult {
+    bool success;
+    struct ImpulseParseDiagnostic* diagnostics;
+    size_t diagnostic_count;
+    bool has_exit_code;
+    int exit_code;
+    char* message;
+};
+
 #ifndef __cplusplus
 typedef struct ImpulseParseOptions ImpulseParseOptions;
 typedef struct ImpulseParseDiagnostic ImpulseParseDiagnostic;
@@ -64,6 +73,7 @@ typedef struct ImpulseIrResult ImpulseIrResult;
 typedef struct ImpulseSemanticResult ImpulseSemanticResult;
 typedef struct ImpulseBindingValue ImpulseBindingValue;
 typedef struct ImpulseEvalResult ImpulseEvalResult;
+typedef struct ImpulseRunResult ImpulseRunResult;
 #endif
 
 #ifdef __cplusplus
@@ -108,6 +118,18 @@ struct ImpulseEvalResult impulse_evaluate_bindings(const struct ImpulseParseOpti
 void impulse_free_eval_result(ImpulseEvalResult* result);
 #else
 void impulse_free_eval_result(struct ImpulseEvalResult* result);
+#endif
+
+#ifdef __cplusplus
+[[nodiscard]] auto impulse_run_module(const ImpulseParseOptions* options, const char* entry_binding)
+    -> ImpulseRunResult;
+#else
+struct ImpulseRunResult impulse_run_module(const struct ImpulseParseOptions* options, const char* entry_binding);
+#endif
+#ifdef __cplusplus
+void impulse_free_run_result(ImpulseRunResult* result);
+#else
+void impulse_free_run_result(struct ImpulseRunResult* result);
 #endif
 
 #ifdef __cplusplus

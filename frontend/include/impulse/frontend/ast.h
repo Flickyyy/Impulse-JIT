@@ -56,6 +56,12 @@ struct Expression {
         Subtract,
         Multiply,
         Divide,
+        Equal,
+        NotEqual,
+        Less,
+        LessEqual,
+        Greater,
+        GreaterEqual,
     };
 
     SourceLocation location;
@@ -85,6 +91,21 @@ struct BindingDecl {
     std::unique_ptr<Expression> initializer_expr;
 };
 
+struct Statement {
+    enum class Kind : std::uint8_t {
+        Return,
+        Binding,
+    } kind = Kind::Return;
+
+    SourceLocation location;
+    std::unique_ptr<Expression> return_expression;
+    BindingDecl binding;
+};
+
+struct FunctionBody {
+    std::vector<Statement> statements;
+};
+
 struct FieldDecl {
     Identifier name;
     Identifier type_name;
@@ -105,6 +126,7 @@ struct FunctionDecl {
     std::vector<Parameter> parameters;
     std::optional<Identifier> return_type;
     Snippet body;
+    FunctionBody parsed_body;
 };
 
 struct Declaration {

@@ -7,6 +7,9 @@ add_library(impulse-frontend STATIC
 	src/semantic.cpp
 )
 
-target_include_directories(impulse-frontend PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(impulse-frontend PUBLIC
+	${CMAKE_CURRENT_SOURCE_DIR}/include
+	${CMAKE_SOURCE_DIR}/runtime/include
+)
 
-target_link_libraries(impulse-frontend PUBLIC impulse-ir)
+target_link_libraries(impulse-frontend PUBLIC impulse-ir impulse-runtime)

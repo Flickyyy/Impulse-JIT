@@ -126,6 +126,15 @@ void lower_expression_to_stack(const Expression& expr, std::vector<ir::Instructi
                 },
             });
             break;
+        case Expression::Kind::Call:
+            for (const auto& arg : expr.arguments) {
+                lower_expression_to_stack(*arg, instructions);
+            }
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Call,
+                .operands = std::vector<std::string>{expr.callee, std::to_string(expr.arguments.size())},
+            });
+            break;
     }
 }
 

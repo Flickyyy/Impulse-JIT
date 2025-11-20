@@ -42,6 +42,7 @@ class Parser {
     [[nodiscard]] auto parseExpression() -> std::unique_ptr<Expression>;
     [[nodiscard]] auto parseBinaryExpression(int minPrecedence) -> std::unique_ptr<Expression>;
     [[nodiscard]] auto parseUnaryExpression() -> std::unique_ptr<Expression>;
+    [[nodiscard]] auto parsePostfixExpression() -> std::unique_ptr<Expression>;
     [[nodiscard]] auto parsePrimaryExpression() -> std::unique_ptr<Expression>;
     [[nodiscard]] static auto binaryPrecedence(TokenKind kind) -> int;
     [[nodiscard]] static auto toBinaryOperator(TokenKind kind) -> Expression::BinaryOperator;

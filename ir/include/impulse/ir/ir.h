@@ -26,6 +26,7 @@ enum class InstructionKind : std::uint8_t {
     Branch,
     BranchIf,
     Label,
+    Call,
 };
 
 struct Instruction {

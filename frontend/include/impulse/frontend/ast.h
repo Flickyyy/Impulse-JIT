@@ -49,6 +49,7 @@ struct Expression {
         Identifier,
         Binary,
         Unary,
+        Call,
     };
 
     Kind kind = Kind::Literal;
@@ -81,6 +82,8 @@ struct Expression {
     std::unique_ptr<Expression> left;
     std::unique_ptr<Expression> right;
     std::unique_ptr<Expression> operand;
+    std::string callee;
+    std::vector<std::unique_ptr<Expression>> arguments;
 };
 
 struct Parameter {

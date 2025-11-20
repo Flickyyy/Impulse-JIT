@@ -143,7 +143,7 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
     }
 
     std::vector<double> stack;
-    std::unordered_map<std::string, double> locals;
+    std::unordered_map<std::string, double> locals = parameters;
     
     std::vector<ir::Instruction> all_instructions;
     for (const auto& block : function.blocks) {
@@ -318,6 +318,54 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
                         pc = it->second;
                         continue;
                     }
+                    break;
+                }
+                case ir::InstructionKind::Call: {
+                    if (inst.operands.size() < 2) {
+                        return make_result(VmStatus::ModuleError, "call instruction requires function name and arg count");
+                    }
+                    const std::string& callee_name = inst.operands[0];
+                    const size_t arg_count = std::stoull(inst.operands[1]);
+                    
+                    if (stack.size() < arg_count) {
+                        return make_result(VmStatus::RuntimeError, "call requires " + std::to_string(arg_count) + " arguments on stack");
+                    }
+                    
+                    std::unordered_map<std::string, double> call_params;
+                    
+                    const ir::Function* target_func = nullptr;
+                    for (const auto& f : module.module.functions) {
+                        if (f.name == callee_name) {
+                            target_func = &f;
+                            break;
+                        }
+                    }
+                    
+                    if (!target_func) {
+                        return make_result(VmStatus::ModuleError, "function '" + callee_name + "' not found");
+                    }
+                    
+                    if (target_func->parameters.size() != arg_count) {
+                        return make_result(VmStatus::ModuleError, "function '" + callee_name + "' expects " + 
+                                          std::to_string(target_func->parameters.size()) + " arguments, got " + std::to_string(arg_count));
+                    }
+                    
+                    std::vector<double> args;
+                    for (size_t i = 0; i < arg_count; ++i) {
+                        args.push_back(stack[stack.size() - arg_count + i]);
+                    }
+                    stack.resize(stack.size() - arg_count);
+                    
+                    for (size_t i = 0; i < args.size(); ++i) {
+                        call_params[target_func->parameters[i].name] = args[i];
+                    }
+                    
+                    const auto result = execute_function(module, *target_func, call_params);
+                    if (result.status != VmStatus::Success || !result.has_value) {
+                        return result;
+                    }
+                    
+                    stack.push_back(result.value);
                     break;
                 }
                 case ir::InstructionKind::Label:

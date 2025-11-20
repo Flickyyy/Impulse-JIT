@@ -94,6 +94,15 @@ namespace {
         case InstructionKind::Label:
             out << inst.operands.empty() ? "label:" : (inst.operands.front() + ":");
             break;
+        case InstructionKind::Call:
+            out << "call";
+            if (!inst.operands.empty()) {
+                out << ' ' << inst.operands.front();
+                if (inst.operands.size() > 1) {
+                    out << " (" << inst.operands[1] << " args)";
+                }
+            }
+            break;
     }
     return out.str();
 }

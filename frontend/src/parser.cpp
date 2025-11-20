@@ -621,7 +621,41 @@ auto Parser::parseUnaryExpression() -> std::unique_ptr<Expression> {
         return unary;
     }
 
-    return parsePrimaryExpression();
+    return parsePostfixExpression();
+}
+
+auto Parser::parsePostfixExpression() -> std::unique_ptr<Expression> {
+    auto expr = parsePrimaryExpression();
+    
+    while (match(TokenKind::LParen)) {
+        auto call = std::make_unique<Expression>();
+        call->kind = Expression::Kind::Call;
+        call->location = expr->location;
+        
+        if (expr->kind == Expression::Kind::Identifier) {
+            call->callee = expr->identifier.value;
+        } else {
+            reportError(peek(), "Can only call named functions");
+            return nullptr;
+        }
+        
+        if (!check(TokenKind::RParen)) {
+            do {
+                auto arg = parseExpression();
+                if (arg) {
+                    call->arguments.push_back(std::move(arg));
+                }
+            } while (match(TokenKind::Comma));
+        }
+        
+        if (!consume(TokenKind::RParen, "Expected ')' after arguments")) {
+            return nullptr;
+        }
+        
+        expr = std::move(call);
+    }
+    
+    return expr;
 }
 
 auto Parser::parsePrimaryExpression() -> std::unique_ptr<Expression> {

@@ -1,0 +1,19 @@
+Start testing: Nov 20 09:58 UTC
+----------------------------------------------------------
+1/1 Testing: impulse-tests
+1/1 Test: impulse-tests
+Command: "/home/runner/work/Impulse-JIT/Impulse-JIT/build/tests/impulse-tests"
+Directory: /home/runner/work/Impulse-JIT/Impulse-JIT/build/tests
+"impulse-tests" start time: Nov 20 09:58 UTC
+Output:
+----------------------------------------------------------
+All frontend tests passed
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"impulse-tests" end time: Nov 20 09:58 UTC
+"impulse-tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 20 09:58 UTC

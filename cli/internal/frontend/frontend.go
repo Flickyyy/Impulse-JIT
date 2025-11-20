@@ -2,7 +2,7 @@ package frontend
 
 /*
 #cgo CXXFLAGS: -I${SRCDIR}/../../../frontend/include
-#cgo LDFLAGS: -L${SRCDIR}/../../../build/frontend -L${SRCDIR}/../../../build/ir -limpulse-frontend -limpulse-ir -lstdc++ -lm
+#cgo LDFLAGS: -L${SRCDIR}/../../../build/frontend -L${SRCDIR}/../../../build/ir -L${SRCDIR}/../../../build/runtime -limpulse-frontend -limpulse-ir -limpulse-runtime -lstdc++ -lm
 #include <stdlib.h>
 #include "../../../frontend/include/impulse/frontend/frontend.h"
 */

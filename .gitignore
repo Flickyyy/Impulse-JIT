@@ -1,0 +1,17 @@
+# Build directories
+build/
+**/build/
+
+# Go build artifacts
+cli/impulsec
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

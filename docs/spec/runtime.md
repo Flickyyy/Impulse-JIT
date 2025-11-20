@@ -1,78 +1,46 @@
-# Runtime & VM Spec
+# Runtime & VM
 
-## 1. Архитектура
-- Регистровая VM с явным стеком вызовов: каждый фрейм хранит `locals`, `temporaries`, `return_addr`, `closure_env`.
-- Байткод (`ImpulseBC`) — основа для интерпретатора и вход для JIT. Формат: заголовок + таблица констант + массив функций + тело инструкций.
-- Calling convention: аргументы размещаются в регистрах `r0..rN`; при переполнении — на стек. Возврат — через `r0`.
-- JIT встраивается поверх VM: горячие функции помечаются, переводятся в машинный код, VM патчит таблицу входов.
+## Current Implementation
 
-## 2. Layout стекового фрейма
+Simple stack-based VM:
+- Executes IR instructions sequentially
+- Stack for operands
+- Local variables storage
+- Module loading with global bindings
+
+### Supported Operations
+- Arithmetic: +,-,*,/,%
+- Logic: &&,||,!
+- Comparison: ==,!=,<,<=,>,>=
+- Variables: load/store locals and globals
+- Control: return (if/while TODO)
+
+## VM Structure
+
 ```
-| return addr |
-| prev fp     |
-| registers   |
-| spills      |
-| locals      |
-```
-- `fp` указывает на `prev fp`, `sp` растёт вверх.
-- Для хвостовых вызовов разрешается оптимизация (tail-call elimination) — в roadmap.
+VM {
+  modules: LoadedModule[]
+}
 
-## 3. Garbage Collector
-- Алгоритм: mark-and-sweep stop-the-world.
-	1. Pause мир, собрать корни (stack, глобалы, регистры VM, JIT trampolines).
-	2. Mark: DFS/BFS по графу объектов, помечаем `color=black`.
-	3. Sweep: обходим heap, возвращаем `white`-объекты в free list.
-- План: поколенческий режим (nursery + tenured), write barrier на уровне VM.
-- Heap организован аренами фиксированного размера (например, 1 МБ). Есть отдельные пулы для крупных объектов (`> 64 КБ`).
-
-## 4. Ошибки и паника
-- `panic` раскручивает стек до границы модуля; VM печатает stack trace и завершает программу кодом 1.
-- `Result`/`Option` не используют механику VM: это чистые значения, поэтому runtime не знает о них.
-- В будущем возможен `defer`-блок для гарантированного выполнения очистки.
-
-## 5. Модули и загрузка
-- Модуль компилируется в единицу `ImpulseBC`, содержащую:
-	- таблицу экспортов (символ → адрес байткода);
-	- таблицу импортов (символ → lazy resolver).
-- При запуске `impulse-vm` резолвит импорты, строит граф зависимостей, выполняет статические инициализаторы в порядке топосортировки.
-- Внешние библиотеки (C/Go) подключаются через FFI-адаптер (в разработке).
-
-## 6. Stdlib roadmap
-1. **core** — `print`, `panic`, `time::now`, базовые структуры (`Vec`, `Map`).
-2. **math** — sqrt, pow, trig.
-3. **collections** — динамические массивы, очереди, хэш-таблицы.
-4. **io** — stdin/stdout, файлы (позже).
-5. **bench** — вспомогательные утилиты для factorial/sort/primes.
-
-## 7. ABI между VM и JIT
-- Общие регистры: JIT соблюдает контракт `r0..r5` caller-saved, остальные callee-saved.
-- Frame map передаётся JIT для GC (точки safepoint).
-- Trampoline table хранит пары (`function_id`, `entry_ptr`). Если `entry_ptr` указывает на байткод — VM интерпретирует; если на машинный код — передаёт управление напрямую.
-
-### Calling convention
-- `r0` — return value (целые/указатели), `f0` — return float.
-- Аргументы: первые 4 целочисленных → `r1..r4`, следующие — стек; аналогично для float (`f1..f4`).
-- `r5` используется как временный для VM (не сохраняется).
-- Callee обязан сохранять `r6..r15`, а также FP (`fp`) и link register (`lr`).
-
-### Stack layout (native)
-```
-| arg spill (если >4) |
-| return addr (lr)    |
-| saved fp            |
-| locals              |
-| spills              |
+LoadedModule {
+  name: string,
+  globals: Map<string, double>,
+  module: IR.Module
+}
 ```
 
-### FFI мосты
-- Для вызова C/Go функций предоставляется `extern "C"` шима. VM конвертирует Impulse-значения в C ABI (64-бит System V):
-	- `int` → `int64_t`
-	- `float` → `double`
-	- `string` → `{const char*, size_t}`
-- Возврат значений обратно происходит с копированием (для строк/структур).
-- FFI-функции отмечаются в байткоде отдельным флагом, чтобы JIT мог генерировать прямые вызовы.
+## Execution Model
 
-## 8. Формат дескрипторов объектов
-- Каждый heap-объект начинается с заголовка: `struct Header { TypeId tid; uint8 color; uint8 flags; }`.
-- Далее следует payload (struct fields, array data, string bytes).
-- `TypeId` используется GC и runtime для RTTI и pattern matching.
+1. Load module → evaluate global bindings
+2. Find entry function (default "main")
+3. Execute instructions on stack
+4. Return result value
+
+## TODO
+
+- **Control flow**: Branch/Label instructions for if/while
+- **GC**: Mark-and-sweep garbage collector
+- **JIT**: Hot path compilation to native code
+- **Call convention**: Proper ABI for multi-function calls
+- **Heap**: Dynamic allocation beyond stack
+

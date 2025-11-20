@@ -1,5 +1,4 @@
 add_library(impulse-ir STATIC
-	src/placeholder.cpp
 	src/printer.cpp
 	src/builder.cpp
 	src/interpreter.cpp

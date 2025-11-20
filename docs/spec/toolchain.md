@@ -1,77 +1,178 @@
-# Toolchain & Processes
+# Toolchain & Development Process
 
-## 1. Компоненты
-- `frontend/` — **C++ by default** (PEGTL/ANTLR) для лексера, парсера, type-check; Go-песочницы допускаются для генерации тестов.
-- `ir/` — собственный SSA builder и оптимизации на C++, общий API с Go-драйверами.
-- `runtime/` — VM, GC, JIT на C++ без внешних зависимостей;
-- `cli/impulsec` — Go-утилита обёртка (CLI, реплаи, визуализации), общается с C++ через FFI.
-- `tools/` — Python/Go скрипты для тестов, генераторов, бенчмарков.
+## 1. Components
 
-## 2. Сборка
-- Основной build: CMake (для C++), Go modules.
-- Цели: `impulsec`, `impulse-vm`, `impulse-tests`.
-- Пакеты/директивы:
-	- `frontend` и `ir` собираются как статические библиотеки, экспортирующие C API.
-	- `runtime` линкуется с JIT/GC и предоставляет `libimpulsevm.so`.
-	- Go CLI линкится с C API через `cgo`.
+### Current Implementation
+- **`frontend/`** — C++ lexer, parser, semantic analysis, and lowering to IR
+- **`ir/`** — Stack-based IR with interpreter for constant evaluation and function execution
+- **`runtime/`** — VM executing IR instructions with control flow support
+- **`cli/`** — Go CLI wrapper (`impulsec`) communicating with C++ via CGO
+- **`tests/`** — Unit tests covering parser, IR, and runtime
 
-## 3. Стиль и проверки
-- Google C++ Style (`.clang-format`), `gofmt`.
-- Lint и unit-тесты в CI (GitHub Actions / GitLab CI).
-- C++ компилятор: clang++17+. Флаги: `-Wall -Wextra -Werror -pedantic`.
-- Go версия: 1.22+. Модули без vendor.
+### Future Components
+- **`tools/`** — Scripts for code generation, benchmarks, profiling
+- **`stdlib/`** — Standard library modules (print, math, collections, io)
 
-## 4. Тестирование
-- Golden tests для parser/typechecker.
-- IR verifier + VM regression suite.
-- Производственные бенчмарки factorial/sort/primes.
-- Отдельные стресс-тесты GC (утечки, фрагментация).
-- FFI smoke tests (Go ↔ C++), если задействованы.
+## 2. Build System
 
-## 5. Roadmap синхронизаций
-- Каждое изменение языка сопровождается PR с обновлением `docs/spec/*`.
-- Еженедельные demo-run бенчмарков.
-- После перехода компонента на C++ bootstrap на Go считается устаревшим (оставляем только для reference).
+### Current Setup
+```bash
+# Build C++ components
+cmake -S . -B build
+cmake --build build
 
-## 6. Политика выбора языка
-- Если компонент можно написать на "голом" C++ без сторонних библиотек — пишем на C++.
-- Go используем для быстрых прототипов, CLI и tooling, но код должен быть перенесён в C++ перед мейлстоун "GC & Runtime".
-- Python допускается только для вспомогательных скриптов (не часть тулчейна).
+# Build CLI
+cd cli && go build ./cmd/impulsec
 
-## 7. Структура репозитория
-```
-Impulse-JIT/
-	frontend/
-	ir/
-	runtime/
-	cli/
-	tools/
-	docs/spec/
-	tests/
-	benchmarks/
-	scripts/
-	cmake/
+# Run tests
+cd build && ctest
+cd ../cli && go test ./...
 ```
 
-## 8. Git workflow и релизы
-- Основная ветка `main` всегда зелёная, защищена (требует review + прохождение CI).
-- Фичи разрабатываются в ветках `feature/<name>`; крупные работы делятся на несколько PR.
-- Для каждой итерации roadmap создаём milestone и релизные теги `v0.x.y`.
-- Релизный артефакт: архив с `impulsec`, `impulse-vm`, stdlib и примерами.
-- Файлы автогенерации (Docs, схемы) собираются в `docs/build/`, не коммитятся.
+### Targets
+- `impulse-ir` — IR library (printer, builder, interpreter)
+- `impulse-runtime` — VM runtime
+- `impulse-frontend` — Parser and lowering
+- `impulse-tests` — Unit test suite
+- `impulse-cpp` — C++ CLI (optional)
 
-## 9. CI/CD
-- GitHub Actions: матрица по Ubuntu 22.04 / clang++17.
-- Джобы: `fmt-check`, `lint`, `build`, `tests`, `benchmarks` (smoke), `docs-lint`.
-- При merge в `main` автоматически публикуем nightly-артефакты (через GitHub Releases).
+## 3. Code Style & Quality
 
-## 10. Настройка окружения
-- Требуется установленный clang++17, CMake ≥ 3.24, Go 1.22.
-- Для локальной разработки: `scripts/bootstrap.sh` — ставит pre-commit hooks, подтягивает зависимости.
-- Предусмотрим Dockerfile со всем стеком для CI/локальных запусков.
+### Standards
+- **C++**: Modern C++17, Google C++ Style Guide
+- **Go**: `gofmt`, standard Go conventions
+- **Comments**: Document public APIs and complex logic
 
-## 11. План на TODO
-- **Опкоды IR** → `docs/spec/ir.md` (таблица, бинарный формат).
-- **ABI/FFI подробности** → `docs/spec/runtime.md`.
-- **`.clang-format`, `.clang-tidy`, `.golangci.yml`** — добавить в корень.
-- **CMake skeleton**: `cmake/toolchain.cmake`, `CMakeLists.txt` в каждом модуле.
+### Compiler Flags
+- C++: `-Wall -Wextra -std=c++17`
+- Go: Standard flags, `-race` for concurrent code
+
+### Testing Requirements
+- All new features must have unit tests
+- Parser tests verify AST structure
+- Runtime tests verify execution correctness
+- Edge cases (division by zero, empty inputs) must be tested
+
+## 4. Development Workflow
+
+### Making Changes
+1. Write failing test first (TDD)
+2. Implement feature
+3. Verify tests pass
+4. Update documentation if public API changes
+5. Run full test suite before committing
+
+### Code Organization
+- Keep files focused (single responsibility)
+- Separate concerns: parsing ≠ evaluation ≠ execution
+- Use namespaces consistently
+- Minimize dependencies between modules
+
+## 5. Current Limitations & Roadmap
+
+### What Works Now
+✅ Full expression parsing and evaluation  
+✅ Control flow (if/else, while)  
+✅ Function definitions and calls  
+✅ Local variables  
+✅ All operators  
+
+### Next Priorities
+1. **For loops** — Extend parser and lowering
+2. **Type checking** — Semantic verification beyond syntax
+3. **Multiple functions** — Call stack and function calls
+4. **Standard library** — Built-in print, file I/O
+5. **Error messages** — Better diagnostics with source locations
+
+### Future Work
+- **GC** — Memory management for heap-allocated objects
+- **JIT** — Native code generation for hot paths
+- **Optimization** — Dead code elimination, constant folding
+- **Modules** — Import/export system
+- **Debugging** — Source maps, breakpoints
+
+## 6. Testing Strategy
+
+### Current Tests (26 total)
+- Module header parsing
+- Numeric literals and strings
+- Expression parsing and precedence
+- Semantic validation (duplicates, const rules)
+- Operator functionality (arithmetic, logical, comparison)
+- Control flow execution (if/else, while)
+- Constant evaluation
+
+### Test Coverage Goals
+- Parser: All grammar productions
+- Evaluator: All operators and edge cases
+- VM: All instructions and control flow paths
+- Semantic: All error conditions
+
+## 7. Documentation Standards
+
+### Required Documentation
+- **README.md** — Quick start, basic usage
+- **STATUS.md** — Current implementation status
+- **Grammar spec** — Language syntax reference
+- **IR spec** — Instruction set and semantics
+- **Runtime spec** — VM behavior and calling convention
+- **Type system** — Type rules and checking (when implemented)
+
+### Code Documentation
+- Public functions: Purpose, parameters, return value, exceptions
+- Complex algorithms: High-level explanation
+- Non-obvious code: Why, not what
+
+## 8. Contributing Guidelines
+
+### Before Starting Work
+1. Check STATUS.md for current state
+2. Review relevant spec docs
+3. Ensure build environment is set up
+4. Run existing tests to establish baseline
+
+### While Working
+- Commit frequently with clear messages
+- Keep changes focused (one feature per PR)
+- Update tests alongside code
+- Maintain backward compatibility when possible
+
+### Before Submitting
+- All tests pass
+- Code follows style guidelines
+- Documentation updated
+- No compiler warnings
+- Manual testing of new features
+
+## 9. Performance Considerations
+
+### Current Performance
+- Parsing: Fast enough for interactive use
+- Interpretation: Suitable for scripts and testing
+- No optimization yet
+
+### Future Optimization
+- JIT compilation for hot functions
+- Inline caching for common operations
+- Constant folding and propagation
+- Dead code elimination
+
+## 10. Release Process (Future)
+
+### Version Numbering
+- 0.x.y for pre-1.0 releases
+- x.y.z for stable releases (semantic versioning)
+
+### Release Artifacts
+- Compiler binary (`impulsec`)
+- Runtime library
+- Standard library modules
+- Documentation
+- Example programs
+
+### Quality Bar for Releases
+- All tests pass
+- No known critical bugs
+- Documentation up to date
+- Example programs work
+- Performance acceptable

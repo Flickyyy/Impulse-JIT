@@ -18,6 +18,20 @@ namespace ir = ::impulse::ir;
 
 namespace {
 
+int label_counter = 0;
+
+[[nodiscard]] auto generate_label() -> std::string {
+    return "L" + std::to_string(label_counter++);
+}
+
+void lower_statement_to_instructions(const Statement& statement, std::vector<ir::Instruction>& instructions);
+
+void lower_statements_to_instructions(const std::vector<Statement>& statements, std::vector<ir::Instruction>& instructions) {
+    for (const auto& stmt : statements) {
+        lower_statement_to_instructions(stmt, instructions);
+    }
+}
+
 [[nodiscard]] auto to_storage(BindingKind kind) -> ir::StorageClass {
     switch (kind) {
         case BindingKind::Let:
@@ -53,6 +67,8 @@ namespace {
             return "*";
         case Expression::BinaryOperator::Divide:
             return "/";
+        case Expression::BinaryOperator::Modulo:
+            return "%";
         case Expression::BinaryOperator::Equal:
             return "==";
         case Expression::BinaryOperator::NotEqual:
@@ -65,6 +81,10 @@ namespace {
             return ">";
         case Expression::BinaryOperator::GreaterEqual:
             return ">=";
+        case Expression::BinaryOperator::LogicalAnd:
+            return "&&";
+        case Expression::BinaryOperator::LogicalOr:
+            return "||";
     }
     return "?";
 }
@@ -94,6 +114,119 @@ void lower_expression_to_stack(const Expression& expr, std::vector<ir::Instructi
                 .kind = ir::InstructionKind::Binary,
                 .operands = std::vector<std::string>{std::string{binary_operator_token(expr.binary_operator)}},
             });
+            break;
+        case Expression::Kind::Unary:
+            if (expr.operand) {
+                lower_expression_to_stack(*expr.operand, instructions);
+            }
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Unary,
+                .operands = std::vector<std::string>{
+                    expr.unary_operator == Expression::UnaryOperator::LogicalNot ? "!" : "-"
+                },
+            });
+            break;
+        case Expression::Kind::Call:
+            for (const auto& arg : expr.arguments) {
+                lower_expression_to_stack(*arg, instructions);
+            }
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Call,
+                .operands = std::vector<std::string>{expr.callee, std::to_string(expr.arguments.size())},
+            });
+            break;
+    }
+}
+
+void lower_statement_to_instructions(const Statement& statement, std::vector<ir::Instruction>& instructions) {
+    switch (statement.kind) {
+        case Statement::Kind::Return:
+            if (statement.return_expression) {
+                lower_expression_to_stack(*statement.return_expression, instructions);
+            }
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Return,
+                .operands = {},
+            });
+            break;
+        case Statement::Kind::Binding:
+            if (statement.binding.initializer_expr) {
+                lower_expression_to_stack(*statement.binding.initializer_expr, instructions);
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::Store,
+                    .operands = std::vector<std::string>{statement.binding.name.value},
+                });
+            }
+            break;
+        case Statement::Kind::If: {
+            if (!statement.condition) break;
+            
+            const std::string else_label = generate_label();
+            const std::string end_label = generate_label();
+            
+            lower_expression_to_stack(*statement.condition, instructions);
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::BranchIf,
+                .operands = std::vector<std::string>{else_label, "0"},
+            });
+            
+            lower_statements_to_instructions(statement.then_body, instructions);
+            
+            if (!statement.else_body.empty()) {
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::Branch,
+                    .operands = std::vector<std::string>{end_label},
+                });
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::Label,
+                    .operands = std::vector<std::string>{else_label},
+                });
+                lower_statements_to_instructions(statement.else_body, instructions);
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::Label,
+                    .operands = std::vector<std::string>{end_label},
+                });
+            } else {
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::Label,
+                    .operands = std::vector<std::string>{else_label},
+                });
+            }
+            break;
+        }
+        case Statement::Kind::While: {
+            if (!statement.condition) break;
+            
+            const std::string loop_label = generate_label();
+            const std::string end_label = generate_label();
+            
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Label,
+                .operands = std::vector<std::string>{loop_label},
+            });
+            
+            lower_expression_to_stack(*statement.condition, instructions);
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::BranchIf,
+                .operands = std::vector<std::string>{end_label, "0"},
+            });
+            
+            lower_statements_to_instructions(statement.then_body, instructions);
+            
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Branch,
+                .operands = std::vector<std::string>{loop_label},
+            });
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Label,
+                .operands = std::vector<std::string>{end_label},
+            });
+            break;
+        }
+        case Statement::Kind::ExprStmt:
+            if (statement.expr) {
+                lower_expression_to_stack(*statement.expr, instructions);
+            }
             break;
     }
 }
@@ -153,34 +286,7 @@ auto lower_to_ir(const Module& module) -> ir::Module {
                 if (!decl.function.parsed_body.statements.empty()) {
                     ir::FunctionBuilder builder(function);
                     auto& entry = builder.entry();
-                    for (const auto& statement : decl.function.parsed_body.statements) {
-                        switch (statement.kind) {
-                            case Statement::Kind::Return:
-                                if (statement.return_expression) {
-                                    lower_expression_to_stack(*statement.return_expression, entry.instructions);
-                                }
-                                entry.instructions.push_back(ir::Instruction{
-                                    .kind = ir::InstructionKind::Return,
-                                    .operands = {},
-                                });
-                                break;
-                            case Statement::Kind::Binding:
-                                if (statement.binding.initializer_expr) {
-                                    lower_expression_to_stack(*statement.binding.initializer_expr, entry.instructions);
-                                    entry.instructions.push_back(ir::Instruction{
-                                        .kind = ir::InstructionKind::Store,
-                                        .operands = std::vector<std::string>{statement.binding.name.value},
-                                    });
-                                } else {
-                                    entry.instructions.push_back(ir::Instruction{
-                                        .kind = ir::InstructionKind::Comment,
-                                        .operands = std::vector<std::string>{std::string{"unlowered binding "} +
-                                                                             statement.binding.name.value},
-                                    });
-                                }
-                                break;
-                        }
-                    }
+                    lower_statements_to_instructions(decl.function.parsed_body.statements, entry.instructions);
                 } else if (!function.body_snippet.empty()) {
                     ir::FunctionBuilder builder(function);
                     builder.appendComment(function.body_snippet);

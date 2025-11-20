@@ -1,79 +1,340 @@
-# Система типов Impulse
+# Type System
 
-## 1. Базовые принципы
-- Статическая проверка выполняется до генерации IR; фронтенд обязан выводить все типы выражений.
-- Нуллабельность запрещена: вместо `null` используются `Option[T]`, `Result[T,E]`, либо явные sentinel-значения.
-- Отсутствие неявных преобразований: каждая конверсия оформляется как функция/оператор.
-- Generics — first-class, но без метапрограммирования/partial specialization.
+## 1. Design Principles
 
-## 2. Примитивы
+### Core Philosophy
+- **Static typing** — All types known at compile time
+- **Type safety** — No implicit conversions that lose information
+- **Simplicity** — Easy to understand and reason about
+- **Expressiveness** — Support common programming patterns
 
-| Тип | Описание |
-| --- | --- |
-| `int` | 64-битное знаковое целое |
-| `uint` | 64-битное беззнаковое |
-| `float` | 64-битный IEEE754 |
-| `bool` | `true`/`false`, хранится как 1 байт |
-| `string` | UTF-8, неизменяемая, хранит длину + указатель на байты |
+### Current State
+⚠️ **Type checking not yet implemented**. Parser accepts type annotations but doesn't verify them. All values are currently treated as `double` in the runtime.
 
-План расширения: `i8/u8/i32/u32`, фиксированные массивы `[T; N]`, `decimal`.
+## 2. Primitive Types
 
-## 3. Составные типы
-
-### Структуры
+### Numeric Types
 ```
-struct Vec2 {
-	x: float;
-	y: float;
+int     — Integer numbers (currently interpreted as double)
+float   — Floating-point numbers
+```
+
+**Planned behavior:**
+- `int`: 64-bit signed integer
+- `float`: 64-bit double precision
+- Automatic promotion: `int` → `float` when needed
+- Explicit conversion: `int(x)`, `float(x)`
+
+### Boolean Type
+```
+bool    — true or false
+```
+
+**Current behavior:**
+- `true` → 1.0
+- `false` → 0.0
+- Any non-zero value is truthy
+
+### String Type (Future)
+```
+string  — UTF-8 text
+```
+
+**Planned:**
+- Immutable by default
+- Built-in operations: concatenation, slicing, comparison
+- Escape sequences: `\n`, `\t`, `\"`, `\\`
+
+## 3. Composite Types
+
+### Structs
+```impulse
+struct Point {
+    x: int;
+    y: int;
+}
+
+let p: Point = Point { x: 10, y: 20 };
+```
+
+**Current state:** Parsed but not executable  
+**Needed:** Memory layout, field access, construction
+
+### Arrays (Future)
+```impulse
+let numbers: [int] = [1, 2, 3, 4, 5];
+let matrix: [[int]] = [[1, 2], [3, 4]];
+```
+
+**Planned:**
+- Fixed-size arrays
+- Dynamic arrays (vector/slice)
+- Bounds checking
+- Iteration support
+
+### Tuples (Future)
+```impulse
+let pair: (int, string) = (42, "answer");
+let triple: (int, int, int) = (1, 2, 3);
+```
+
+## 4. Function Types
+
+### Current Syntax
+```impulse
+func add(a: int, b: int) -> int {
+    return a + b;
 }
 ```
-- Поля приватные по умолчанию; `pub` (в roadmap) делает их экспортируемыми.
-- Конструктор — это просто функция `Vec2 { x: 0, y: 0 }`.
 
-### Интерфейсы
-- Модель Go: тип удовлетворяет интерфейсу, если реализует все методы.
-- Нет явного `implements`; проверки происходят в момент использования (при присвоении в интерфейсную переменную или при подстановке в generic).
+**Working:**
+- Function declarations with typed parameters
+- Return type annotation
+- Function calls (basic)
 
+**Needed:**
+- Type checking parameter types
+- Return type verification
+- Function pointers/closures
+
+### Higher-Order Functions (Future)
+```impulse
+func map(f: func(int) -> int, xs: [int]) -> [int] {
+    // Apply f to each element
+}
 ```
-interface Display {
-	func toString(self) -> string;
+
+## 5. Type Inference (Future)
+
+### Local Variable Inference
+```impulse
+let x = 42;              // infer: int
+let y = 3.14;            // infer: float
+let z = x + 1;           // infer: int
+let w = true && false;   // infer: bool
+```
+
+### Function Return Type Inference
+```impulse
+func identity(x: int) {
+    return x;  // infer return type: int
+}
+```
+
+## 6. Type Checking Rules
+
+### Assignment Compatibility
+**Rule:** Expression type must match declared type
+```impulse
+let x: int = 42;        // OK
+let y: int = 3.14;      // ERROR: float assigned to int
+let z: float = 42;      // OK: int promotes to float
+```
+
+### Operator Type Rules
+
+#### Arithmetic Operators (+, -, *, /, %)
+```
+int    OP int    → int
+float  OP float  → float
+int    OP float  → float
+```
+
+#### Comparison Operators (<, <=, >, >=, ==, !=)
+```
+int    CMP int    → bool
+float  CMP float  → bool
+int    CMP float  → bool
+```
+
+#### Logical Operators (&&, ||, !)
+```
+bool   AND bool   → bool
+bool   OR  bool   → bool
+NOT    bool       → bool
+```
+
+### Control Flow Type Rules
+```impulse
+if condition {  // condition must be bool
+    // ...
 }
 
-func printAll<T: Display>(items: [T]) { ... }
+while condition {  // condition must be bool
+    // ...
+}
 ```
 
-### Срезы и массивы
-- Динамический массив: `[]T` (срез) хранит `ptr + len + cap`.
-- Фиксированный массив `[T; N]` — значение (копируется). Срез можно получить `arr[..]`.
+## 7. Interfaces (Future)
 
-## 4. Обработка ошибок и контроль потоков
-- `Result<T, E>`: enum вида `Result = Ok(T) | Err(E)`.
-- `Option<T>`: `Some(T)` или `None`.
-- Оператор `?` (позже) для короткого выхода из функции при `Err/None`.
-- `panic(msg)` выбрасывает неперехватываемое событие, завершает поток выполнения до границы модуля/рантайма.
+### Declaration
+```impulse
+interface Drawable {
+    func draw() -> void;
+    func move(dx: int, dy: int) -> void;
+}
+```
 
-## 5. Generics
-- Синтаксис: `func max<T: Comparable>(a: T, b: T) -> T` или `struct Box<T>`.
-- Ограничения указываются через интерфейсы. Несколько ограничений записываются через `&` (`T: Readable & Writable`).
-- Мономорфизация на этапе компиляции: для каждого набора типов генерируется версия функции/структуры.
-- Вывод типов при вызове: если аргументы определяют `T`, то `<>` можно опустить.
+### Implementation
+```impulse
+struct Circle {
+    x: int;
+    y: int;
+    radius: int;
+}
 
-## 6. Вывод типов
-- Локальный вывод (let): `let x = 42;` → `x: int`.
-- Для параметров функций требуется явное указание типов.
-- Алгоритм HM-подобный, но без higher-kinded типов.
+impl Drawable for Circle {
+    func draw() -> void {
+        // Implementation
+    }
+    
+    func move(dx: int, dy: int) -> void {
+        let x: int = x + dx;
+        let y: int = y + dy;
+    }
+}
+```
 
-## 7. Ссылки и владение
-- Значения по умолчанию копируются (semantics of value). Для больших структур можно объявить поле типа `ref T` — дескриптор на heap.
-- `ref` гарантирует управление GC, нет ручного `free`.
-- Мутирование осуществляется через `var` переменные либо методы со `mut self` (в roadmap).
+**Planned features:**
+- Structural typing (duck typing)
+- Multiple interface implementation
+- Interface composition
 
-## 8. Совместимость типов
-- Неявных up/down-кастов нет.
-- Интерфейсы: значение типа `T` можно присвоить переменной типа `I`, если `T` реализует `I`.
-- `match` по enum'ам обязателен исчерпывающий.
+## 8. Generics (Future)
 
-## 9. Будущие расширения
-- `enum` и algebraic data types.
-- `const`-generic (размеры массивов).
-- `opaque type` для модульных границ.
+### Generic Functions
+```impulse
+func swap<T>(a: T, b: T) -> (T, T) {
+    return (b, a);
+}
+
+let pair = swap<int>(1, 2);
+```
+
+### Generic Types
+```impulse
+struct Box<T> {
+    value: T;
+}
+
+let int_box: Box<int> = Box { value: 42 };
+let str_box: Box<string> = Box { value: "hello" };
+```
+
+### Constraints
+```impulse
+interface Numeric {
+    func add(other: Self) -> Self;
+    func mul(other: Self) -> Self;
+}
+
+func sum<T: Numeric>(values: [T]) -> T {
+    // T must implement Numeric
+}
+```
+
+## 9. Option and Result Types (Future)
+
+### Option for Nullable Values
+```impulse
+option<int>  // Some(value) or None
+
+func find(xs: [int], target: int) -> option<int> {
+    // Return Some(index) or None
+}
+```
+
+### Result for Error Handling
+```impulse
+result<int, string>  // Ok(value) or Err(error)
+
+func divide(a: int, b: int) -> result<int, string> {
+    if b == 0 {
+        return Err("division by zero");
+    }
+    return Ok(a / b);
+}
+```
+
+## 10. Type System Implementation Plan
+
+### Phase 1: Basic Type Checking (Next Priority)
+- ✅ Parse type annotations (DONE)
+- ⬜ Symbol table with types
+- ⬜ Type checking for expressions
+- ⬜ Type checking for statements
+- ⬜ Function signature verification
+
+### Phase 2: Type Inference
+- ⬜ Local variable type inference
+- ⬜ Return type inference
+- ⬜ Generic function instantiation
+
+### Phase 3: Advanced Features
+- ⬜ Struct types and field access
+- ⬜ Array types and indexing
+- ⬜ Interface types and implementations
+- ⬜ Generic types and constraints
+
+### Phase 4: Refinement
+- ⬜ Better error messages
+- ⬜ Type aliases
+- ⬜ Newtype pattern
+- ⬜ Exhaustiveness checking
+
+## 11. Type Error Messages
+
+### Good Error Messages (Goal)
+```
+error: type mismatch
+  --> example.imp:5:12
+   |
+5  |     let x: int = "hello";
+   |            ^^^   ^^^^^^^ expected int, found string
+   |            |
+   |            variable declared as int
+   |
+help: convert string to int with int() function
+```
+
+### Current State
+⚠️ No type checking yet — parser accepts all syntactically valid programs
+
+## 12. Type System Soundness
+
+### Goals
+- **No undefined behavior** — Type errors caught at compile time
+- **Memory safety** — No invalid memory access through types
+- **Predictable conversions** — Clear rules for type coercion
+
+### Guarantees (Future)
+- Well-typed programs don't crash due to type errors
+- No implicit narrowing conversions
+- Generic code is type-safe at instantiation
+
+## 13. Interoperability
+
+### FFI Types (Future)
+```impulse
+extern func printf(format: string, ...) -> int;
+extern func malloc(size: int) -> pointer;
+```
+
+**Required:**
+- C type mappings
+- Calling convention compatibility
+- Memory management at boundaries
+
+## 14. Performance Considerations
+
+### Type Representation
+- Primitives: Machine native types
+- Structs: Packed in memory
+- Arrays: Contiguous allocation
+- Interfaces: Vtable dispatch
+
+### Optimization Opportunities
+- Monomorphization of generics
+- Devirtualization of interface calls
+- Escape analysis for stack allocation
+- Inline type-specialized functions

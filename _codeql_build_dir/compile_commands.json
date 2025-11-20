@@ -1,0 +1,80 @@
+[
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/ir",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-ir.dir/src/placeholder.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/ir/src/placeholder.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/ir/src/placeholder.cpp",
+  "output": "ir/CMakeFiles/impulse-ir.dir/src/placeholder.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/ir",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-ir.dir/src/printer.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/ir/src/printer.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/ir/src/printer.cpp",
+  "output": "ir/CMakeFiles/impulse-ir.dir/src/printer.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/ir",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-ir.dir/src/builder.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/ir/src/builder.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/ir/src/builder.cpp",
+  "output": "ir/CMakeFiles/impulse-ir.dir/src/builder.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/ir",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-ir.dir/src/interpreter.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/ir/src/interpreter.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/ir/src/interpreter.cpp",
+  "output": "ir/CMakeFiles/impulse-ir.dir/src/interpreter.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/frontend",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/runtime/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-frontend.dir/src/lexer.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/lexer.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/lexer.cpp",
+  "output": "frontend/CMakeFiles/impulse-frontend.dir/src/lexer.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/frontend",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/runtime/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-frontend.dir/src/parser.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/parser.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/parser.cpp",
+  "output": "frontend/CMakeFiles/impulse-frontend.dir/src/parser.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/frontend",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/runtime/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/frontend.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/frontend.cpp",
+  "output": "frontend/CMakeFiles/impulse-frontend.dir/src/frontend.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/frontend",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/runtime/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-frontend.dir/src/lowering.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/lowering.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/lowering.cpp",
+  "output": "frontend/CMakeFiles/impulse-frontend.dir/src/lowering.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/frontend",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/runtime/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/expression_eval.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/expression_eval.cpp",
+  "output": "frontend/CMakeFiles/impulse-frontend.dir/src/expression_eval.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/frontend",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/runtime/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/semantic.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/src/semantic.cpp",
+  "output": "frontend/CMakeFiles/impulse-frontend.dir/src/semantic.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/runtime",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/runtime/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-runtime.dir/src/runtime.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/runtime/src/runtime.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/runtime/src/runtime.cpp",
+  "output": "runtime/CMakeFiles/impulse-runtime.dir/src/runtime.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/tests",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/runtime/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-tests.dir/main.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/tests/main.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/tests/main.cpp",
+  "output": "tests/CMakeFiles/impulse-tests.dir/main.cpp.o"
+},
+{
+  "directory": "/home/runner/work/Impulse-JIT/Impulse-JIT/_codeql_build_dir/tools/cpp-cli",
+  "command": "/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++  -I/home/runner/work/Impulse-JIT/Impulse-JIT/frontend/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/ir/include -I/home/runner/work/Impulse-JIT/Impulse-JIT/runtime/include -O3 -DNDEBUG -std=gnu++17 -o CMakeFiles/impulse-cpp.dir/main.cpp.o -c /home/runner/work/Impulse-JIT/Impulse-JIT/tools/cpp-cli/main.cpp",
+  "file": "/home/runner/work/Impulse-JIT/Impulse-JIT/tools/cpp-cli/main.cpp",
+  "output": "tools/cpp-cli/CMakeFiles/impulse-cpp.dir/main.cpp.o"
+}
+]

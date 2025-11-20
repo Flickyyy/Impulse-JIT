@@ -48,6 +48,8 @@ struct Expression {
         Literal,
         Identifier,
         Binary,
+        Unary,
+        Call,
     };
 
     Kind kind = Kind::Literal;
@@ -56,20 +58,32 @@ struct Expression {
         Subtract,
         Multiply,
         Divide,
+        Modulo,
         Equal,
         NotEqual,
         Less,
         LessEqual,
         Greater,
         GreaterEqual,
+        LogicalAnd,
+        LogicalOr,
+    };
+
+    enum class UnaryOperator : std::uint8_t {
+        LogicalNot,
+        Negate,
     };
 
     SourceLocation location;
     std::string literal_value;
     Identifier identifier;
     BinaryOperator binary_operator = BinaryOperator::Add;
+    UnaryOperator unary_operator = UnaryOperator::LogicalNot;
     std::unique_ptr<Expression> left;
     std::unique_ptr<Expression> right;
+    std::unique_ptr<Expression> operand;
+    std::string callee;
+    std::vector<std::unique_ptr<Expression>> arguments;
 };
 
 struct Parameter {
@@ -95,11 +109,19 @@ struct Statement {
     enum class Kind : std::uint8_t {
         Return,
         Binding,
+        If,
+        While,
+        ExprStmt,
     } kind = Kind::Return;
 
     SourceLocation location;
     std::unique_ptr<Expression> return_expression;
     BindingDecl binding;
+    
+    std::unique_ptr<Expression> condition;
+    std::vector<Statement> then_body;
+    std::vector<Statement> else_body;
+    std::unique_ptr<Expression> expr;
 };
 
 struct FunctionBody {

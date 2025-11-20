@@ -300,6 +300,79 @@ auto Parser::parseStatement() -> std::optional<Statement> {
         return statement;
     };
 
+    if (match(TokenKind::KwIf)) {
+        Statement statement;
+        statement.kind = Statement::Kind::If;
+        const Token& keyword = previous();
+        statement.location = SourceLocation{keyword.line, keyword.column};
+        
+        statement.condition = parseExpression();
+        if (!statement.condition) {
+            reportError(peek(), "Expected condition after 'if'");
+            return std::nullopt;
+        }
+        
+        if (!consume(TokenKind::LBrace, "Expected '{' after if condition")) {
+            return std::nullopt;
+        }
+        
+        while (!check(TokenKind::RBrace) && !isAtEnd()) {
+            if (auto stmt = parseStatement()) {
+                statement.then_body.push_back(std::move(*stmt));
+            }
+        }
+        
+        if (!consume(TokenKind::RBrace, "Expected '}' after if body")) {
+            return std::nullopt;
+        }
+        
+        if (match(TokenKind::KwElse)) {
+            if (!consume(TokenKind::LBrace, "Expected '{' after else")) {
+                return std::nullopt;
+            }
+            
+            while (!check(TokenKind::RBrace) && !isAtEnd()) {
+                if (auto stmt = parseStatement()) {
+                    statement.else_body.push_back(std::move(*stmt));
+                }
+            }
+            
+            if (!consume(TokenKind::RBrace, "Expected '}' after else body")) {
+                return std::nullopt;
+            }
+        }
+        
+        return statement;
+    }
+
+    if (match(TokenKind::KwWhile)) {
+        Statement statement;
+        statement.kind = Statement::Kind::While;
+        const Token& keyword = previous();
+        statement.location = SourceLocation{keyword.line, keyword.column};
+        
+        statement.condition = parseExpression();
+        if (!statement.condition) {
+            reportError(peek(), "Expected condition after 'while'");
+            return std::nullopt;
+        }
+        
+        if (!consume(TokenKind::LBrace, "Expected '{' after while condition")) {
+            return std::nullopt;
+        }
+        
+        while (!check(TokenKind::RBrace) && !isAtEnd()) {
+            if (auto stmt = parseStatement()) {
+                statement.then_body.push_back(std::move(*stmt));
+            }
+        }
+        
+        if (!consume(TokenKind::RBrace, "Expected '}' after while body")) {
+            return std::nullopt;
+        }
+        return statement;
+    }
+
     if (auto stmt = bindingStatement(TokenKind::KwLet, BindingKind::Let)) {
         return stmt;
     }
@@ -310,7 +383,7 @@ auto Parser::parseStatement() -> std::optional<Statement> {
         return stmt;
     }
 
-    reportError(peek(), "Only return/let/const/var statements are supported in function bodies");
+    reportError(peek(), "Expected statement");
     return std::nullopt;
 }
 
@@ -490,7 +563,7 @@ auto Parser::parsePath(const char* context) -> std::vector<Identifier> {
 auto Parser::parseExpression() -> std::unique_ptr<Expression> { return parseBinaryExpression(0); }
 
 auto Parser::parseBinaryExpression(int minPrecedence) -> std::unique_ptr<Expression> {
-    auto left = parsePrimaryExpression();
+    auto left = parseUnaryExpression();
     if (left == nullptr) {
         return nullptr;
     }
@@ -517,6 +590,72 @@ auto Parser::parseBinaryExpression(int minPrecedence) -> std::unique_ptr<Express
     }
 
     return left;
+}
+
+auto Parser::parseUnaryExpression() -> std::unique_ptr<Expression> {
+    if (match(TokenKind::Bang)) {
+        const Token op = previous();
+        auto operand = parseUnaryExpression();
+        if (operand == nullptr) {
+            return nullptr;
+        }
+        auto unary = std::make_unique<Expression>();
+        unary->kind = Expression::Kind::Unary;
+        unary->location = SourceLocation{op.line, op.column};
+        unary->unary_operator = Expression::UnaryOperator::LogicalNot;
+        unary->operand = std::move(operand);
+        return unary;
+    }
+
+    if (match(TokenKind::Minus)) {
+        const Token op = previous();
+        auto operand = parseUnaryExpression();
+        if (operand == nullptr) {
+            return nullptr;
+        }
+        auto unary = std::make_unique<Expression>();
+        unary->kind = Expression::Kind::Unary;
+        unary->location = SourceLocation{op.line, op.column};
+        unary->unary_operator = Expression::UnaryOperator::Negate;
+        unary->operand = std::move(operand);
+        return unary;
+    }
+
+    return parsePostfixExpression();
+}
+
+auto Parser::parsePostfixExpression() -> std::unique_ptr<Expression> {
+    auto expr = parsePrimaryExpression();
+    
+    while (match(TokenKind::LParen)) {
+        auto call = std::make_unique<Expression>();
+        call->kind = Expression::Kind::Call;
+        call->location = expr->location;
+        
+        if (expr->kind == Expression::Kind::Identifier) {
+            call->callee = expr->identifier.value;
+        } else {
+            reportError(peek(), "Can only call named functions");
+            return nullptr;
+        }
+        
+        if (!check(TokenKind::RParen)) {
+            do {
+                auto arg = parseExpression();
+                if (arg) {
+                    call->arguments.push_back(std::move(arg));
+                }
+            } while (match(TokenKind::Comma));
+        }
+        
+        if (!consume(TokenKind::RParen, "Expected ')' after arguments")) {
+            return nullptr;
+        }
+        
+        expr = std::move(call);
+    }
+    
+    return expr;
 }
 
 auto Parser::parsePrimaryExpression() -> std::unique_ptr<Expression> {
@@ -557,20 +696,25 @@ auto Parser::parsePrimaryExpression() -> std::unique_ptr<Expression> {
 
 auto Parser::binaryPrecedence(TokenKind kind) -> int {
     switch (kind) {
-        case TokenKind::Plus:
-        case TokenKind::Minus:
-            return 20;
-        case TokenKind::Star:
-        case TokenKind::Slash:
-            return 30;
+        case TokenKind::PipePipe:
+            return 5;
+        case TokenKind::AmpersandAmpersand:
+            return 8;
+        case TokenKind::EqualEqual:
+        case TokenKind::BangEqual:
+            return 10;
         case TokenKind::Less:
         case TokenKind::LessEqual:
         case TokenKind::Greater:
         case TokenKind::GreaterEqual:
             return 15;
-        case TokenKind::EqualEqual:
-        case TokenKind::BangEqual:
-            return 10;
+        case TokenKind::Plus:
+        case TokenKind::Minus:
+            return 20;
+        case TokenKind::Star:
+        case TokenKind::Slash:
+        case TokenKind::Percent:
+            return 30;
         default:
             return -1;
     }
@@ -586,6 +730,8 @@ auto Parser::toBinaryOperator(TokenKind kind) -> Expression::BinaryOperator {
             return Expression::BinaryOperator::Multiply;
         case TokenKind::Slash:
             return Expression::BinaryOperator::Divide;
+        case TokenKind::Percent:
+            return Expression::BinaryOperator::Modulo;
         case TokenKind::EqualEqual:
             return Expression::BinaryOperator::Equal;
         case TokenKind::BangEqual:
@@ -598,6 +744,10 @@ auto Parser::toBinaryOperator(TokenKind kind) -> Expression::BinaryOperator {
             return Expression::BinaryOperator::Greater;
         case TokenKind::GreaterEqual:
             return Expression::BinaryOperator::GreaterEqual;
+        case TokenKind::AmpersandAmpersand:
+            return Expression::BinaryOperator::LogicalAnd;
+        case TokenKind::PipePipe:
+            return Expression::BinaryOperator::LogicalOr;
         default:
             return Expression::BinaryOperator::Add;
     }

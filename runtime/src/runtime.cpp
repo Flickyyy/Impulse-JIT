@@ -143,21 +143,36 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
     }
 
     std::vector<double> stack;
-    std::unordered_map<std::string, double> locals;
+    std::unordered_map<std::string, double> locals = parameters;
+    
+    std::vector<ir::Instruction> all_instructions;
     for (const auto& block : function.blocks) {
-        for (const auto& inst : block.instructions) {
-            switch (inst.kind) {
-                case ir::InstructionKind::Literal: {
-                    if (inst.operands.empty()) {
-                        return make_result(VmStatus::ModuleError, "literal instruction missing operand");
-                    }
-                    const auto parsed = parse_literal(inst.operands.front());
-                    if (!parsed.has_value()) {
-                        return make_result(VmStatus::ModuleError,
-                                           "unable to parse literal operand '" + inst.operands.front() + "'");
-                    }
-                    stack.push_back(*parsed);
-                    break;
+        all_instructions.insert(all_instructions.end(), block.instructions.begin(), block.instructions.end());
+    }
+    
+    std::unordered_map<std::string, size_t> labels;
+    for (size_t i = 0; i < all_instructions.size(); ++i) {
+        if (all_instructions[i].kind == ir::InstructionKind::Label && !all_instructions[i].operands.empty()) {
+            labels[all_instructions[i].operands.front()] = i;
+        }
+    }
+    
+    size_t pc = 0;
+    while (pc < all_instructions.size()) {
+        const auto& inst = all_instructions[pc];
+        
+        switch (inst.kind) {
+            case ir::InstructionKind::Literal: {
+                if (inst.operands.empty()) {
+                    return make_result(VmStatus::ModuleError, "literal instruction missing operand");
+                }
+                const auto parsed = parse_literal(inst.operands.front());
+                if (!parsed.has_value()) {
+                    return make_result(VmStatus::ModuleError,
+                                       "unable to parse literal operand '" + inst.operands.front() + "'");
+                }
+                stack.push_back(*parsed);
+                break;
                 }
                 case ir::InstructionKind::Reference: {
                     if (inst.operands.empty()) {
@@ -204,6 +219,13 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
                             return make_result(VmStatus::RuntimeError, "division by zero during execution");
                         }
                         stack.push_back(left / right);
+                    } else if (op == "%") {
+                        if (std::abs(right) < kEpsilon) {
+                            return make_result(VmStatus::RuntimeError, "modulo by zero during execution");
+                        }
+                        const int leftInt = static_cast<int>(left);
+                        const int rightInt = static_cast<int>(right);
+                        stack.push_back(static_cast<double>(leftInt % rightInt));
                     } else if (op == "==") {
                         stack.push_back((left == right) ? 1.0 : 0.0);
                     } else if (op == "!=") {
@@ -216,8 +238,31 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
                         stack.push_back((left > right) ? 1.0 : 0.0);
                     } else if (op == ">=") {
                         stack.push_back((left >= right) ? 1.0 : 0.0);
+                    } else if (op == "&&") {
+                        stack.push_back((left != 0.0 && right != 0.0) ? 1.0 : 0.0);
+                    } else if (op == "||") {
+                        stack.push_back((left != 0.0 || right != 0.0) ? 1.0 : 0.0);
                     } else {
                         return make_result(VmStatus::ModuleError, "unsupported binary operator '" + op + "'");
+                    }
+                    break;
+                }
+                case ir::InstructionKind::Unary: {
+                    if (inst.operands.empty()) {
+                        return make_result(VmStatus::ModuleError, "unary instruction missing operator");
+                    }
+                    if (stack.empty()) {
+                        return make_result(VmStatus::RuntimeError, "unary instruction requires one operand");
+                    }
+                    const double operand = stack.back();
+                    stack.pop_back();
+                    const std::string& op = inst.operands.front();
+                    if (op == "!") {
+                        stack.push_back((operand == 0.0) ? 1.0 : 0.0);
+                    } else if (op == "-") {
+                        stack.push_back(-operand);
+                    } else {
+                        return make_result(VmStatus::ModuleError, "unsupported unary operator '" + op + "'");
                     }
                     break;
                 }
@@ -244,10 +289,90 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
                     locals[inst.operands.front()] = value;
                     break;
                 }
+                case ir::InstructionKind::Branch: {
+                    if (inst.operands.empty()) {
+                        return make_result(VmStatus::ModuleError, "branch instruction missing label");
+                    }
+                    const auto it = labels.find(inst.operands.front());
+                    if (it == labels.end()) {
+                        return make_result(VmStatus::ModuleError, "branch to undefined label '" + inst.operands.front() + "'");
+                    }
+                    pc = it->second;
+                    continue;
+                }
+                case ir::InstructionKind::BranchIf: {
+                    if (inst.operands.size() < 2) {
+                        return make_result(VmStatus::ModuleError, "branch_if instruction requires label and condition");
+                    }
+                    if (stack.empty()) {
+                        return make_result(VmStatus::RuntimeError, "branch_if requires a condition on stack");
+                    }
+                    const double condition = stack.back();
+                    stack.pop_back();
+                    const double compare_val = std::stod(inst.operands[1]);
+                    if (std::abs(condition - compare_val) < kEpsilon) {
+                        const auto it = labels.find(inst.operands.front());
+                        if (it == labels.end()) {
+                            return make_result(VmStatus::ModuleError, "branch_if to undefined label '" + inst.operands.front() + "'");
+                        }
+                        pc = it->second;
+                        continue;
+                    }
+                    break;
+                }
+                case ir::InstructionKind::Call: {
+                    if (inst.operands.size() < 2) {
+                        return make_result(VmStatus::ModuleError, "call instruction requires function name and arg count");
+                    }
+                    const std::string& callee_name = inst.operands[0];
+                    const size_t arg_count = std::stoull(inst.operands[1]);
+                    
+                    if (stack.size() < arg_count) {
+                        return make_result(VmStatus::RuntimeError, "call requires " + std::to_string(arg_count) + " arguments on stack");
+                    }
+                    
+                    std::unordered_map<std::string, double> call_params;
+                    
+                    const ir::Function* target_func = nullptr;
+                    for (const auto& f : module.module.functions) {
+                        if (f.name == callee_name) {
+                            target_func = &f;
+                            break;
+                        }
+                    }
+                    
+                    if (!target_func) {
+                        return make_result(VmStatus::ModuleError, "function '" + callee_name + "' not found");
+                    }
+                    
+                    if (target_func->parameters.size() != arg_count) {
+                        return make_result(VmStatus::ModuleError, "function '" + callee_name + "' expects " + 
+                                          std::to_string(target_func->parameters.size()) + " arguments, got " + std::to_string(arg_count));
+                    }
+                    
+                    std::vector<double> args;
+                    for (size_t i = 0; i < arg_count; ++i) {
+                        args.push_back(stack[stack.size() - arg_count + i]);
+                    }
+                    stack.resize(stack.size() - arg_count);
+                    
+                    for (size_t i = 0; i < args.size(); ++i) {
+                        call_params[target_func->parameters[i].name] = args[i];
+                    }
+                    
+                    const auto result = execute_function(module, *target_func, call_params);
+                    if (result.status != VmStatus::Success || !result.has_value) {
+                        return result;
+                    }
+                    
+                    stack.push_back(result.value);
+                    break;
+                }
+                case ir::InstructionKind::Label:
                 case ir::InstructionKind::Comment:
                     break;
             }
-        }
+        ++pc;
     }
 
     return make_result(VmStatus::RuntimeError, "function did not encounter a return instruction");

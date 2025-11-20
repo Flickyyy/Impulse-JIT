@@ -552,32 +552,389 @@ func main() -> int {
     assert(std::abs(result.value - 4.0) < 1e-9);
 }
 
+void testModuloOperator() {
+    const std::string source = R"(module demo;
+let a: int = 10 % 3;
+let b: int = 17 % 5;
+func main() -> int {
+    let c: int = 15 % 4;
+    return a + b + c;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto irText = impulse::frontend::emit_ir_text(parseResult.module);
+    assert(irText.find("binary %") != std::string::npos);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    std::unordered_map<std::string, double> environment;
+    for (const auto& binding : lowered.bindings) {
+        const auto eval = impulse::ir::interpret_binding(binding, environment);
+        if (eval.status == impulse::ir::EvalStatus::Success && eval.value.has_value()) {
+            environment.emplace(binding.name, *eval.value);
+        }
+    }
+    assert(environment["a"] == 1.0);
+    assert(environment["b"] == 2.0);
+
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 6.0) < 1e-9);
+}
+
+void testLogicalOperators() {
+    const std::string source = R"(module demo;
+let and_true: int = true && true;
+let and_false: int = true && false;
+let or_true: int = false || true;
+let or_false: int = false || false;
+func main() -> int {
+    let a: int = (1 < 2) && (3 > 1);
+    let b: int = (1 > 2) || (3 > 1);
+    return and_true + and_false + or_true + or_false + a + b;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto irText = impulse::frontend::emit_ir_text(parseResult.module);
+    assert(irText.find("binary &&") != std::string::npos);
+    assert(irText.find("binary ||") != std::string::npos);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    std::unordered_map<std::string, double> environment;
+    for (const auto& binding : lowered.bindings) {
+        const auto eval = impulse::ir::interpret_binding(binding, environment);
+        if (eval.status == impulse::ir::EvalStatus::Success && eval.value.has_value()) {
+            environment.emplace(binding.name, *eval.value);
+        }
+    }
+    assert(environment["and_true"] == 1.0);
+    assert(environment["and_false"] == 0.0);
+    assert(environment["or_true"] == 1.0);
+    assert(environment["or_false"] == 0.0);
+
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 4.0) < 1e-9);
+}
+
+void testUnaryOperators() {
+    const std::string source = R"(module demo;
+let not_true: int = !true;
+let not_false: int = !false;
+let neg_five: int = -5;
+let neg_expr: int = -(3 + 2);
+func main() -> int {
+    let a: int = !0;
+    let b: int = !(1 > 2);
+    let c: int = -10;
+    return not_true + not_false + neg_five + neg_expr + a + b + c;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto irText = impulse::frontend::emit_ir_text(parseResult.module);
+    assert(irText.find("unary !") != std::string::npos);
+    assert(irText.find("unary -") != std::string::npos);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    std::unordered_map<std::string, double> environment;
+    for (const auto& binding : lowered.bindings) {
+        const auto eval = impulse::ir::interpret_binding(binding, environment);
+        if (eval.status == impulse::ir::EvalStatus::Success && eval.value.has_value()) {
+            environment.emplace(binding.name, *eval.value);
+        }
+    }
+    assert(environment["not_true"] == 0.0);
+    assert(environment["not_false"] == 1.0);
+    assert(environment["neg_five"] == -5.0);
+    assert(environment["neg_expr"] == -5.0);
+
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - (-17.0)) < 1e-9);
+}
+
+void testOperatorPrecedence() {
+    const std::string source = R"(module demo;
+let a: int = 2 + 3 * 4;
+let b: int = 10 % 3 + 2;
+let c: int = 1 < 2 && 3 > 1;
+let d: int = 0 || 1 && 0;
+let e: int = !0 + 1;
+let f: int = -2 * 3;
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    std::unordered_map<std::string, double> environment;
+    for (const auto& binding : lowered.bindings) {
+        const auto eval = impulse::ir::interpret_binding(binding, environment);
+        if (eval.status == impulse::ir::EvalStatus::Success && eval.value.has_value()) {
+            environment.emplace(binding.name, *eval.value);
+        }
+    }
+    
+    assert(std::abs(environment["a"] - 14.0) < 1e-9);
+    assert(std::abs(environment["b"] - 3.0) < 1e-9);
+    assert(std::abs(environment["c"] - 1.0) < 1e-9);
+    assert(std::abs(environment["d"] - 0.0) < 1e-9);
+    assert(std::abs(environment["e"] - 2.0) < 1e-9);
+    assert(std::abs(environment["f"] - (-6.0)) < 1e-9);
+}
+
+void testModuloByZero() {
+    const std::string source = R"(module demo;
+const broken: int = 10 % 0;
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+    assert(!semantic.success);
+    bool found = false;
+    for (const auto& diag : semantic.diagnostics) {
+        if (diag.message.find("odulo by zero") != std::string::npos) {
+            found = true;
+            break;
+        }
+    }
+    assert(found && "Expected modulo-by-zero diagnostic");
+}
+
+void testControlFlow() {
+    const std::string source = R"(module demo;
+
+func test_if() -> int {
+    let x: int = 5;
+    if x > 3 {
+        return 10;
+    }
+    return 0;
+}
+
+func test_else() -> int {
+    let x: int = 2;
+    if x > 3 {
+        return 10;
+    } else {
+        return 20;
+    }
+}
+
+func test_while() -> int {
+    let x: int = 0;
+    while x < 5 {
+        let x: int = x + 1;
+    }
+    return x;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+    
+    const auto result_if = vm.run("demo", "test_if");
+    assert(result_if.status == impulse::runtime::VmStatus::Success);
+    assert(result_if.has_value);
+    assert(std::abs(result_if.value - 10.0) < 1e-9);
+    
+    const auto result_else = vm.run("demo", "test_else");
+    assert(result_else.status == impulse::runtime::VmStatus::Success);
+    assert(result_else.has_value);
+    assert(std::abs(result_else.value - 20.0) < 1e-9);
+    
+    const auto result_while = vm.run("demo", "test_while");
+    assert(result_while.status == impulse::runtime::VmStatus::Success);
+    assert(result_while.has_value);
+    assert(std::abs(result_while.value - 5.0) < 1e-9);
+}
+
+void testFunctionCalls() {
+    const std::string source = R"(module demo;
+
+func identity(x: int) -> int {
+    return x;
+}
+
+func add(a: int, b: int) -> int {
+    return a + b;
+}
+
+func multiply(x: int, y: int) -> int {
+    return x * y;
+}
+
+func test_identity() -> int {
+    return identity(42);
+}
+
+func test_add() -> int {
+    return add(10, 20);
+}
+
+func test_multiply() -> int {
+    return multiply(5, 7);
+}
+
+func test_nested() -> int {
+    return add(multiply(2, 3), identity(4));
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+    
+    const auto result_identity = vm.run("demo", "test_identity");
+    assert(result_identity.status == impulse::runtime::VmStatus::Success);
+    assert(result_identity.has_value);
+    assert(std::abs(result_identity.value - 42.0) < 1e-9);
+    
+    const auto result_add = vm.run("demo", "test_add");
+    assert(result_add.status == impulse::runtime::VmStatus::Success);
+    assert(result_add.has_value);
+    assert(std::abs(result_add.value - 30.0) < 1e-9);
+    
+    const auto result_multiply = vm.run("demo", "test_multiply");
+    assert(result_multiply.status == impulse::runtime::VmStatus::Success);
+    assert(result_multiply.has_value);
+    assert(std::abs(result_multiply.value - 35.0) < 1e-9);
+    
+    const auto result_nested = vm.run("demo", "test_nested");
+    assert(result_nested.status == impulse::runtime::VmStatus::Success);
+    assert(result_nested.has_value);
+    assert(std::abs(result_nested.value - 10.0) < 1e-9);
+}
+
 }  // namespace
 
-auto main() -> int {
+// =============================================================================
+// TEST GROUPS
+// =============================================================================
+
+void runLexerTests() {
+    std::cout << "[Lexer Tests]\n";
     testModuleHeader();
     testNumericLiterals();
     testStringsAndComments();
+    std::cout << "  ✓ 3 tests passed\n\n";
+}
+
+void runParserTests() {
+    std::cout << "[Parser Tests]\n";
     testParserHappyPath();
     testParserDiagnostics();
+    std::cout << "  ✓ 2 tests passed\n\n";
+}
+
+void runSemanticTests() {
+    std::cout << "[Semantic Tests]\n";
     testConstAndVarBindings();
     testFunctionDeclaration();
     testStructDeclaration();
     testInterfaceDeclaration();
     testStructDiagnostics();
-    testEmitIrText();
-    testInterfaceIrEmission();
-    testBindingExpressionLowering();
-    testExportedDeclarations();
     testSemanticDuplicates();
     testImportSemanticDiagnostics();
     testConstRequiresConstantInitializer();
     testConstDivisionByZeroDiagnostic();
+    std::cout << "  ✓ 9 tests passed\n\n";
+}
+
+void runIRTests() {
+    std::cout << "[IR Tests]\n";
+    testEmitIrText();
+    testInterfaceIrEmission();
+    testBindingExpressionLowering();
+    testExportedDeclarations();
     testIrBindingInterpreter();
+    std::cout << "  ✓ 5 tests passed\n\n";
+}
+
+void runOperatorTests() {
+    std::cout << "[Operator Tests]\n";
+    testBooleanComparisons();
+    testModuloOperator();
+    testLogicalOperators();
+    testUnaryOperators();
+    testOperatorPrecedence();
+    testModuloByZero();
+    std::cout << "  ✓ 6 tests passed\n\n";
+}
+
+void runControlFlowTests() {
+    std::cout << "[Control Flow Tests]\n";
+    testControlFlow();
+    std::cout << "  ✓ 1 test passed\n\n";
+}
+
+void runRuntimeTests() {
+    std::cout << "[Runtime Tests]\n";
     testRuntimeVmExecution();
     testFunctionLocals();
-    testBooleanComparisons();
+    std::cout << "  ✓ 2 tests passed\n\n";
+}
 
-    std::cout << "All frontend tests passed\n";
+void runFunctionCallTests() {
+    std::cout << "[Function Call Tests]\n";
+    testFunctionCalls();
+    std::cout << "  ✓ 1 test passed\n\n";
+}
+
+auto main() -> int {
+    std::cout << "==============================================\n";
+    std::cout << "Impulse Compiler Test Suite\n";
+    std::cout << "==============================================\n\n";
+    
+    runLexerTests();
+    runParserTests();
+    runSemanticTests();
+    runIRTests();
+    runOperatorTests();
+    runControlFlowTests();
+    runRuntimeTests();
+    runFunctionCallTests();
+
+    std::cout << "==============================================\n";
+    std::cout << "All 29 tests passed! ✓\n";
+    std::cout << "==============================================\n";
     return 0;
 }

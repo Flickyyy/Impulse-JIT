@@ -22,6 +22,8 @@ constexpr double kEpsilon = 1e-12;
             return "*";
         case Expression::BinaryOperator::Divide:
             return "/";
+        case Expression::BinaryOperator::Modulo:
+            return "%";
         case Expression::BinaryOperator::Equal:
             return "==";
         case Expression::BinaryOperator::NotEqual:
@@ -34,6 +36,10 @@ constexpr double kEpsilon = 1e-12;
             return ">";
         case Expression::BinaryOperator::GreaterEqual:
             return ">=";
+        case Expression::BinaryOperator::LogicalAnd:
+            return "&&";
+        case Expression::BinaryOperator::LogicalOr:
+            return "||";
     }
     return "+";
 }
@@ -132,6 +138,18 @@ constexpr double kEpsilon = 1e-12;
                 };
             }
             return ExpressionEvalResult{ExpressionEvalStatus::Constant, left / right, std::nullopt};
+        case Expression::BinaryOperator::Modulo: {
+            if (std::abs(right) < kEpsilon) {
+                return ExpressionEvalResult{
+                    .status = ExpressionEvalStatus::Error,
+                    .value = std::nullopt,
+                    .message = std::string{"Modulo by zero in constant expression"},
+                };
+            }
+            const int leftInt = static_cast<int>(left);
+            const int rightInt = static_cast<int>(right);
+            return ExpressionEvalResult{ExpressionEvalStatus::Constant, static_cast<double>(leftInt % rightInt), std::nullopt};
+        }
         case Expression::BinaryOperator::Equal:
             return ExpressionEvalResult{ExpressionEvalStatus::Constant, (left == right) ? 1.0 : 0.0, std::nullopt};
         case Expression::BinaryOperator::NotEqual:
@@ -144,6 +162,10 @@ constexpr double kEpsilon = 1e-12;
             return ExpressionEvalResult{ExpressionEvalStatus::Constant, (left > right) ? 1.0 : 0.0, std::nullopt};
         case Expression::BinaryOperator::GreaterEqual:
             return ExpressionEvalResult{ExpressionEvalStatus::Constant, (left >= right) ? 1.0 : 0.0, std::nullopt};
+        case Expression::BinaryOperator::LogicalAnd:
+            return ExpressionEvalResult{ExpressionEvalStatus::Constant, (left != 0.0 && right != 0.0) ? 1.0 : 0.0, std::nullopt};
+        case Expression::BinaryOperator::LogicalOr:
+            return ExpressionEvalResult{ExpressionEvalStatus::Constant, (left != 0.0 || right != 0.0) ? 1.0 : 0.0, std::nullopt};
     }
     return ExpressionEvalResult{
         .status = ExpressionEvalStatus::Error,
@@ -174,6 +196,18 @@ auto printExpression(const Expression& expr) -> std::string {
             result += ')';
             return result;
         }
+        case Expression::Kind::Unary: {
+            std::string result;
+            if (expr.unary_operator == Expression::UnaryOperator::LogicalNot) {
+                result = "!";
+            } else {
+                result = "-";
+            }
+            if (expr.operand) {
+                result += printExpression(*expr.operand);
+            }
+            return result;
+        }
     }
     return {};
 }
@@ -198,6 +232,32 @@ auto evaluateNumericExpression(const Expression& expr) -> ExpressionEvalResult {
             }
             return combine_results(evaluateNumericExpression(*expr.left), evaluateNumericExpression(*expr.right),
                                    expr.binary_operator);
+        case Expression::Kind::Unary: {
+            if (expr.operand == nullptr) {
+                return ExpressionEvalResult{
+                    .status = ExpressionEvalStatus::Error,
+                    .value = std::nullopt,
+                    .message = std::string{"Incomplete unary expression"},
+                };
+            }
+            const auto operandResult = evaluateNumericExpression(*expr.operand);
+            if (operandResult.status == ExpressionEvalStatus::Error) {
+                return operandResult;
+            }
+            if (operandResult.status != ExpressionEvalStatus::Constant || !operandResult.value.has_value()) {
+                return ExpressionEvalResult{
+                    .status = ExpressionEvalStatus::NonConstant,
+                    .value = std::nullopt,
+                    .message = std::nullopt,
+                };
+            }
+            const double operandValue = *operandResult.value;
+            if (expr.unary_operator == Expression::UnaryOperator::LogicalNot) {
+                return ExpressionEvalResult{ExpressionEvalStatus::Constant, (operandValue == 0.0) ? 1.0 : 0.0, std::nullopt};
+            } else {
+                return ExpressionEvalResult{ExpressionEvalStatus::Constant, -operandValue, std::nullopt};
+            }
+        }
     }
     return ExpressionEvalResult{
         .status = ExpressionEvalStatus::Error,

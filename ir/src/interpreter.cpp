@@ -223,21 +223,36 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
 
     std::vector<double> stack;
     std::unordered_map<std::string, double> locals;
+    
+    std::vector<Instruction> all_instructions;
     for (const auto& block : function.blocks) {
-        for (const auto& inst : block.instructions) {
-            switch (inst.kind) {
-                case InstructionKind::Literal: {
-                    if (inst.operands.empty()) {
-                        return make_function_error("literal instruction missing operand");
-                    }
-                    const auto parsed = parse_literal(inst.operands.front());
-                    if (!parsed.has_value()) {
-                        return make_function_error("unable to parse literal operand '" + inst.operands.front() + "'");
-                    }
-                    stack.push_back(*parsed);
-                    break;
+        all_instructions.insert(all_instructions.end(), block.instructions.begin(), block.instructions.end());
+    }
+    
+    std::unordered_map<std::string, size_t> labels;
+    for (size_t i = 0; i < all_instructions.size(); ++i) {
+        if (all_instructions[i].kind == InstructionKind::Label && !all_instructions[i].operands.empty()) {
+            labels[all_instructions[i].operands.front()] = i;
+        }
+    }
+    
+    size_t pc = 0;
+    while (pc < all_instructions.size()) {
+        const auto& inst = all_instructions[pc];
+        
+        switch (inst.kind) {
+            case InstructionKind::Literal: {
+                if (inst.operands.empty()) {
+                    return make_function_error("literal instruction missing operand");
                 }
-                case InstructionKind::Reference: {
+                const auto parsed = parse_literal(inst.operands.front());
+                if (!parsed.has_value()) {
+                    return make_function_error("unable to parse literal operand '" + inst.operands.front() + "'");
+                }
+                stack.push_back(*parsed);
+                break;
+            }
+            case InstructionKind::Reference: {
                     if (inst.operands.empty()) {
                         return make_function_error("reference instruction missing operand");
                     }
@@ -357,10 +372,42 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
                     locals[inst.operands.front()] = value;
                     break;
                 }
+                case InstructionKind::Branch: {
+                    if (inst.operands.empty()) {
+                        return make_function_error("branch instruction missing label");
+                    }
+                    const auto it = labels.find(inst.operands.front());
+                    if (it == labels.end()) {
+                        return make_function_error("branch to undefined label '" + inst.operands.front() + "'");
+                    }
+                    pc = it->second;
+                    continue;
+                }
+                case InstructionKind::BranchIf: {
+                    if (inst.operands.size() < 2) {
+                        return make_function_error("branch_if instruction requires label and condition");
+                    }
+                    if (stack.empty()) {
+                        return make_function_error("branch_if requires a condition on stack");
+                    }
+                    const double condition = stack.back();
+                    stack.pop_back();
+                    const double compare_val = std::stod(inst.operands[1]);
+                    if (std::abs(condition - compare_val) < kEpsilon) {
+                        const auto it = labels.find(inst.operands.front());
+                        if (it == labels.end()) {
+                            return make_function_error("branch_if to undefined label '" + inst.operands.front() + "'");
+                        }
+                        pc = it->second;
+                        continue;
+                    }
+                    break;
+                }
+                case InstructionKind::Label:
                 case InstructionKind::Comment:
                     break;
             }
-        }
+        ++pc;
     }
 
     return FunctionEvalResult{

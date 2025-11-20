@@ -79,6 +79,21 @@ namespace {
                 out << ' ' << inst.operands.front();
             }
             break;
+        case InstructionKind::Branch:
+            out << "branch";
+            if (!inst.operands.empty()) {
+                out << ' ' << inst.operands.front();
+            }
+            break;
+        case InstructionKind::BranchIf:
+            out << "branch_if";
+            if (inst.operands.size() >= 2) {
+                out << ' ' << inst.operands[0] << " when " << inst.operands[1];
+            }
+            break;
+        case InstructionKind::Label:
+            out << inst.operands.empty() ? "label:" : (inst.operands.front() + ":");
+            break;
     }
     return out.str();
 }
@@ -178,7 +193,11 @@ auto print_module(const Module& module) -> std::string {
                     out << "    # empty block\n";
                 } else {
                     for (const auto& inst : block.instructions) {
-                        out << "    " << format_instruction(inst) << "\n";
+                        if (inst.kind == InstructionKind::Label) {
+                            out << "  " << format_instruction(inst) << "\n";
+                        } else {
+                            out << "    " << format_instruction(inst) << "\n";
+                        }
                     }
                 }
             }

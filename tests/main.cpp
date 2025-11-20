@@ -728,6 +728,60 @@ const broken: int = 10 % 0;
     assert(found && "Expected modulo-by-zero diagnostic");
 }
 
+void testControlFlow() {
+    const std::string source = R"(module demo;
+
+func test_if() -> int {
+    let x: int = 5;
+    if x > 3 {
+        return 10;
+    }
+    return 0;
+}
+
+func test_else() -> int {
+    let x: int = 2;
+    if x > 3 {
+        return 10;
+    } else {
+        return 20;
+    }
+}
+
+func test_while() -> int {
+    let x: int = 0;
+    while x < 5 {
+        let x: int = x + 1;
+    }
+    return x;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+    
+    const auto result_if = vm.run("demo", "test_if");
+    assert(result_if.status == impulse::runtime::VmStatus::Success);
+    assert(result_if.has_value);
+    assert(std::abs(result_if.value - 10.0) < 1e-9);
+    
+    const auto result_else = vm.run("demo", "test_else");
+    assert(result_else.status == impulse::runtime::VmStatus::Success);
+    assert(result_else.has_value);
+    assert(std::abs(result_else.value - 20.0) < 1e-9);
+    
+    const auto result_while = vm.run("demo", "test_while");
+    assert(result_while.status == impulse::runtime::VmStatus::Success);
+    assert(result_while.has_value);
+    assert(std::abs(result_while.value - 5.0) < 1e-9);
+}
+
 }  // namespace
 
 auto main() -> int {
@@ -758,6 +812,7 @@ auto main() -> int {
     testUnaryOperators();
     testOperatorPrecedence();
     testModuloByZero();
+    testControlFlow();
 
     std::cout << "All frontend tests passed\n";
     return 0;

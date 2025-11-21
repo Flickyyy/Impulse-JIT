@@ -111,6 +111,7 @@ struct Statement {
         Binding,
         If,
         While,
+        For,
         ExprStmt,
     } kind = Kind::Return;
 
@@ -122,6 +123,8 @@ struct Statement {
     std::vector<Statement> then_body;
     std::vector<Statement> else_body;
     std::unique_ptr<Expression> expr;
+    std::unique_ptr<Statement> for_initializer;
+    std::unique_ptr<Statement> for_increment;
 };
 
 struct FunctionBody {

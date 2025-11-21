@@ -223,9 +223,50 @@ void lower_statement_to_instructions(const Statement& statement, std::vector<ir:
             });
             break;
         }
+        case Statement::Kind::For: {
+            if (statement.for_initializer) {
+                lower_statement_to_instructions(*statement.for_initializer, instructions);
+            }
+
+            const std::string loop_label = generate_label();
+            const std::string end_label = generate_label();
+
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Label,
+                .operands = std::vector<std::string>{loop_label},
+            });
+
+            if (statement.condition) {
+                lower_expression_to_stack(*statement.condition, instructions);
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::BranchIf,
+                    .operands = std::vector<std::string>{end_label, "0"},
+                });
+            }
+
+            lower_statements_to_instructions(statement.then_body, instructions);
+
+            if (statement.for_increment) {
+                lower_statement_to_instructions(*statement.for_increment, instructions);
+            }
+
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Branch,
+                .operands = std::vector<std::string>{loop_label},
+            });
+            instructions.push_back(ir::Instruction{
+                .kind = ir::InstructionKind::Label,
+                .operands = std::vector<std::string>{end_label},
+            });
+            break;
+        }
         case Statement::Kind::ExprStmt:
             if (statement.expr) {
                 lower_expression_to_stack(*statement.expr, instructions);
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::Drop,
+                    .operands = {},
+                });
             }
             break;
     }

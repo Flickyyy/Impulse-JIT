@@ -289,6 +289,13 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
                     locals[inst.operands.front()] = value;
                     break;
                 }
+                case ir::InstructionKind::Drop: {
+                    if (stack.empty()) {
+                        return make_result(VmStatus::RuntimeError, "drop instruction requires a value");
+                    }
+                    stack.pop_back();
+                    break;
+                }
                 case ir::InstructionKind::Branch: {
                     if (inst.operands.empty()) {
                         return make_result(VmStatus::ModuleError, "branch instruction missing label");
@@ -351,6 +358,7 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
                     }
                     
                     std::vector<double> args;
+                    args.reserve(arg_count);
                     for (size_t i = 0; i < arg_count; ++i) {
                         args.push_back(stack[stack.size() - arg_count + i]);
                     }

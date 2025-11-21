@@ -226,22 +226,49 @@ The Command-Line Interface provides user-friendly access to the compiler.
 ## Testing Strategy
 
 ### Unit Tests (`tests/main.cpp`)
-Organized into 8 groups (29 tests total):
+Organized into 9 groups (38 tests total):
 
 1. **Lexer Tests** (3): Token recognition
 2. **Parser Tests** (2): AST construction
 3. **Semantic Tests** (9): Validation and diagnostics
-4. **IR Tests** (5): IR generation and formatting
-5. **Operator Tests** (6): All operators with precedence
-6. **Control Flow Tests** (1): if/else, while execution
-7. **Runtime Tests** (2): VM execution
-8. **Function Call Tests** (1): Parameter passing and nested calls
+4. **IR Tests** (8): IR generation, formatting, and CFG construction
+5. **SSA Tests** (6): Dominators, phi placement, verifier success and failure paths
+6. **Operator Tests** (6): All operators with precedence
+7. **Control Flow Tests** (2): if/else, while, for-loop execution
+8. **Runtime Tests** (3): VM execution, locals, expression statements
+9. **Function Call Tests** (2): Parameter passing, nested calls, recursion
 
 ### Test Philosophy
 - Test at each layer independently
 - End-to-end tests through full pipeline
 - Edge cases and error conditions
 - Clear, readable test names
+
+## Compiler Pipeline Overview
+
+```
+source ──► lexer ──► tokens ──► parser ──► AST ──► semantic checks ──► lowered IR
+                │
+                ▼
+              control-flow graph (CFG)
+                │
+                ▼
+               static single assignment (SSA)
+                │
+                ▼
+              future: data-flow graph, liveness, regalloc, codegen
+```
+
+- **AST (Abstract Syntax Tree)** captures the language structure after parsing and is the entry point to the middle end.
+- **Semantic checks** annotate the AST (name binding, duplicate detection) and only pass well-formed statements to lowering.
+- **Lowered IR** represents each function as a flat instruction list that the VM can interpret immediately.
+- The **CFG builder** re-groups that instruction list into basic blocks, discovers branch edges, and becomes the control substrate for later analyses.
+- The **SSA builder** reads both the CFG and the original instructions to produce versioned values (e.g. `x.2`), enabling value-tracking analyses and optimisations.
+- A future **DFG (data-flow graph)** can be derived from SSA when we need explicit producer/consumer relationships (common subexpression elimination, instruction scheduling).
+- **Liveness analysis & register allocation** will consume SSA/DFG data once we target real hardware registers instead of the stack VM.
+- **Code generation** will eventually turn the optimised representation into target-specific output (native code, optimised bytecode, etc.).
+
+Every arrow corresponds to a documented boundary in `docs/spec/`: grammar, IR, CFG, SSA. This separation makes it easy to slot in educational passes like dead code elimination, loop optimisations, or register allocation without destabilising earlier layers.
 
 ## Code Organization
 

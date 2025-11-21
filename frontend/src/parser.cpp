@@ -169,7 +169,7 @@ auto Parser::parseDeclaration() -> std::optional<Declaration> {
     return std::nullopt;
 }
 
-auto Parser::parseBindingDecl(BindingKind kind) -> BindingDecl {
+auto Parser::parseBindingDecl(BindingKind kind, bool requireTerminator) -> BindingDecl {
     const auto keywordLiteral = [](BindingKind value) -> const char* {
         switch (value) {
             case BindingKind::Let:
@@ -204,8 +204,10 @@ auto Parser::parseBindingDecl(BindingKind kind) -> BindingDecl {
             (void)advance();
         }
     }
-    const Token* terminator = consume(TokenKind::Semicolon, semicolonMessage);
-    (void)terminator;
+    if (requireTerminator) {
+        const Token* terminator = consume(TokenKind::Semicolon, semicolonMessage);
+        (void)terminator;
+    }
 
     BindingDecl decl;
     decl.kind = kind;
@@ -373,6 +375,112 @@ auto Parser::parseStatement() -> std::optional<Statement> {
         return statement;
     }
 
+    if (match(TokenKind::KwFor)) {
+        Statement statement;
+        statement.kind = Statement::Kind::For;
+        const Token& keyword = previous();
+        statement.location = SourceLocation{keyword.line, keyword.column};
+
+        if (!consume(TokenKind::LParen, "Expected '(' after 'for'")) {
+            return std::nullopt;
+        }
+
+        if (!check(TokenKind::Semicolon)) {
+            if (match(TokenKind::KwLet) || match(TokenKind::KwConst) || match(TokenKind::KwVar)) {
+                const Token keywordToken = previous();
+                BindingKind kind = BindingKind::Let;
+                if (keywordToken.kind == TokenKind::KwConst) {
+                    kind = BindingKind::Const;
+                } else if (keywordToken.kind == TokenKind::KwVar) {
+                    kind = BindingKind::Var;
+                }
+                auto initStmt = std::make_unique<Statement>();
+                initStmt->kind = Statement::Kind::Binding;
+                initStmt->location = SourceLocation{keywordToken.line, keywordToken.column};
+                initStmt->binding = parseBindingDecl(kind);
+                statement.for_initializer = std::move(initStmt);
+            } else {
+                auto initExpr = parseExpression();
+                if (!initExpr) {
+                    reportError(peek(), "Expected initializer expression in for-loop");
+                    return std::nullopt;
+                }
+                if (!consume(TokenKind::Semicolon, "Expected ';' after for-loop initializer")) {
+                    return std::nullopt;
+                }
+                auto initStmt = std::make_unique<Statement>();
+                initStmt->kind = Statement::Kind::ExprStmt;
+                initStmt->location = initExpr->location;
+                initStmt->expr = std::move(initExpr);
+                statement.for_initializer = std::move(initStmt);
+            }
+        } else {
+            advance();
+        }
+
+        if (!check(TokenKind::Semicolon)) {
+            auto condition = parseExpression();
+            if (condition) {
+                statement.condition = std::move(condition);
+            } else {
+                reportError(peek(), "Expected condition expression in for-loop");
+                return std::nullopt;
+            }
+        }
+
+        if (!consume(TokenKind::Semicolon, "Expected ';' after for-loop condition")) {
+            return std::nullopt;
+        }
+
+        if (!check(TokenKind::RParen)) {
+            if (match(TokenKind::KwLet) || match(TokenKind::KwConst) || match(TokenKind::KwVar)) {
+                const Token keywordToken = previous();
+                BindingKind kind = BindingKind::Let;
+                if (keywordToken.kind == TokenKind::KwConst) {
+                    kind = BindingKind::Const;
+                } else if (keywordToken.kind == TokenKind::KwVar) {
+                    kind = BindingKind::Var;
+                }
+                auto incrementStmt = std::make_unique<Statement>();
+                incrementStmt->kind = Statement::Kind::Binding;
+                incrementStmt->location = SourceLocation{keywordToken.line, keywordToken.column};
+                incrementStmt->binding = parseBindingDecl(kind, false);
+                statement.for_increment = std::move(incrementStmt);
+            } else {
+                auto incrementExpr = parseExpression();
+                if (!incrementExpr) {
+                    reportError(peek(), "Expected increment expression in for-loop");
+                    return std::nullopt;
+                }
+                auto incrementStmt = std::make_unique<Statement>();
+                incrementStmt->kind = Statement::Kind::ExprStmt;
+                incrementStmt->location = incrementExpr->location;
+                incrementStmt->expr = std::move(incrementExpr);
+                statement.for_increment = std::move(incrementStmt);
+            }
+            (void)match(TokenKind::Semicolon);
+        }
+
+        if (!consume(TokenKind::RParen, "Expected ')' after for-loop header")) {
+            return std::nullopt;
+        }
+
+        if (!consume(TokenKind::LBrace, "Expected '{' after for-loop header")) {
+            return std::nullopt;
+        }
+
+        while (!check(TokenKind::RBrace) && !isAtEnd()) {
+            if (auto stmt = parseStatement()) {
+                statement.then_body.push_back(std::move(*stmt));
+            }
+        }
+
+        if (!consume(TokenKind::RBrace, "Expected '}' after for-loop body")) {
+            return std::nullopt;
+        }
+        return statement;
+    }
+
     if (auto stmt = bindingStatement(TokenKind::KwLet, BindingKind::Let)) {
         return stmt;
     }
@@ -383,8 +491,29 @@ auto Parser::parseStatement() -> std::optional<Statement> {
         return stmt;
     }
 
-    reportError(peek(), "Expected statement");
-    return std::nullopt;
+    const size_t exprStart = current_;
+    auto expression = parseExpression();
+    if (!expression) {
+        reportError(peek(), "Expected statement");
+        return std::nullopt;
+    }
+
+    if (!consume(TokenKind::Semicolon, "Expected ';' after expression")) {
+        // simple recovery: advance until next statement boundary
+        while (!check(TokenKind::Semicolon) && !check(TokenKind::RBrace) && !check(TokenKind::EndOfFile)) {
+            (void)advance();
+        }
+        if (check(TokenKind::Semicolon)) {
+            advance();
+        }
+        return std::nullopt;
+    }
+
+    Statement statement;
+    statement.kind = Statement::Kind::ExprStmt;
+    statement.location = expression->location;
+    statement.expr = std::move(expression);
+    return statement;
 }
 
 auto Parser::parseStructDecl() -> StructDecl {

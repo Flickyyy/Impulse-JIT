@@ -8,11 +8,15 @@ Simple stack-based IR with instructions:
 - `Binary` - binary op (+,-,*,/,%,&&,||,==,!=,<,<=,>,>=)
 - `Unary` - unary op (!,-)
 - `Store` - save to variable
+- `Drop` - discard top of stack
 - `Return` - return from function
 - `Comment` - annotation
-- `Branch` - unconditional jump (TODO)
-- `BranchIf` - conditional jump (TODO)
-- `Label` - jump target (TODO)
+- `Branch` - unconditional jump
+- `BranchIf` - conditional jump comparing top of stack
+- `Label` - jump target
+- `Call` - invoke function with N arguments (arguments pushed left-to-right)
+
+`BranchIf` pops a single value off the stack and compares it to an immediate operand. When the values match, execution jumps to the named label. Lowering currently emits a comparison against `0` for falsy checks.
 
 ## IR Structure
 

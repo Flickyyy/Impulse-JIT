@@ -68,6 +68,28 @@ cd ../cli && go test ./...
 - Use namespaces consistently
 - Minimize dependencies between modules
 
+### Layer Interactions
+
+```
+source ──► lexer ──► tokens ──► parser ──► AST ──► semantic checks ──► IR lowering
+								│
+								▼
+							Control Flow Graph
+								│
+								▼
+						   Static Single Assignment
+								│
+								▼
+			     Future: Data-Flow Graph, liveness, register allocation, codegen
+```
+
+- **AST ➜ IR**: `frontend::lower_to_ir` translates well-typed syntax into stack-based IR.
+- **IR ➜ CFG**: `ir::build_control_flow_graph` groups the flat instruction stream into basic blocks so we know which edges exist.
+- **CFG ➜ SSA**: `ir::build_ssa` relies on the CFG topology to insert `phi` nodes and mint versioned variables.
+- **SSA ➜ Analyses**: optimisations (dead code elimination, common subexpression elimination, loop transforms), liveness, register allocation, and future code generators all build on top of SSA (and any derived DFG).
+
+Documenting these boundaries keeps the repo approachable and makes it clear how a new pass should plug in.
+
 ## 5. Current Limitations & Roadmap
 
 ### What Works Now
@@ -76,13 +98,16 @@ cd ../cli && go test ./...
 ✅ Function definitions and calls  
 ✅ Local variables  
 ✅ All operators  
+✅ For loops with initializer / condition / increment sections  
+✅ Control-flow graph construction for IR functions  
+✅ Static single assignment construction and validation (dominance, phi insertion, renaming, verifier)  
 
 ### Next Priorities
-1. **For loops** — Extend parser and lowering
-2. **Type checking** — Semantic verification beyond syntax
-3. **Multiple functions** — Call stack and function calls
+1. **SSA optimizations** — Constant propagation, dead assignment elimination
+2. **SSA round-trip tooling** — IR ↔ SSA conversions for diagnostics
+3. **Type checking** — Semantic verification beyond syntax
 4. **Standard library** — Built-in print, file I/O
-5. **Error messages** — Better diagnostics with source locations
+5. **Loop control** — `break`/`continue` statements and loop scoping
 
 ### Future Work
 - **GC** — Memory management for heap-allocated objects
@@ -93,14 +118,20 @@ cd ../cli && go test ./...
 
 ## 6. Testing Strategy
 
-### Current Tests (26 total)
+### Current Tests (38 total)
 - Module header parsing
 - Numeric literals and strings
 - Expression parsing and precedence
 - Semantic validation (duplicates, const rules)
 - Operator functionality (arithmetic, logical, comparison)
 - Control flow execution (if/else, while)
+- For loop execution (initializer / condition / increment)
+- Control-flow graph construction
+- SSA renaming, phi validation, and verifier coverage
 - Constant evaluation
+- Function call execution
+- Expression statements with value dropping
+- Recursive execution paths
 
 ### Test Coverage Goals
 - Parser: All grammar productions
@@ -115,6 +146,7 @@ cd ../cli && go test ./...
 - **STATUS.md** — Current implementation status
 - **Grammar spec** — Language syntax reference
 - **IR spec** — Instruction set and semantics
+- **CFG spec** — Control-flow graph representation
 - **Runtime spec** — VM behavior and calling convention
 - **Type system** — Type rules and checking (when implemented)
 

@@ -1,9 +1,11 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "../frontend/include/impulse/frontend/lexer.h"
@@ -11,6 +13,9 @@
 #include "../frontend/include/impulse/frontend/lowering.h"
 #include "../frontend/include/impulse/frontend/semantic.h"
 #include "../ir/include/impulse/ir/interpreter.h"
+#include "../ir/include/impulse/ir/cfg.h"
+#include "../ir/include/impulse/ir/ssa.h"
+#include "../ir/include/impulse/ir/ssa_verify.h"
 #include "../runtime/include/impulse/runtime/runtime.h"
 
 using impulse::frontend::Lexer;
@@ -441,6 +446,346 @@ let b: int = a * 5 + 3;
     assert(foundB && "Interpreter did not evaluate binding 'b'");
 }
 
+void testCfgLinearFunction() {
+    impulse::ir::Function function;
+    function.name = "linear";
+    impulse::ir::BasicBlock block;
+    block.label = "entry";
+    block.instructions.push_back({impulse::ir::InstructionKind::Literal, {"0"}});
+    block.instructions.push_back({impulse::ir::InstructionKind::Return, {}});
+    function.blocks.push_back(std::move(block));
+
+    const auto cfg = impulse::ir::build_control_flow_graph(function);
+    assert(cfg.blocks.size() == 1);
+    const auto& entry = cfg.blocks.front();
+    assert(entry.name == "entry");
+    assert(entry.successors.empty());
+    assert(entry.predecessors.empty());
+    assert(entry.end_index - entry.start_index == 2);
+}
+
+void testCfgBranchIfFunction() {
+    impulse::ir::Function function;
+    function.name = "branch_if";
+    impulse::ir::BasicBlock block;
+    block.label = "entry";
+    block.instructions.push_back({impulse::ir::InstructionKind::Literal, {"cond"}});
+    block.instructions.push_back({impulse::ir::InstructionKind::BranchIf, {"target", "0"}});
+    block.instructions.push_back({impulse::ir::InstructionKind::Literal, {"1"}});
+    block.instructions.push_back({impulse::ir::InstructionKind::Return, {}});
+    block.instructions.push_back({impulse::ir::InstructionKind::Label, {"target"}});
+    block.instructions.push_back({impulse::ir::InstructionKind::Literal, {"2"}});
+    block.instructions.push_back({impulse::ir::InstructionKind::Return, {}});
+    function.blocks.push_back(std::move(block));
+
+    const auto cfg = impulse::ir::build_control_flow_graph(function);
+    assert(cfg.blocks.size() == 3);
+    const auto& entry = cfg.blocks[0];
+    assert(entry.successors.size() == 2);
+
+    bool hasFallthrough = false;
+    bool hasTarget = false;
+    for (const auto succ : entry.successors) {
+        if (succ == 1) {
+            hasFallthrough = true;
+        }
+        if (succ == 2) {
+            hasTarget = true;
+        }
+    }
+    assert(hasFallthrough && hasTarget);
+    const auto& target = cfg.blocks[2];
+    assert(target.name == "target");
+    assert(target.predecessors.size() == 1 && target.predecessors.front() == 0);
+}
+
+void testCfgBranchFunction() {
+    impulse::ir::Function function;
+    function.name = "branch";
+    impulse::ir::BasicBlock block;
+    block.label = "entry";
+    block.instructions.push_back({impulse::ir::InstructionKind::Branch, {"exit"}});
+    block.instructions.push_back({impulse::ir::InstructionKind::Label, {"exit"}});
+    block.instructions.push_back({impulse::ir::InstructionKind::Return, {}});
+    function.blocks.push_back(std::move(block));
+
+    const auto cfg = impulse::ir::build_control_flow_graph(function);
+    assert(cfg.blocks.size() == 2);
+    const auto& entry = cfg.blocks[0];
+    assert(entry.successors.size() == 1);
+    const auto exitIndex = entry.successors.front();
+    assert(exitIndex == 1);
+    const auto& exitBlock = cfg.blocks[exitIndex];
+    assert(exitBlock.name == "exit");
+    assert(exitBlock.predecessors.size() == 1 && exitBlock.predecessors.front() == 0);
+}
+
+void testSsaLinearFunction() {
+    const std::string source = R"(module demo;
+func main() -> int {
+    let a: int = 1;
+    let b: int = a + 2;
+    return b;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    assert(!lowered.functions.empty());
+
+    const auto& function = lowered.functions.front();
+    const auto ssa = impulse::ir::build_ssa(function);
+    assert(!ssa.blocks.empty());
+
+    const auto& entry = ssa.blocks.front();
+    bool foundBinary = false;
+    bool foundStoreA = false;
+    bool foundStoreB = false;
+    impulse::ir::SsaValue storedA{};
+
+    for (const auto& inst : entry.instructions) {
+        using impulse::ir::SsaOp;
+        if (inst.op == SsaOp::Store && inst.result.has_value()) {
+            if (inst.result->name == "a") {
+                storedA = *inst.result;
+                foundStoreA = true;
+            } else if (inst.result->name == "b") {
+                foundStoreB = true;
+                assert(!inst.arguments.empty());
+                assert(inst.arguments.front().name.rfind("tmp", 0) == 0);
+            }
+        }
+        if (inst.op == SsaOp::Binary) {
+            assert(foundStoreA && "Binary should see stored 'a'");
+            assert(inst.arguments.size() == 2);
+            assert(inst.arguments.front().name == "a");
+            assert(inst.arguments.front().version == storedA.version);
+            foundBinary = true;
+        }
+    }
+
+    assert(foundStoreA && "Expected store to 'a'");
+    assert(foundStoreB && "Expected store to 'b'");
+    assert(foundBinary && "Expected binary instruction in SSA output");
+}
+
+void testSsaBranchPhi() {
+    const std::string source = R"(module demo;
+func main() -> int {
+    let x: int = 0;
+    if true {
+        let x: int = 1;
+    } else {
+        let x: int = 2;
+    }
+    return x;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    assert(!lowered.functions.empty());
+    const auto& function = lowered.functions.front();
+    const auto ssa = impulse::ir::build_ssa(function);
+
+    bool foundPhi = false;
+    for (const auto& block : ssa.blocks) {
+        for (const auto& phi : block.phi_nodes) {
+            if (phi.variable != "x") {
+                continue;
+            }
+            assert(phi.result.name == "x");
+            assert(!phi.inputs.empty());
+            std::unordered_set<std::uint32_t> versions;
+            for (const auto& input : phi.inputs) {
+                assert(input.value.has_value());
+                assert(input.value->name == "x");
+                versions.insert(input.value->version);
+            }
+            assert(versions.size() == 2);
+            foundPhi = true;
+        }
+    }
+
+    assert(foundPhi && "Expected phi node for 'x' in SSA output");
+}
+
+void testSsaLoopPhi() {
+    const std::string source = R"(module demo;
+func main() -> int {
+    let sum: int = 0;
+    let i: int = 0;
+    while i < 3 {
+        let sum: int = sum + i;
+        let i: int = i + 1;
+    }
+    return sum;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    assert(!lowered.functions.empty());
+    const auto& function = lowered.functions.front();
+    const auto ssa = impulse::ir::build_ssa(function);
+
+    bool foundSumPhi = false;
+    bool foundIPhi = false;
+    for (const auto& block : ssa.blocks) {
+        for (const auto& phi : block.phi_nodes) {
+            if (phi.variable == "sum") {
+                assert(phi.inputs.size() >= 2);
+                std::unordered_set<std::uint32_t> versions;
+                for (const auto& input : phi.inputs) {
+                    assert(input.value.has_value());
+                    assert(input.value->name == "sum");
+                    versions.insert(input.value->version);
+                }
+                assert(versions.size() >= 2);
+                foundSumPhi = true;
+            } else if (phi.variable == "i") {
+                assert(phi.inputs.size() >= 2);
+                std::unordered_set<std::uint32_t> versions;
+                for (const auto& input : phi.inputs) {
+                    assert(input.value.has_value());
+                    assert(input.value->name == "i");
+                    versions.insert(input.value->version);
+                }
+                assert(versions.size() >= 2);
+                foundIPhi = true;
+            }
+        }
+    }
+
+    assert(foundSumPhi && "Expected phi node for loop-carried 'sum'");
+    assert(foundIPhi && "Expected phi node for loop-carried 'i'");
+}
+
+void testSsaValidationSuccess() {
+    const std::string source = R"(module demo;
+func main() -> int {
+    let x: int = 0;
+    while x < 5 {
+        let x: int = x + 1;
+    }
+    return x;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    assert(!lowered.functions.empty());
+    const auto ssa = impulse::ir::build_ssa(lowered.functions.front());
+
+    const auto validation = impulse::ir::validate_ssa(ssa);
+    assert(validation.success);
+    assert(validation.issues.empty());
+}
+
+void testSsaValidationDetectsMissingPhiInput() {
+    const std::string source = R"(module demo;
+func main() -> int {
+    let x: int = 0;
+    if true {
+        let x: int = 1;
+    } else {
+        let x: int = 2;
+    }
+    return x;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    assert(!lowered.functions.empty());
+    const auto base_ssa = impulse::ir::build_ssa(lowered.functions.front());
+
+    auto faulty_ssa = base_ssa;
+    bool mutated = false;
+    for (auto& block : faulty_ssa.blocks) {
+        if (!block.phi_nodes.empty()) {
+            if (!block.phi_nodes.front().inputs.empty()) {
+                block.phi_nodes.front().inputs.pop_back();
+            }
+            mutated = true;
+            break;
+        }
+    }
+    assert(mutated && "Expected SSA mutation to remove phi input");
+
+    const auto validation = impulse::ir::validate_ssa(faulty_ssa);
+    assert(!validation.success);
+    bool found_issue = false;
+    for (const auto& issue : validation.issues) {
+        if (issue.message.find("Phi") != std::string::npos) {
+            found_issue = true;
+            break;
+        }
+    }
+    assert(found_issue && "Expected validation to report phi issue");
+}
+
+void testSsaValidationDetectsUndefinedValue() {
+    const std::string source = R"(module demo;
+func main() -> int {
+    let a: int = 1;
+    let b: int = a + 2;
+    return b;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    assert(!lowered.functions.empty());
+    const auto base_ssa = impulse::ir::build_ssa(lowered.functions.front());
+
+    auto faulty_ssa = base_ssa;
+    bool mutated = false;
+    for (auto& block : faulty_ssa.blocks) {
+        for (auto& inst : block.instructions) {
+            if (!inst.arguments.empty()) {
+                inst.arguments.front().name = "tmp_missing";
+                inst.arguments.front().version = 7;
+                mutated = true;
+                break;
+            }
+        }
+        if (mutated) {
+            break;
+        }
+    }
+    assert(mutated && "Expected to corrupt SSA argument");
+
+    const auto validation = impulse::ir::validate_ssa(faulty_ssa);
+    assert(!validation.success);
+    bool found_issue = false;
+    for (const auto& issue : validation.issues) {
+        if (issue.message.find("undefined value") != std::string::npos) {
+            found_issue = true;
+            break;
+        }
+    }
+    assert(found_issue && "Expected validation to detect undefined value use");
+}
+
 void testRuntimeVmExecution() {
     const std::string source = R"(module demo;
 let seed: int = 10;
@@ -506,6 +851,37 @@ func main() -> int {
     assert(result.status == impulse::runtime::VmStatus::Success);
     assert(result.has_value);
     assert(std::abs(result.value - 10.0) < 1e-9);
+}
+
+void testExpressionStatements() {
+    const std::string source = R"(module demo;
+
+func helper() -> int {
+    return 1;
+}
+
+func main() -> int {
+    helper();
+    helper();
+    return 2;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto irText = impulse::frontend::emit_ir_text(parseResult.module);
+    assert(irText.find("drop") != std::string::npos);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 2.0) < 1e-9);
 }
 
 void testBooleanComparisons() {
@@ -782,6 +1158,37 @@ func test_while() -> int {
     assert(std::abs(result_while.value - 5.0) < 1e-9);
 }
 
+void testForLoop() {
+    const std::string source = R"(module demo;
+
+func main() -> int {
+    let sum: int = 0;
+    for (let i: int = 0; i < 5; let i: int = i + 1;) {
+        let sum: int = sum + i;
+    }
+
+    for (; sum < 20; let sum: int = sum + 5;) {
+    }
+
+    return sum;
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 20.0) < 1e-9);
+}
+
 void testFunctionCalls() {
     const std::string source = R"(module demo;
 
@@ -844,6 +1251,37 @@ func test_nested() -> int {
     assert(std::abs(result_nested.value - 10.0) < 1e-9);
 }
 
+void testRecursion() {
+    const std::string source = R"(module demo;
+
+func fact(n: int) -> int {
+    if n <= 1 {
+        return 1;
+    } else {
+        return n * fact(n - 1);
+    }
+}
+
+func main() -> int {
+    return fact(5);
+}
+)";
+
+    Parser parser(source);
+    ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 120.0) < 1e-9);
+}
+
 }  // namespace
 
 // =============================================================================
@@ -886,7 +1324,21 @@ void runIRTests() {
     testBindingExpressionLowering();
     testExportedDeclarations();
     testIrBindingInterpreter();
-    std::cout << "  ✓ 5 tests passed\n\n";
+    testCfgLinearFunction();
+    testCfgBranchIfFunction();
+    testCfgBranchFunction();
+    std::cout << "  ✓ 8 tests passed\n\n";
+}
+
+void runSsaTests() {
+    std::cout << "[SSA Tests]\n";
+    testSsaLinearFunction();
+    testSsaBranchPhi();
+    testSsaLoopPhi();
+    testSsaValidationSuccess();
+    testSsaValidationDetectsMissingPhiInput();
+    testSsaValidationDetectsUndefinedValue();
+    std::cout << "  ✓ 6 tests passed\n\n";
 }
 
 void runOperatorTests() {
@@ -903,20 +1355,23 @@ void runOperatorTests() {
 void runControlFlowTests() {
     std::cout << "[Control Flow Tests]\n";
     testControlFlow();
-    std::cout << "  ✓ 1 test passed\n\n";
+    testForLoop();
+    std::cout << "  ✓ 2 tests passed\n\n";
 }
 
 void runRuntimeTests() {
     std::cout << "[Runtime Tests]\n";
     testRuntimeVmExecution();
     testFunctionLocals();
-    std::cout << "  ✓ 2 tests passed\n\n";
+    testExpressionStatements();
+    std::cout << "  ✓ 3 tests passed\n\n";
 }
 
 void runFunctionCallTests() {
     std::cout << "[Function Call Tests]\n";
     testFunctionCalls();
-    std::cout << "  ✓ 1 test passed\n\n";
+    testRecursion();
+    std::cout << "  ✓ 2 tests passed\n\n";
 }
 
 auto main() -> int {
@@ -928,13 +1383,14 @@ auto main() -> int {
     runParserTests();
     runSemanticTests();
     runIRTests();
+    runSsaTests();
     runOperatorTests();
     runControlFlowTests();
     runRuntimeTests();
     runFunctionCallTests();
 
     std::cout << "==============================================\n";
-    std::cout << "All 29 tests passed! ✓\n";
+    std::cout << "All 38 tests passed! ✓\n";
     std::cout << "==============================================\n";
     return 0;
 }

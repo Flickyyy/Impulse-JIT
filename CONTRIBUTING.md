@@ -100,7 +100,7 @@ Examples:
 ## Areas for Contribution
 
 ### High Priority
-- **For loops**: Add parsing and execution support
+- **Loop controls**: Implement `break` / `continue` semantics
 - **Type checking**: Implement semantic type validation
 - **Recursion**: Add support for recursive function calls
 - **Error recovery**: Improve parser error recovery

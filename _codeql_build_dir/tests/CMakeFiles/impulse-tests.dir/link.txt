@@ -1,1 +1,0 @@
-/home/runner/work/Impulse-JIT/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/impulse-tests.dir/link.d "CMakeFiles/impulse-tests.dir/main.cpp.o" -o impulse-tests  ../frontend/libimpulse-frontend.a ../ir/libimpulse-ir.a ../runtime/libimpulse-runtime.a ../ir/libimpulse-ir.a

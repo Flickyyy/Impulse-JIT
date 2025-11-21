@@ -190,6 +190,22 @@ auto interpret_binding(const Binding& binding, const std::unordered_map<std::str
                     .message = inst.operands.empty() ? std::string{} : inst.operands.front(),
                 };
             }
+            case InstructionKind::Drop: {
+                if (stack.empty()) {
+                    return make_error("drop instruction requires a value on the stack");
+                }
+                stack.pop_back();
+                break;
+            }
+            case InstructionKind::Branch:
+            case InstructionKind::BranchIf:
+            case InstructionKind::Label:
+            case InstructionKind::Call:
+                return BindingEvalResult{
+                    .status = EvalStatus::NonConstant,
+                    .value = std::nullopt,
+                    .message = "non-constant control flow in initializer",
+                };
             case InstructionKind::Comment:
             case InstructionKind::Return:
                 break;
@@ -372,6 +388,13 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
                     locals[inst.operands.front()] = value;
                     break;
                 }
+                case InstructionKind::Drop: {
+                    if (stack.empty()) {
+                        return make_function_error("drop instruction requires a value");
+                    }
+                    stack.pop_back();
+                    break;
+                }
                 case InstructionKind::Branch: {
                     if (inst.operands.empty()) {
                         return make_function_error("branch instruction missing label");
@@ -403,6 +426,12 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
                     }
                     break;
                 }
+                case InstructionKind::Call:
+                    return FunctionEvalResult{
+                        .status = EvalStatus::NonConstant,
+                        .value = std::nullopt,
+                        .message = "function calls require runtime execution",
+                    };
                 case InstructionKind::Label:
                 case InstructionKind::Comment:
                     break;

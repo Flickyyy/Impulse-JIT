@@ -23,6 +23,7 @@ enum class InstructionKind : std::uint8_t {
     Binary,
     Unary,
     Store,
+    Drop,
     Branch,
     BranchIf,
     Label,

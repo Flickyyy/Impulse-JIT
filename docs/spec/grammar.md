@@ -32,12 +32,16 @@ Param       ::= Ident ":" Type
 
 ## Statements
 ```
-Stmt        ::= Block | IfStmt | WhileStmt | ReturnStmt | Binding | ExprStmt
+Stmt        ::= Block | IfStmt | WhileStmt | ForStmt | ReturnStmt | Binding | ExprStmt
 Block       ::= "{" Stmt* "}"
 IfStmt      ::= "if" Expr Block ["else" Block]
 WhileStmt   ::= "while" Expr Block
+ForStmt     ::= "for" "(" ForInit? ";" Expr? ";" ForIncrement? ")" Block
 ReturnStmt  ::= "return" Expr? ";"
 ExprStmt    ::= Expr ";"
+
+ForInit     ::= Binding | Expr
+ForIncrement::= Binding [";"] | Expr [";"]
 ```
 
 ## Expressions (precedence: low → high)

@@ -208,6 +208,20 @@ auto printExpression(const Expression& expr) -> std::string {
             }
             return result;
         }
+        case Expression::Kind::Call: {
+            std::string result = expr.callee;
+            result += '(';
+            for (size_t i = 0; i < expr.arguments.size(); ++i) {
+                if (i > 0) {
+                    result += ", ";
+                }
+                if (expr.arguments[i]) {
+                    result += printExpression(*expr.arguments[i]);
+                }
+            }
+            result += ')';
+            return result;
+        }
     }
     return {};
 }
@@ -240,7 +254,7 @@ auto evaluateNumericExpression(const Expression& expr) -> ExpressionEvalResult {
                     .message = std::string{"Incomplete unary expression"},
                 };
             }
-            const auto operandResult = evaluateNumericExpression(*expr.operand);
+            auto operandResult = evaluateNumericExpression(*expr.operand);
             if (operandResult.status == ExpressionEvalStatus::Error) {
                 return operandResult;
             }
@@ -258,6 +272,12 @@ auto evaluateNumericExpression(const Expression& expr) -> ExpressionEvalResult {
                 return ExpressionEvalResult{ExpressionEvalStatus::Constant, -operandValue, std::nullopt};
             }
         }
+        case Expression::Kind::Call:
+            return ExpressionEvalResult{
+                .status = ExpressionEvalStatus::NonConstant,
+                .value = std::nullopt,
+                .message = std::nullopt,
+            };
     }
     return ExpressionEvalResult{
         .status = ExpressionEvalStatus::Error,

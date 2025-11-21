@@ -79,6 +79,9 @@ namespace {
                 out << ' ' << inst.operands.front();
             }
             break;
+        case InstructionKind::Drop:
+            out << "drop";
+            break;
         case InstructionKind::Branch:
             out << "branch";
             if (!inst.operands.empty()) {
@@ -92,7 +95,11 @@ namespace {
             }
             break;
         case InstructionKind::Label:
-            out << inst.operands.empty() ? "label:" : (inst.operands.front() + ":");
+            if (inst.operands.empty()) {
+                out << "label:";
+            } else {
+                out << inst.operands.front() << ':';
+            }
             break;
         case InstructionKind::Call:
             out << "call";

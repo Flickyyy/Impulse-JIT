@@ -13,7 +13,10 @@ Simple stack-based VM:
 - Logic: &&,||,!
 - Comparison: ==,!=,<,<=,>,>=
 - Variables: load/store locals and globals
-- Control: return (if/while TODO)
+- Control: return, branch, branch_if, labels
+- Loops: while/for lowering using labels and conditional branches
+- Calls: direct calls with value returns
+- Stack: drop top value for expression statements
 
 ## VM Structure
 
@@ -38,9 +41,10 @@ LoadedModule {
 
 ## TODO
 
-- **Control flow**: Branch/Label instructions for if/while
+- **Recursion semantics**: Define stack depth limits and tail call expectations
+- **Loop control**: Add `break`/`continue` semantics and label resolution
 - **GC**: Mark-and-sweep garbage collector
 - **JIT**: Hot path compilation to native code
-- **Call convention**: Proper ABI for multi-function calls
+- **Call convention**: Proper ABI for cross-module calls
 - **Heap**: Dynamic allocation beyond stack
 

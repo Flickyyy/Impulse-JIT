@@ -2,16 +2,10 @@
 build/
 **/build/
 
-# Go build artifacts
-cli/impulsec
-
 # IDE
+.cache/
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# OS
-.DS_Store
-Thumbs.db

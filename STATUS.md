@@ -2,45 +2,38 @@
 
 ## ✅ Working
 - **Lexer**: keywords, operators, literals (int, float, bool, string), comments
-- **Parser**: module/import/export, let/const/var, func, struct, interface, if/while/else
-- **Operators**: +,-,*,/,%, &&,||,!, ==,!=,<,<=,>,>=, unary -
-- **Control Flow**: if/else, while - **ПОЛНОСТЬЮ РАБОТАЮТ** ✨
-- **Function Calls**: Parsing, lowering, execution, and recursive calls - **ПОЛНОСТЬЮ РАБОТАЮТ** ✨
-- **Expression Statements**: Calls and expressions execute with stack clean-up
-- **For Loops**: C-style `(init; cond; incr)` with lowering and execution support
-- **IR**: Stack machine with Branch/BranchIf/Label/Call for control flow and function calls
-- **Evaluator**: Constant expression evaluation
-- **VM**: Full function execution with control flow, locals, jumps, and function calls
-- **SSA**: Dominator tree, phi insertion, renaming, and validation pass producing SSA form
-- **Tests**: 35 unit tests passing (organized in 9 groups)
+- **Parser**: modules, imports, bindings, functions, structs, interfaces, if/while/for
+- **Semantic Analysis**: identifier binding, scope resolution, return checking, struct/interface validation
+- **Operators**: arithmetic, logical, comparison, unary minus/negation
+- **Control Flow**: `if`/`else`, `while`, C-style `for`, `break`, `continue`
+- **Functions**: definition, calls, recursion, parameter passing
+- **Bindings**: `let` / `const` / `var` with constant folding in initializers
+- **IR**: stack machine instructions (literal, reference, store, drop, unary, binary, branch, call, label, array ops) with CFG + SSA pipeline (dominators, phi placement, rename, SSA blocks/instructions) plus constant propagation, copy propagation, dead assignment elimination, and an optimisation driver that runs them to a fixed point
+- **Constant Evaluator**: binding initializer execution for compile-time folding
+- **Runtime VM**: SSA-driven interpreter that optimises functions before execution, with GC-managed heap, frame rooting, and array builtins
+- **Tests**: regression suite covering lexer, parser, semantics, IR emission, operators, control flow, functions, runtime/GC
 
-## 🚧 In Progress  
-- SSA round-trip checks
-- SSA-driven optimization pass design (const propagation, DCE, copy propagation)
+## 🚧 In Progress
+- Broader semantic diagnostics and better error recovery
+- Runtime helpers that emulate a standard library surface
+- Documentation refresh to keep pace with runtime evolution
+- SSA optimisation planning for additional passes (value numbering, loop optimisations)
 
 ## ❌ Not Implemented
-- **SSA optimizations**: Const propagation, dead assignment removal, copy propagation
-- **Loop controls**: `break` / `continue`
-- **Type checking**: No semantic type verification beyond syntax
-- **GC**: No garbage collector (planned mark-and-sweep)
-- **JIT**: No native code generation (interpreter works fine)
-- **Stdlib**: No standard library (print, file I/O, etc.)
-- **Pattern matching**: Grammar only
-- **Generics**: Not started
+- **Native codegen / JIT**: interpreter only
+- **Standard library**: pending (no I/O helpers yet)
+- **Advanced language features**: pattern matching, generics, traits, etc.
 
-
-## Test Coverage
+## Test Coverage (current groups)
 ```
-[Lexer Tests]        3 tests  ✓
-[Parser Tests]       2 tests  ✓
-[Semantic Tests]     9 tests  ✓
-[IR Tests]           8 tests  ✓
-[Operator Tests]     6 tests  ✓
-[Control Flow Tests] 2 tests  ✓
-[Runtime Tests]      3 tests  ✓
-[Function Call Tests] 2 tests  ✓
-[SSA Tests]          6 tests  ✓
-────────────────────────────────
-Total:              38 tests  ✓
+[Lexer Tests]         ✓
+[Parser Tests]        ✓
+[Semantic Tests]      ✓
+[IR Tests]            ✓
+[Operator Tests]      ✓
+[Control Flow Tests]  ✓
+[Function Call Tests] ✓
+────────────────────────
+All groups green ✓
 ```
 

@@ -16,8 +16,12 @@ Source Code (.imp)
 [Semantic Analysis] → Validated AST
     ↓
 [IR Lowering] → Intermediate Representation
+  ↓
+[IR] → Stack Machine
     ↓
-[VM / Interpreter] → Execution / Results
+[SSA Conversion + Optimiser] → SSA
+    ↓
+[SSA Interpreter] → Execution / Results
 ```
 
 ## Components
@@ -106,6 +110,7 @@ The Intermediate Representation is a stack-based instruction set designed for si
 - **BranchIf**: Conditional jump (pop condition, jump if true)
 - **Label**: Jump target marker
 - **Return**: Pop value, return from function
+- **Drop**: Remove the top of stack (expression statements)
 - **Comment**: No-op for debugging
 
 #### Lowering (`lowering.cpp`, `lowering.h`)
@@ -150,34 +155,16 @@ func add(a: int, b: int) -> int {
 
 **Location:** `runtime/`
 
-The runtime Virtual Machine executes IR code.
+The runtime rebuilds SSA per function invocation, applies optimiser passes, and interprets the optimised SSA program.
 
 #### VM (`runtime.cpp`, `runtime.h`)
-- **Purpose:** Execute IR functions
+- **Purpose:** Execute SSA functions with lightweight activation records and GC integration
 - **Features:**
-  - Stack-based architecture
-  - Local variable storage
-  - Function call support with parameter passing
-  - Control flow with program counter (PC)
-  - Label resolution for jumps
-  - Error handling and diagnostics
-
-**Execution Model:**
-1. Load IR module
-2. Build label map (label name → instruction index)
-3. Initialize locals from parameters
-4. Execute instructions sequentially
-5. Update PC for branches
-6. Return final stack value
-
-**Stack Machine Example:**
-```
-Instructions:           Stack State:
-literal 5               [5]
-literal 3               [5, 3]
-binary +                [8]
-return                  [] (returns 8)
-```
+  - Rebuilds SSA from the function’s IR and runs the optimisation pipeline to a fixed point
+  - Interprets SSA instructions block-by-block, honouring phi nodes, control-flow metadata, and value versions
+  - Seeds parameter and global values into the SSA value cache to mirror semantic scope rules
+  - Provides direct function calls, recursion, and array primitives backed by a mark-sweep heap
+  - Reports structured errors for malformed SSA (missing operands, invalid control flow, type mismatches)
 
 ### 4. CLI (Go)
 
@@ -223,20 +210,18 @@ The Command-Line Interface provides user-friendly access to the compiler.
 - **Foundation**: JIT requires solid IR and type system
 - **Future**: LLVM or custom JIT planned
 
-## Testing Strategy
+### Testing Strategy
 
 ### Unit Tests (`tests/main.cpp`)
-Organized into 9 groups (38 tests total):
+Organised into 7 groups:
 
-1. **Lexer Tests** (3): Token recognition
-2. **Parser Tests** (2): AST construction
-3. **Semantic Tests** (9): Validation and diagnostics
-4. **IR Tests** (8): IR generation, formatting, and CFG construction
-5. **SSA Tests** (6): Dominators, phi placement, verifier success and failure paths
-6. **Operator Tests** (6): All operators with precedence
-7. **Control Flow Tests** (2): if/else, while, for-loop execution
-8. **Runtime Tests** (3): VM execution, locals, expression statements
-9. **Function Call Tests** (2): Parameter passing, nested calls, recursion
+1. **Lexer Tests**: Token recognition
+2. **Parser Tests**: AST construction
+3. **Semantic Tests**: Validation and diagnostics
+4. **IR Tests**: IR generation, formatting, CFG construction
+5. **Operator Tests**: Arithmetic, logic, comparison behaviour
+6. **Control Flow Tests**: `if`/`else`, `while`, `for`, `break`, `continue`
+7. **Function Call Tests**: Parameter passing, nested calls, recursion
 
 ### Test Philosophy
 - Test at each layer independently
@@ -247,26 +232,17 @@ Organized into 9 groups (38 tests total):
 ## Compiler Pipeline Overview
 
 ```
-source ──► lexer ──► tokens ──► parser ──► AST ──► semantic checks ──► lowered IR
-                │
-                ▼
-              control-flow graph (CFG)
-                │
-                ▼
-               static single assignment (SSA)
-                │
-                ▼
-              future: data-flow graph, liveness, regalloc, codegen
+source ──► lexer ──► tokens ──► parser ──► AST ──► semantic checks ──► lowered IR ──► SSA optimise ──► interpreter
+      │
+      ▼
+     control-flow graph (analysis + SSA metadata)
 ```
 
 - **AST (Abstract Syntax Tree)** captures the language structure after parsing and is the entry point to the middle end.
 - **Semantic checks** annotate the AST (name binding, duplicate detection) and only pass well-formed statements to lowering.
-- **Lowered IR** represents each function as a flat instruction list that the VM can interpret immediately.
-- The **CFG builder** re-groups that instruction list into basic blocks, discovers branch edges, and becomes the control substrate for later analyses.
-- The **SSA builder** reads both the CFG and the original instructions to produce versioned values (e.g. `x.2`), enabling value-tracking analyses and optimisations.
-- A future **DFG (data-flow graph)** can be derived from SSA when we need explicit producer/consumer relationships (common subexpression elimination, instruction scheduling).
-- **Liveness analysis & register allocation** will consume SSA/DFG data once we target real hardware registers instead of the stack VM.
-- **Code generation** will eventually turn the optimised representation into target-specific output (native code, optimised bytecode, etc.).
+- **Lowered IR** represents each function as a flat instruction list that feeds the CFG and SSA builders.
+- The **CFG builder** re-groups that instruction list into basic blocks, discovers branch edges, and annotates dominance data for SSA.
+- **SSA + Optimiser** version values, resolves phi nodes, and applies constant/copy propagation plus dead assignment elimination before execution.
 
 Every arrow corresponds to a documented boundary in `docs/spec/`: grammar, IR, CFG, SSA. This separation makes it easy to slot in educational passes like dead code elimination, loop optimisations, or register allocation without destabilising earlier layers.
 
@@ -296,7 +272,7 @@ Impulse-JIT/
 │   ├── include/impulse/runtime/
 │   │   └── runtime.h               # VM interface
 │   └── src/
-│       └── runtime.cpp             # VM implementation
+│       └── runtime.cpp             # SSA interpreter + GC runtime
 │
 ├── cli/
 │   ├── cmd/impulsec/               # CLI entry point
@@ -307,18 +283,17 @@ Impulse-JIT/
 │   └── main.cpp                    # Unit test suite
 │
 └── docs/
-    └── spec/                       # Language specification
+  └── spec/                       # Language & backend specifications
 ```
 
 ## Future Architecture
 
 ### Planned Additions
-1. **Type Checking**: Full semantic type validation
-2. **Optimization**: Constant folding, dead code elimination
-3. **SSA Form**: Static Single Assignment for advanced optimization
-4. **JIT**: LLVM backend or custom x86-64 code generation
-5. **GC**: Garbage collector for heap-allocated objects
-6. **Stdlib**: Standard library (I/O, collections, math)
+1. **Type Checking**: Full semantic type validation and diagnostics
+2. **GC**: Mark/sweep collector integrated with VM frames and heap
+3. **Optimization Pipeline**: Loop optimisations, inlining, pass manager infrastructure
+4. **Native Backend**: LLVM-based or custom x86-64 code generation
+5. **Stdlib & Benchmarks**: Foundational runtime modules and performance suites
 
 ### Extensibility Points
 - **New IR instructions**: Add to `ir.h`, implement in `interpreter.cpp` and `runtime.cpp`
@@ -335,7 +310,7 @@ Impulse-JIT/
 
 ### Future Optimization
 - **JIT compilation**: Hot path native code generation
-- **Better IR**: SSA for optimization
+- **Deeper SSA**: Value numbering, loop optimisations, inlining, register-friendly form
 - **Memory management**: Arena allocation, object pooling
 - **Parallelization**: Multi-threaded compilation
 
@@ -348,11 +323,11 @@ This compiler is designed for learning. Key concepts demonstrated:
 - **AST Construction**: Tree representation of code
 - **Semantic Analysis**: Type checking, scope resolution
 - **IR Generation**: Lowering high-level constructs
-- **VM Design**: Stack machines, instruction execution
+- **VM Design**: SSA interpreter, control-flow evaluation
 - **Error Handling**: Diagnostics with source locations
 
 ## Conclusion
 
-Impulse demonstrates a complete, working compiler pipeline from source to execution. The architecture is clean, modular, and extensible, making it suitable for both educational purposes and as a foundation for more advanced features.
+Impulse demonstrates a complete, working compiler pipeline from source to execution with a deliberately small runtime. The architecture remains clean, modular, and extensible, making it suitable for both educational purposes and as a foundation for more advanced features.
 
 For implementation details, see the source code and documentation in `docs/spec/`.

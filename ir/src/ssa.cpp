@@ -1,670 +1,692 @@
 #include "impulse/ir/ssa.h"
 
 #include <algorithm>
-#include <functional>
 #include <limits>
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
-#include <utility>
-
-#include "impulse/ir/cfg.h"
-
-namespace impulse::ir {
-
-auto SsaValue::to_string() const -> std::string {
-    return name + "." + std::to_string(version);
-}
 
 namespace {
 
-constexpr std::size_t kInvalidIndex = std::numeric_limits<std::size_t>::max();
+using impulse::ir::ControlFlowGraph;
+using impulse::ir::Function;
+using impulse::ir::FunctionParameter;
+using impulse::ir::InstructionKind;
+using impulse::ir::Instruction;
+using impulse::ir::PhiNode;
+using impulse::ir::PhiInput;
+using impulse::ir::SsaBlock;
+using impulse::ir::SsaFunction;
+using impulse::ir::SsaInstruction;
+using impulse::ir::SsaSymbol;
+using impulse::ir::SsaValue;
+using impulse::ir::SymbolId;
 
-enum class ValueKind : std::uint8_t {
-    Variable,
-    Temporary,
-    External,
-};
+class SymbolTable {
+public:
+    void add_parameter(const FunctionParameter& parameter) {
+        const SymbolId id = next_id_++;
+        symbols_.push_back({id, parameter.name, parameter.type});
+        name_to_id_.emplace(parameter.name, id);
+    }
 
-struct ValueRef {
-    ValueKind kind = ValueKind::Temporary;
-    std::string name;
-};
-
-struct PreInstruction {
-    SsaOp op = SsaOp::Literal;
-    std::optional<ValueRef> result;
-    std::optional<SsaValue> fixed_result;
-    std::vector<ValueRef> arguments;
-    std::vector<std::string> immediates;
-};
-
-struct PreBlock {
-    std::string name;
-    std::vector<PreInstruction> instructions;
-};
-
-class SsaBuilder {
-   public:
-    explicit SsaBuilder(const Function& function) : function_(function) {}
-
-    auto build() -> SsaFunction {
-        result_.name = function_.name;
-        if (function_.blocks.empty()) {
-            return result_;
+    auto get_or_create(const std::string& name) -> SymbolId {
+        const auto it = name_to_id_.find(name);
+        if (it != name_to_id_.end()) {
+            return it->second;
         }
+        const SymbolId id = next_id_++;
+        symbols_.push_back({id, name, {}});
+        name_to_id_.emplace(name, id);
+        return id;
+    }
 
-        cfg_ = build_control_flow_graph(function_);
-        if (cfg_.blocks.empty()) {
-            return result_;
+    [[nodiscard]] auto create_temporary() -> SymbolId {
+        const SymbolId id = next_id_++;
+        const std::string name = "%t" + std::to_string(temp_counter_++);
+        symbols_.push_back({id, name, {}});
+        name_to_id_.emplace(name, id);
+        return id;
+    }
+
+    [[nodiscard]] auto find(const std::string& name) const -> std::optional<SymbolId> {
+        const auto it = name_to_id_.find(name);
+        if (it == name_to_id_.end()) {
+            return std::nullopt;
         }
-
-        entry_block_ = 0;
-        pre_blocks_.resize(cfg_.blocks.size());
-        phi_variables_.resize(cfg_.blocks.size());
-        result_.blocks.resize(cfg_.blocks.size());
-
-        initialize_tracked_variables();
-        convert_blocks();
-        compute_dominators();
-        compute_dominance_frontiers();
-        place_phi_nodes();
-        initialize_result_blocks();
-        rename();
-        return std::move(result_);
+        return it->second;
     }
 
-   private:
-    void initialize_tracked_variables() {
-        for (const auto& param : function_.parameters) {
-            tracked_variables_.insert(param.name);
-            version_counters_[param.name] = 0;
+    [[nodiscard]] auto symbols() const -> const std::vector<SsaSymbol>& { return symbols_; }
+
+private:
+    SymbolId next_id_ = 1;
+    std::uint64_t temp_counter_ = 0;
+    std::vector<SsaSymbol> symbols_;
+    std::unordered_map<std::string, SymbolId> name_to_id_;
+};
+
+[[nodiscard]] auto compute_reverse_postorder(const ControlFlowGraph& cfg) -> std::vector<std::size_t> {
+    std::vector<std::size_t> order;
+    order.reserve(cfg.blocks.size());
+    std::vector<bool> visited(cfg.blocks.size(), false);
+
+    const auto dfs = [&](auto&& self, std::size_t block_index) -> void {
+        if (block_index >= cfg.blocks.size() || visited[block_index]) {
+            return;
         }
+        visited[block_index] = true;
+        const auto& block = cfg.blocks[block_index];
+        for (const auto succ : block.successors) {
+            self(self, succ);
+        }
+        order.push_back(block_index);
+    };
+
+    if (!cfg.blocks.empty()) {
+        dfs(dfs, 0);
     }
 
-    static auto make_variable_ref(const std::string& name) -> ValueRef {
-        return ValueRef{ValueKind::Variable, name};
+    std::reverse(order.begin(), order.end());
+    return order;
+}
+
+[[nodiscard]] auto compute_immediate_dominators(const ControlFlowGraph& cfg) -> std::vector<std::size_t> {
+    if (cfg.blocks.empty()) {
+        return {};
     }
 
-    auto make_temp_ref() -> std::pair<ValueRef, SsaValue> {
-        const std::string name = "tmp" + std::to_string(next_temp_index_++);
-        SsaValue value{name, 0};
-        temp_values_.emplace(name, value);
-        return {ValueRef{ValueKind::Temporary, name}, value};
-    }
+    constexpr std::size_t kUndefined = std::numeric_limits<std::size_t>::max();
+    std::vector<std::size_t> idom(cfg.blocks.size(), kUndefined);
+    idom[0] = 0;
 
-    static auto make_external_ref(const std::string& name) -> ValueRef {
-        return ValueRef{ValueKind::External, name};
-    }
+    const auto rpo = compute_reverse_postorder(cfg);
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (std::size_t idx = 1; idx < rpo.size(); ++idx) {
+            const std::size_t block_index = rpo[idx];
+            const auto& block = cfg.blocks[block_index];
 
-    void convert_blocks() {
-        for (std::size_t block_index = 0; block_index < cfg_.blocks.size(); ++block_index) {
-            const auto& cfg_block = cfg_.blocks[block_index];
-            auto& pre_block = pre_blocks_[block_index];
-            pre_block.name = cfg_block.name;
-
-            std::vector<ValueRef> stack;
-            stack.reserve(cfg_block.end_index > cfg_block.start_index ? (cfg_block.end_index - cfg_block.start_index) : 0);
-
-            for (std::size_t i = cfg_block.start_index; i < cfg_block.end_index; ++i) {
-                const Instruction* inst = nullptr;
-                if (i < cfg_.instructions.size()) {
-                    inst = cfg_.instructions[i];
+            std::size_t new_idom = kUndefined;
+            for (const auto pred : block.predecessors) {
+                if (pred >= cfg.blocks.size()) {
+                    continue;
                 }
+                if (idom[pred] == kUndefined) {
+                    continue;
+                }
+                if (new_idom == kUndefined) {
+                    new_idom = pred;
+                } else {
+                    std::size_t finger1 = pred;
+                    std::size_t finger2 = new_idom;
+                    while (finger1 != finger2) {
+                        while (finger1 > finger2) {
+                            finger1 = idom[finger1];
+                        }
+                        while (finger2 > finger1) {
+                            finger2 = idom[finger2];
+                        }
+                    }
+                    new_idom = finger1;
+                }
+            }
+
+            if (new_idom != kUndefined && idom[block_index] != new_idom) {
+                idom[block_index] = new_idom;
+                changed = true;
+            }
+        }
+    }
+
+    return idom;
+}
+
+[[nodiscard]] auto compute_dominance_frontiers(const ControlFlowGraph& cfg,
+                                               const std::vector<std::size_t>& idom)
+    -> std::vector<std::vector<std::size_t>> {
+    std::vector<std::vector<std::size_t>> frontiers(cfg.blocks.size());
+    for (std::size_t b = 0; b < cfg.blocks.size(); ++b) {
+        const auto& block = cfg.blocks[b];
+        if (block.predecessors.size() < 2) {
+            continue;
+        }
+        for (const auto pred : block.predecessors) {
+            std::size_t runner = pred;
+            while (runner != idom[b] && runner < cfg.blocks.size()) {
+                frontiers[runner].push_back(b);
+                runner = idom[runner];
+            }
+        }
+    }
+    return frontiers;
+}
+
+[[nodiscard]] auto build_dominator_tree(const std::vector<std::size_t>& idom)
+    -> std::vector<std::vector<std::size_t>> {
+    std::vector<std::vector<std::size_t>> children(idom.size());
+    for (std::size_t block = 1; block < idom.size(); ++block) {
+        const std::size_t parent = idom[block];
+        if (parent < idom.size()) {
+            children[parent].push_back(block);
+        }
+    }
+    return children;
+}
+
+class RenameContext {
+public:
+    RenameContext(const Function& function, const ControlFlowGraph& cfg, SsaFunction& ssa, SymbolTable& symbols)
+        : function_(function), cfg_(cfg), ssa_(ssa), symbols_(symbols) {
+        block_instructions_.resize(cfg_.blocks.size());
+        for (std::size_t block_index = 0; block_index < cfg_.blocks.size(); ++block_index) {
+            const auto& block = cfg_.blocks[block_index];
+            if (block.start_index >= block.end_index) {
+                continue;
+            }
+            for (std::size_t i = block.start_index; i < block.end_index && i < cfg_.instructions.size(); ++i) {
+                block_instructions_[block_index].push_back(cfg_.instructions[i]);
+            }
+        }
+    }
+
+    void run() {
+        initialize_parameters();
+        if (!ssa_.blocks.empty()) {
+            rename_block(0);
+        }
+    }
+
+private:
+    void initialize_parameters() {
+        for (const auto& parameter : function_.parameters) {
+            const auto symbol_id = symbols_.find(parameter.name);
+            if (!symbol_id.has_value()) {
+                continue;
+            }
+            push_existing(SsaValue{*symbol_id, 1});
+        }
+    }
+
+    void rename_block(std::size_t block_index) {
+        if (block_index >= ssa_.blocks.size()) {
+            return;
+        }
+
+        auto& block = ssa_.blocks[block_index];
+        std::vector<SymbolId> defined_symbols;
+        defined_symbols.reserve(block.phi_nodes.size());
+        std::vector<SsaInstruction> materialized;
+        std::vector<SsaValue> eval_stack;
+
+        for (auto& phi : block.phi_nodes) {
+            const auto value = next_version(phi.symbol);
+            phi.result = value;
+            defined_symbols.push_back(phi.symbol);
+        }
+
+        if (block_index < block_instructions_.size()) {
+            for (const auto* inst : block_instructions_[block_index]) {
                 if (inst == nullptr) {
                     continue;
                 }
-
                 switch (inst->kind) {
-                    case InstructionKind::Comment:
-                    case InstructionKind::Label:
-                        break;
                     case InstructionKind::Literal: {
-                        if (inst->operands.empty()) {
-                            break;
+                        SsaInstruction out;
+                        out.opcode = "literal";
+                        if (!inst->operands.empty()) {
+                            out.immediates.push_back(inst->operands.front());
                         }
-                        auto [temp_ref, temp_value] = make_temp_ref();
-                        PreInstruction pre;
-                        pre.op = SsaOp::Literal;
-                        pre.result = temp_ref;
-                        pre.fixed_result = temp_value;
-                        pre.immediates = inst->operands;
-                        pre_block.instructions.push_back(std::move(pre));
-                        stack.push_back(temp_ref);
+                        const auto result = make_temporary();
+                        out.result = result;
+                        materialized.push_back(out);
+                        eval_stack.push_back(result);
                         break;
                     }
                     case InstructionKind::Reference: {
                         if (inst->operands.empty()) {
                             break;
                         }
-                        const std::string& name = inst->operands.front();
-                        if (tracked_variables_.count(name) > 0) {
-                            stack.push_back(make_variable_ref(name));
-                        } else {
-                            stack.push_back(make_external_ref(name));
-                        }
-                        break;
-                    }
-                    case InstructionKind::Binary: {
-                        if (inst->operands.empty()) {
-                            break;
-                        }
-                        if (stack.size() < 2) {
-                            break;
-                        }
-                        auto right = stack.back();
-                        stack.pop_back();
-                        auto left = stack.back();
-                        stack.pop_back();
-                        auto [temp_ref, temp_value] = make_temp_ref();
-                        PreInstruction pre;
-                        pre.op = SsaOp::Binary;
-                        pre.arguments.push_back(left);
-                        pre.arguments.push_back(right);
-                        pre.result = temp_ref;
-                        pre.fixed_result = temp_value;
-                        pre.immediates = inst->operands;
-                        pre_block.instructions.push_back(std::move(pre));
-                        stack.push_back(temp_ref);
+                        const auto symbol_id = symbols_.get_or_create(inst->operands.front());
+                        const auto current_value = current(symbol_id);
+                        eval_stack.push_back(current_value.value_or(SsaValue{symbol_id, 0}));
                         break;
                     }
                     case InstructionKind::Unary: {
-                        if (inst->operands.empty()) {
+                        if (eval_stack.empty()) {
                             break;
                         }
-                        if (stack.empty()) {
-                            break;
+                        const auto operand = pop(eval_stack);
+                        SsaInstruction out;
+                        out.opcode = "unary";
+                        out.arguments.push_back(operand);
+                        if (!inst->operands.empty()) {
+                            out.immediates.push_back(inst->operands.front());
                         }
-                        auto operand = stack.back();
-                        stack.pop_back();
-                        auto [temp_ref, temp_value] = make_temp_ref();
-                        PreInstruction pre;
-                        pre.op = SsaOp::Unary;
-                        pre.arguments.push_back(operand);
-                        pre.result = temp_ref;
-                        pre.fixed_result = temp_value;
-                        pre.immediates = inst->operands;
-                        pre_block.instructions.push_back(std::move(pre));
-                        stack.push_back(temp_ref);
+                        const auto result = make_temporary();
+                        out.result = result;
+                        materialized.push_back(out);
+                        eval_stack.push_back(result);
                         break;
                     }
-                    case InstructionKind::Call: {
-                        if (inst->operands.empty()) {
+                    case InstructionKind::Binary: {
+                        if (eval_stack.size() < 2) {
                             break;
                         }
-                        std::size_t arg_count = 0;
-                        if (inst->operands.size() >= 2) {
-                            try {
-                                arg_count = static_cast<std::size_t>(std::stoul(inst->operands[1]));
-                            } catch (...) {
-                                arg_count = 0;
-                            }
+                        const auto rhs = pop(eval_stack);
+                        const auto lhs = pop(eval_stack);
+                        SsaInstruction out;
+                        out.opcode = "binary";
+                        out.arguments.push_back(lhs);
+                        out.arguments.push_back(rhs);
+                        if (!inst->operands.empty()) {
+                            out.immediates.push_back(inst->operands.front());
                         }
-                        if (stack.size() < arg_count) {
-                            break;
-                        }
-                        std::vector<ValueRef> args;
-                        args.reserve(arg_count);
-                        for (std::size_t a = 0; a < arg_count; ++a) {
-                            args.push_back(stack.back());
-                            stack.pop_back();
-                        }
-                        std::reverse(args.begin(), args.end());
-                        auto [temp_ref, temp_value] = make_temp_ref();
-                        PreInstruction pre;
-                        pre.op = SsaOp::Call;
-                        pre.arguments = std::move(args);
-                        pre.result = temp_ref;
-                        pre.fixed_result = temp_value;
-                        pre.immediates = inst->operands;
-                        pre_block.instructions.push_back(std::move(pre));
-                        stack.push_back(temp_ref);
+                        const auto result = make_temporary();
+                        out.result = result;
+                        materialized.push_back(out);
+                        eval_stack.push_back(result);
                         break;
                     }
                     case InstructionKind::Store: {
-                        if (inst->operands.empty()) {
+                        if (inst->operands.empty() || eval_stack.empty()) {
                             break;
                         }
-                        if (stack.empty()) {
-                            break;
-                        }
-                        auto value = stack.back();
-                        stack.pop_back();
-                        const std::string& name = inst->operands.front();
-                        tracked_variables_.insert(name);
-                        defsites_[name].insert(block_index);
-                        PreInstruction pre;
-                        pre.op = SsaOp::Store;
-                        pre.arguments.push_back(value);
-                        pre.result = make_variable_ref(name);
-                        pre_block.instructions.push_back(std::move(pre));
+                        const auto value = pop(eval_stack);
+                        const SymbolId symbol = symbols_.get_or_create(inst->operands.front());
+                        const auto versioned = next_version(symbol);
+                        defined_symbols.push_back(symbol);
+
+                        SsaInstruction out;
+                        out.opcode = "assign";
+                        out.arguments.push_back(value);
+                        out.result = versioned;
+                        materialized.push_back(out);
                         break;
                     }
                     case InstructionKind::Drop: {
-                        if (stack.empty()) {
+                        if (eval_stack.empty()) {
                             break;
                         }
-                        auto value = stack.back();
-                        stack.pop_back();
-                        PreInstruction pre;
-                        pre.op = SsaOp::Drop;
-                        pre.arguments.push_back(value);
-                        pre_block.instructions.push_back(std::move(pre));
-                        break;
-                    }
-                    case InstructionKind::Return: {
-                        PreInstruction pre;
-                        pre.op = SsaOp::Return;
-                        if (!stack.empty()) {
-                            pre.arguments.push_back(stack.back());
-                            stack.pop_back();
-                        }
-                        pre_block.instructions.push_back(std::move(pre));
+                        SsaInstruction out;
+                        out.opcode = "drop";
+                        out.arguments.push_back(pop(eval_stack));
+                        materialized.push_back(out);
                         break;
                     }
                     case InstructionKind::Branch: {
-                        PreInstruction pre;
-                        pre.op = SsaOp::Branch;
-                        pre.immediates = inst->operands;
-                        pre_block.instructions.push_back(std::move(pre));
+                        SsaInstruction out;
+                        out.opcode = "branch";
+                        if (!inst->operands.empty()) {
+                            out.immediates.push_back(inst->operands.front());
+                        }
+                        materialized.push_back(out);
                         break;
                     }
                     case InstructionKind::BranchIf: {
-                        if (stack.empty()) {
+                        if (eval_stack.empty()) {
                             break;
                         }
-                        auto condition = stack.back();
-                        stack.pop_back();
-                        PreInstruction pre;
-                        pre.op = SsaOp::BranchIf;
-                        pre.arguments.push_back(condition);
-                        pre.immediates = inst->operands;
-                        pre_block.instructions.push_back(std::move(pre));
+                        SsaInstruction out;
+                        out.opcode = "branch_if";
+                        out.arguments.push_back(pop(eval_stack));
+                        out.immediates = inst->operands;
+                        materialized.push_back(out);
                         break;
                     }
-                }
-            }
-        }
-    }
-
-    void compute_reverse_postorder() {
-        reverse_postorder_.clear();
-        if (cfg_.blocks.empty()) {
-            return;
-        }
-
-        std::vector<bool> visited(cfg_.blocks.size(), false);
-        std::function<void(std::size_t)> dfs = [&](std::size_t node) {
-            if (visited[node]) {
-                return;
-            }
-            visited[node] = true;
-            for (const auto succ : cfg_.blocks[node].successors) {
-                if (succ < cfg_.blocks.size()) {
-                    dfs(succ);
-                }
-            }
-            reverse_postorder_.push_back(node);
-        };
-
-        dfs(entry_block_);
-        std::reverse(reverse_postorder_.begin(), reverse_postorder_.end());
-    }
-
-    auto intersect(std::pair<std::size_t, std::size_t> nodes, const std::vector<std::size_t>& rpo_position) const
-        -> std::size_t {
-        std::size_t finger_a = nodes.first;
-        std::size_t finger_b = nodes.second;
-        while (finger_a != finger_b) {
-            while (rpo_position[finger_a] > rpo_position[finger_b]) {
-                finger_a = idom_[finger_a];
-            }
-            while (rpo_position[finger_b] > rpo_position[finger_a]) {
-                finger_b = idom_[finger_b];
-            }
-        }
-        return finger_a;
-    }
-
-    void compute_dominators() {
-        const std::size_t block_count = cfg_.blocks.size();
-        idom_.assign(block_count, kInvalidIndex);
-        dom_children_.assign(block_count, {});
-
-        compute_reverse_postorder();
-        if (reverse_postorder_.empty()) {
-            return;
-        }
-
-        std::vector<std::size_t> rpo_position(block_count, kInvalidIndex);
-        for (std::size_t i = 0; i < reverse_postorder_.size(); ++i) {
-            rpo_position[reverse_postorder_[i]] = i;
-        }
-
-        const std::size_t start = reverse_postorder_.front();
-        idom_[start] = start;
-
-        bool changed = true;
-        while (changed) {
-            changed = false;
-            for (std::size_t i = 1; i < reverse_postorder_.size(); ++i) {
-                const std::size_t block = reverse_postorder_[i];
-                std::size_t new_idom = kInvalidIndex;
-                for (const auto pred : cfg_.blocks[block].predecessors) {
-                    if (pred >= block_count) {
-                        continue;
-                    }
-                    if (idom_[pred] == kInvalidIndex) {
-                        continue;
-                    }
-                    if (new_idom == kInvalidIndex) {
-                        new_idom = pred;
-                    } else {
-                        new_idom = intersect({pred, new_idom}, rpo_position);
-                    }
-                }
-                if (new_idom != kInvalidIndex && idom_[block] != new_idom) {
-                    idom_[block] = new_idom;
-                    changed = true;
-                }
-            }
-        }
-
-        for (std::size_t block = 0; block < block_count; ++block) {
-            const std::size_t idom = idom_[block];
-            if (idom == kInvalidIndex || idom == block) {
-                continue;
-            }
-            dom_children_[idom].push_back(block);
-        }
-    }
-
-    void compute_dominance_frontiers() {
-        const std::size_t block_count = cfg_.blocks.size();
-        dom_frontiers_.assign(block_count, {});
-        if (idom_.empty()) {
-            return;
-        }
-        for (std::size_t block = 0; block < block_count; ++block) {
-            const auto& preds = cfg_.blocks[block].predecessors;
-            if (preds.size() < 2) {
-                continue;
-            }
-            for (const auto pred : preds) {
-                std::size_t runner = pred;
-                while (runner != idom_[block] && runner != kInvalidIndex) {
-                    auto& frontier = dom_frontiers_[runner];
-                    if (std::find(frontier.begin(), frontier.end(), block) == frontier.end()) {
-                        frontier.push_back(block);
-                    }
-                    runner = idom_[runner];
-                }
-            }
-        }
-    }
-
-    void place_phi_nodes() {
-        for (const auto& [variable, sites] : defsites_) {
-            std::vector<std::size_t> worklist(sites.begin(), sites.end());
-            std::unordered_set<std::size_t> processed;
-
-            while (!worklist.empty()) {
-                const std::size_t block = worklist.back();
-                worklist.pop_back();
-
-                if (!processed.insert(block).second) {
-                    continue;
-                }
-
-                if (block >= dom_frontiers_.size()) {
-                    continue;
-                }
-
-                for (const auto frontier_block : dom_frontiers_[block]) {
-                    if (phi_variables_[frontier_block].insert(variable).second) {
-                        if (defsites_.at(variable).count(frontier_block) == 0) {
-                            worklist.push_back(frontier_block);
+                    case InstructionKind::Return: {
+                        SsaInstruction out;
+                        out.opcode = "return";
+                        if (!eval_stack.empty()) {
+                            out.arguments.push_back(pop(eval_stack));
                         }
+                        materialized.push_back(out);
+                        break;
                     }
+                    case InstructionKind::Call: {
+                        if (inst->operands.size() < 2) {
+                            break;
+                        }
+                        const auto arg_count = static_cast<std::size_t>(std::stoul(inst->operands[1]));
+                        if (eval_stack.size() < arg_count) {
+                            break;
+                        }
+                        std::vector<SsaValue> args;
+                        args.reserve(arg_count);
+                        for (std::size_t i = 0; i < arg_count; ++i) {
+                            args.push_back(pop(eval_stack));
+                        }
+                        std::reverse(args.begin(), args.end());
+
+                        SsaInstruction out;
+                        out.opcode = "call";
+                        out.arguments = std::move(args);
+                        out.immediates = inst->operands;
+                        const auto result = make_temporary();
+                        out.result = result;
+                        materialized.push_back(out);
+                        eval_stack.push_back(result);
+                        break;
+                    }
+                    case InstructionKind::MakeArray: {
+                        if (eval_stack.empty()) {
+                            break;
+                        }
+                        SsaInstruction out;
+                        out.opcode = "array_make";
+                        out.arguments.push_back(pop(eval_stack));
+                        const auto result = make_temporary();
+                        out.result = result;
+                        materialized.push_back(out);
+                        eval_stack.push_back(result);
+                        break;
+                    }
+                    case InstructionKind::ArrayGet: {
+                        if (eval_stack.size() < 2) {
+                            break;
+                        }
+                        const auto index = pop(eval_stack);
+                        const auto array = pop(eval_stack);
+                        SsaInstruction out;
+                        out.opcode = "array_get";
+                        out.arguments = {array, index};
+                        const auto result = make_temporary();
+                        out.result = result;
+                        materialized.push_back(out);
+                        eval_stack.push_back(result);
+                        break;
+                    }
+                    case InstructionKind::ArraySet: {
+                        if (eval_stack.size() < 3) {
+                            break;
+                        }
+                        const auto value = pop(eval_stack);
+                        const auto index = pop(eval_stack);
+                        const auto array = pop(eval_stack);
+                        SsaInstruction out;
+                        out.opcode = "array_set";
+                        out.arguments = {array, index, value};
+                        const auto result = make_temporary();
+                        out.result = result;
+                        materialized.push_back(out);
+                        eval_stack.push_back(result);
+                        break;
+                    }
+                    case InstructionKind::ArrayLength: {
+                        if (eval_stack.empty()) {
+                            break;
+                        }
+                        SsaInstruction out;
+                        out.opcode = "array_length";
+                        out.arguments.push_back(pop(eval_stack));
+                        const auto result = make_temporary();
+                        out.result = result;
+                        materialized.push_back(out);
+                        eval_stack.push_back(result);
+                        break;
+                    }
+                    case InstructionKind::Label:
+                    case InstructionKind::Comment:
+                        break;
                 }
             }
         }
-    }
 
-    void initialize_result_blocks() {
-        for (std::size_t block_index = 0; block_index < cfg_.blocks.size(); ++block_index) {
-            const auto& cfg_block = cfg_.blocks[block_index];
-            auto& out_block = result_.blocks[block_index];
-            out_block.name = cfg_block.name;
-            out_block.successors = cfg_block.successors;
+        block.instructions = std::move(materialized);
 
-            std::vector<std::string> phi_vars(phi_variables_[block_index].begin(), phi_variables_[block_index].end());
-            std::sort(phi_vars.begin(), phi_vars.end());
-
-            for (const auto& var : phi_vars) {
-                SsaPhiNode node;
-                node.variable = var;
-                node.result = SsaValue{var, 0};
-                for (const auto pred : cfg_block.predecessors) {
-                    node.inputs.push_back(SsaPhiInput{pred, std::nullopt});
+        for (const auto successor : block.successors) {
+            if (successor >= ssa_.blocks.size()) {
+                continue;
+            }
+            auto& successor_block = ssa_.blocks[successor];
+            for (auto& phi : successor_block.phi_nodes) {
+                const auto current_value = current(phi.symbol);
+                auto it = std::find_if(phi.inputs.begin(), phi.inputs.end(), [&](const PhiInput& input) {
+                    return input.predecessor == block_index;
+                });
+                if (it != phi.inputs.end()) {
+                    it->value = current_value;
+                } else {
+                    PhiInput input;
+                    input.predecessor = block_index;
+                    input.value = current_value;
+                    phi.inputs.push_back(input);
                 }
-                out_block.phi_nodes.push_back(std::move(node));
             }
         }
-    }
 
-    void initialize_variable_environment() {
-        for (const auto& param : function_.parameters) {
-            const std::string& name = param.name;
-            variable_stack_[name].push_back(SsaValue{name, 0});
-            version_counters_[name] = 0;
+        for (const auto child : block.dominator_children) {
+            rename_block(child);
+        }
+
+        for (auto it = defined_symbols.rbegin(); it != defined_symbols.rend(); ++it) {
+            pop(*it);
         }
     }
 
-    auto current_value(const std::string& name) const -> std::optional<SsaValue> {
-        const auto it = variable_stack_.find(name);
-        if (it == variable_stack_.end() || it->second.empty()) {
+    [[nodiscard]] auto next_version(SymbolId symbol) -> SsaValue {
+        auto& counter = counters_[symbol];
+        counter += 1;
+        stacks_[symbol].push_back(counter);
+        return SsaValue{symbol, counter};
+    }
+
+    void push_existing(const SsaValue& value) {
+        auto& stack = stacks_[value.symbol];
+        stack.push_back(value.version);
+        auto& counter = counters_[value.symbol];
+        if (counter < value.version) {
+            counter = value.version;
+        }
+    }
+
+    [[nodiscard]] auto current(SymbolId symbol) const -> std::optional<SsaValue> {
+        const auto it = stacks_.find(symbol);
+        if (it == stacks_.end() || it->second.empty()) {
             return std::nullopt;
         }
-        return it->second.back();
+        return SsaValue{symbol, it->second.back()};
     }
 
-    void push_value(const std::string& name, const SsaValue& value) {
-        variable_stack_[name].push_back(value);
+    [[nodiscard]] auto make_temporary() -> SsaValue {
+        const SymbolId id = symbols_.create_temporary();
+        return SsaValue{id, 1};
     }
 
-    void pop_value(const std::string& name) {
-        auto it = variable_stack_.find(name);
-        if (it == variable_stack_.end() || it->second.empty()) {
+    static auto pop(std::vector<SsaValue>& stack) -> SsaValue {
+        const auto value = stack.back();
+        stack.pop_back();
+        return value;
+    }
+
+    void pop(SymbolId symbol) {
+        auto it = stacks_.find(symbol);
+        if (it == stacks_.end() || it->second.empty()) {
             return;
         }
         it->second.pop_back();
     }
 
-    auto next_version(const std::string& name) -> SsaValue {
-        auto& counter = version_counters_[name];
-        counter += 1;
-        return SsaValue{name, counter};
-    }
-
-    auto resolve_temporary(const std::string& name, const std::optional<SsaValue>& fallback) -> SsaValue {
-        const auto it = temp_values_.find(name);
-        if (it != temp_values_.end()) {
-            return it->second;
-        }
-        if (fallback.has_value()) {
-            temp_values_[name] = *fallback;
-            return *fallback;
-        }
-        SsaValue value{name, 0};
-        temp_values_[name] = value;
-        return value;
-    }
-
-    auto resolve_external(const std::string& name) -> SsaValue {
-        const auto it = external_values_.find(name);
-        if (it != external_values_.end()) {
-            return it->second;
-        }
-        SsaValue value{name, 0};
-        external_values_[name] = value;
-        return value;
-    }
-
-    auto resolve_variable(const std::string& name) -> SsaValue {
-        if (const auto current = current_value(name)) {
-            return *current;
-        }
-        const auto it = fallback_values_.find(name);
-        if (it != fallback_values_.end()) {
-            return it->second;
-        }
-        SsaValue placeholder{name, 0};
-        fallback_values_[name] = placeholder;
-        return placeholder;
-    }
-
-    auto resolve_value(const ValueRef& ref, const std::optional<SsaValue>& preset = std::nullopt) -> SsaValue {
-        switch (ref.kind) {
-            case ValueKind::Variable:
-                return resolve_variable(ref.name);
-            case ValueKind::Temporary:
-                return resolve_temporary(ref.name, preset);
-            case ValueKind::External:
-                return resolve_external(ref.name);
-        }
-        return SsaValue{ref.name, 0};
-    }
-
-    void rename_block(std::size_t block_index) {
-        if (block_index >= result_.blocks.size()) {
-            return;
-        }
-        if (visited_[block_index]) {
-            return;
-        }
-        if (block_index != entry_block_ && (block_index >= idom_.size() || idom_[block_index] == kInvalidIndex)) {
-            visited_[block_index] = true;
-            return;
-        }
-
-        visited_[block_index] = true;
-        auto& out_block = result_.blocks[block_index];
-        const auto& pre_block = pre_blocks_[block_index];
-
-        std::vector<std::string> pushed_variables;
-        pushed_variables.reserve(out_block.phi_nodes.size() + pre_block.instructions.size());
-
-        for (auto& phi : out_block.phi_nodes) {
-            const auto value = next_version(phi.variable);
-            phi.result = value;
-            push_value(phi.variable, value);
-            pushed_variables.push_back(phi.variable);
-        }
-
-        out_block.instructions.reserve(pre_block.instructions.size());
-        for (const auto& pre : pre_block.instructions) {
-            SsaInstruction inst;
-            inst.op = pre.op;
-            inst.immediates = pre.immediates;
-
-            inst.arguments.reserve(pre.arguments.size());
-            for (const auto& arg : pre.arguments) {
-                inst.arguments.push_back(resolve_value(arg));
-            }
-
-            if (pre.result.has_value()) {
-                const auto& target = *pre.result;
-                if (target.kind == ValueKind::Variable) {
-                    const auto value = next_version(target.name);
-                    inst.result = value;
-                    push_value(target.name, value);
-                    pushed_variables.push_back(target.name);
-                } else if (target.kind == ValueKind::Temporary) {
-                    inst.result = resolve_value(target, pre.fixed_result);
-                } else {
-                    if (pre.fixed_result.has_value()) {
-                        inst.result = pre.fixed_result;
-                    }
-                }
-            } else if (pre.fixed_result.has_value()) {
-                inst.result = pre.fixed_result;
-            }
-
-            out_block.instructions.push_back(std::move(inst));
-        }
-
-        for (const auto succ : cfg_.blocks[block_index].successors) {
-            if (succ >= result_.blocks.size()) {
-                continue;
-            }
-            auto& succ_block = result_.blocks[succ];
-            for (auto& phi : succ_block.phi_nodes) {
-                const auto current = current_value(phi.variable);
-                if (!current.has_value()) {
-                    continue;
-                }
-                auto it = std::find_if(phi.inputs.begin(), phi.inputs.end(), [block_index](const SsaPhiInput& input) {
-                    return input.predecessor == block_index;
-                });
-                if (it != phi.inputs.end()) {
-                    it->value = current;
-                }
-            }
-        }
-
-        for (const auto child : dom_children_[block_index]) {
-            rename_block(child);
-        }
-
-        for (auto it = pushed_variables.rbegin(); it != pushed_variables.rend(); ++it) {
-            pop_value(*it);
-        }
-    }
-
-    void rename() {
-        if (cfg_.blocks.empty()) {
-            return;
-        }
-        visited_.assign(cfg_.blocks.size(), false);
-        initialize_variable_environment();
-        rename_block(entry_block_);
-    }
-
-   private:
     const Function& function_;
-    ControlFlowGraph cfg_;
-    std::size_t entry_block_ = 0;
-
-    std::vector<PreBlock> pre_blocks_;
-    std::vector<std::unordered_set<std::string>> phi_variables_;
-
-    std::unordered_map<std::string, std::unordered_set<std::size_t>> defsites_;
-    std::unordered_set<std::string> tracked_variables_;
-
-    std::size_t next_temp_index_ = 0;
-    std::unordered_map<std::string, SsaValue> temp_values_;
-    std::unordered_map<std::string, SsaValue> external_values_;
-    std::unordered_map<std::string, SsaValue> fallback_values_;
-
-    std::vector<std::size_t> idom_;
-    std::vector<std::vector<std::size_t>> dom_children_;
-    std::vector<std::vector<std::size_t>> dom_frontiers_;
-    std::vector<std::size_t> reverse_postorder_;
-
-    std::unordered_map<std::string, std::vector<SsaValue>> variable_stack_;
-    std::unordered_map<std::string, std::uint32_t> version_counters_;
-
-    std::vector<bool> visited_;
-
-    SsaFunction result_;
+    const ControlFlowGraph& cfg_;
+    SsaFunction& ssa_;
+    SymbolTable& symbols_;
+    std::unordered_map<SymbolId, std::vector<std::uint32_t>> stacks_;
+    std::unordered_map<SymbolId, std::uint32_t> counters_;
+    std::vector<std::vector<const Instruction*>> block_instructions_;
 };
 
 }  // namespace
 
-auto build_ssa(const Function& function) -> SsaFunction {
-    SsaBuilder builder(function);
-    return builder.build();
+auto impulse::ir::SsaFunction::find_block(const std::string& block_name) const -> const SsaBlock* {
+    for (const auto& block : blocks) {
+        if (block.name == block_name) {
+            return &block;
+        }
+    }
+    return nullptr;
 }
 
-}  // namespace impulse::ir
+auto SsaFunction::find_symbol(SymbolId id) const -> const SsaSymbol* {
+    for (const auto& symbol : symbols) {
+        if (symbol.id == id) {
+            return &symbol;
+        }
+    }
+    return nullptr;
+}
+
+auto SsaFunction::find_symbol(const std::string& name) const -> const SsaSymbol* {
+    for (const auto& symbol : symbols) {
+        if (symbol.name == name) {
+            return &symbol;
+        }
+    }
+    return nullptr;
+}
+
+auto impulse::ir::build_ssa(const Function& function, const ControlFlowGraph& cfg) -> SsaFunction {
+    SymbolTable symbol_table;
+    for (const auto& parameter : function.parameters) {
+        symbol_table.add_parameter(parameter);
+    }
+
+    SsaFunction ssa;
+    ssa.name = function.name;
+
+    const auto idom = compute_immediate_dominators(cfg);
+    const auto dom_tree = build_dominator_tree(idom);
+    const auto dom_frontiers = compute_dominance_frontiers(cfg, idom);
+
+    ssa.blocks.reserve(cfg.blocks.size());
+    for (std::size_t index = 0; index < cfg.blocks.size(); ++index) {
+        const auto& cfg_block = cfg.blocks[index];
+
+        SsaBlock block;
+        block.id = index;
+        block.name = cfg_block.name;
+        block.successors = cfg_block.successors;
+        block.predecessors = cfg_block.predecessors;
+        if (index < idom.size()) {
+            block.immediate_dominator = idom[index];
+        }
+        if (index < dom_tree.size()) {
+            block.dominator_children = dom_tree[index];
+        }
+        if (index < dom_frontiers.size()) {
+            block.dominance_frontier = dom_frontiers[index];
+        }
+
+        ssa.blocks.push_back(std::move(block));
+    }
+
+    std::vector<std::unordered_set<SymbolId>> existing_phi(ssa.blocks.size());
+    std::unordered_map<SymbolId, std::vector<std::size_t>> definition_sites;
+
+    std::unordered_map<const Instruction*, std::size_t> instruction_to_block;
+    for (std::size_t block_index = 0; block_index < cfg.blocks.size(); ++block_index) {
+        const auto& cfg_block = cfg.blocks[block_index];
+        for (std::size_t i = cfg_block.start_index; i < cfg_block.end_index && i < cfg.instructions.size(); ++i) {
+            const auto* inst = cfg.instructions[i];
+            if (inst == nullptr) {
+                continue;
+            }
+            instruction_to_block[inst] = block_index;
+        }
+    }
+
+    for (std::size_t block_index = 0; block_index < function.blocks.size(); ++block_index) {
+        const auto& source_block = function.blocks[block_index];
+        for (const auto& instruction : source_block.instructions) {
+            if (instruction.kind != InstructionKind::Store || instruction.operands.empty()) {
+                continue;
+            }
+            const std::string& name = instruction.operands.front();
+            const SymbolId id = symbol_table.get_or_create(name);
+            std::size_t ssa_index = block_index;
+            const auto it = instruction_to_block.find(&instruction);
+            if (it != instruction_to_block.end()) {
+                ssa_index = it->second;
+            } else {
+                const auto* cfg_block = cfg.find_block(source_block.label.empty() ? ssa.blocks[block_index].name
+                                                                                   : source_block.label);
+                if (cfg_block != nullptr) {
+                    ssa_index = static_cast<std::size_t>(cfg_block - cfg.blocks.data());
+                }
+            }
+            definition_sites[id].push_back(ssa_index);
+        }
+    }
+
+    if (!ssa.blocks.empty()) {
+        for (const auto& parameter : function.parameters) {
+            if (const auto symbol_id = symbol_table.find(parameter.name)) {
+                definition_sites[*symbol_id].push_back(0);
+            }
+        }
+    }
+
+    for (auto& [symbol, sites] : definition_sites) {
+        std::vector<std::size_t> worklist;
+        worklist.reserve(sites.size());
+        std::unordered_set<std::size_t> visited;
+        for (const auto site : sites) {
+            worklist.push_back(site);
+            visited.insert(site);
+        }
+
+        while (!worklist.empty()) {
+            const std::size_t block_index = worklist.back();
+            worklist.pop_back();
+
+            if (block_index >= dom_frontiers.size()) {
+                continue;
+            }
+
+            for (const auto frontier_block : dom_frontiers[block_index]) {
+                if (frontier_block >= ssa.blocks.size()) {
+                    continue;
+                }
+                if (!existing_phi[frontier_block].emplace(symbol).second) {
+                    continue;
+                }
+
+                PhiNode node;
+                node.symbol = symbol;
+                node.result = SsaValue{symbol, 0};
+                ssa.blocks[frontier_block].phi_nodes.push_back(std::move(node));
+
+                if (visited.insert(frontier_block).second) {
+                    worklist.push_back(frontier_block);
+                }
+            }
+        }
+    }
+
+    for (auto& block : ssa.blocks) {
+        for (auto& phi : block.phi_nodes) {
+            phi.inputs.clear();
+            phi.inputs.reserve(block.predecessors.size());
+            for (const auto predecessor : block.predecessors) {
+                PhiInput input;
+                input.predecessor = predecessor;
+                input.value = std::nullopt;
+                phi.inputs.push_back(input);
+            }
+        }
+    }
+
+    if (!ssa.blocks.empty()) {
+        RenameContext rename(function, cfg, ssa, symbol_table);
+        rename.run();
+    }
+
+    ssa.symbols = symbol_table.symbols();
+    return ssa;
+}
+
+auto impulse::ir::build_ssa(const Function& function) -> SsaFunction {
+    const auto cfg = build_control_flow_graph(function);
+    return build_ssa(function, cfg);
+}

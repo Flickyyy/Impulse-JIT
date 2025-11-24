@@ -75,6 +75,7 @@ struct Expression {
     };
 
     SourceLocation location;
+    SourceLocation closing_location;
     std::string literal_value;
     Identifier identifier;
     BinaryOperator binary_operator = BinaryOperator::Add;
@@ -112,6 +113,8 @@ struct Statement {
         If,
         While,
         For,
+        Break,
+        Continue,
         ExprStmt,
     } kind = Kind::Return;
 

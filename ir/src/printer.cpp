@@ -110,6 +110,18 @@ namespace {
                 }
             }
             break;
+        case InstructionKind::MakeArray:
+            out << "make_array";
+            break;
+        case InstructionKind::ArrayGet:
+            out << "array_get";
+            break;
+        case InstructionKind::ArraySet:
+            out << "array_set";
+            break;
+        case InstructionKind::ArrayLength:
+            out << "array_length";
+            break;
     }
     return out.str();
 }

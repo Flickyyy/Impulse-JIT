@@ -28,6 +28,10 @@ enum class InstructionKind : std::uint8_t {
     BranchIf,
     Label,
     Call,
+    MakeArray,
+    ArrayGet,
+    ArraySet,
+    ArrayLength,
 };
 
 struct Instruction {

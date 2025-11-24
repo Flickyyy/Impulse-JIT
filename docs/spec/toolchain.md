@@ -3,34 +3,40 @@
 ## 1. Components
 
 ### Current Implementation
-- **`frontend/`** — C++ lexer, parser, semantic analysis, and lowering to IR
-- **`ir/`** — Stack-based IR with interpreter for constant evaluation and function execution
-- **`runtime/`** — VM executing IR instructions with control flow support
-- **`cli/`** — Go CLI wrapper (`impulsec`) communicating with C++ via CGO
-- **`tests/`** — Unit tests covering parser, IR, and runtime
-
-### Future Components
-- **`tools/`** — Scripts for code generation, benchmarks, profiling
-- **`stdlib/`** — Standard library modules (print, math, collections, io)
-
-## 2. Build System
-
-### Current Setup
-```bash
-# Build C++ components
-cmake -S . -B build
-cmake --build build
-
-# Build CLI
-cd cli && go build ./cmd/impulsec
-
-# Run tests
-cd build && ctest
-cd ../cli && go test ./...
+- **`frontend/`** — C++ lexer, parser, semantic analysis, and lowering to stack IR
+- **`ir/`** — Stack-based IR utilities (builder, printer, CFG, constant evaluator, SSA with dominators, rename, instruction materialisation, constant/copy propagation, copy propagation, dead assignment elimination, and an optimisation driver)
+- **`runtime/`** — SSA-aware interpreter that rebuilds & optimises functions before execution, with GC-backed arrays
+- **`cli/`** — Go CLI wrapper (`impulsec`) communicating with C++ via CGO (mirrors the C++ `impulse-cpp` tool)
+- **`tests/`** — Unit tests covering lexer, parser, semantics, IR, and runtime execution
+```
+source ──► lexer ──► tokens ──► parser ──► AST ──► semantic checks ──► IR lowering ──► SSA optimise ──► interpreter
+			│				│
+				▼			▼
+	   Control Flow Graph ────────────────► SSA (dominators, phi nodes, renamed values)
 ```
 
-### Targets
-- `impulse-ir` — IR library (printer, builder, interpreter)
+- **AST ➜ IR**: `frontend::lower_to_ir` translates well-typed syntax into the stack IR.
+- **IR ➜ CFG**: `ir::build_control_flow_graph` groups the flat instruction stream into basic blocks for analysis and SSA construction.
+- **IR ➜ SSA**: `ir::build_ssa` mirrors CFG layout, records dominance data, places phi nodes, and materialises SSA instructions.
+- **SSA ➜ Optimiser**: `ir::optimize_ssa` runs constant propagation, copy propagation, and dead assignment elimination to a fixed point.
+- **SSA ➜ Runtime**: the VM evaluates the optimised SSA program directly while maintaining GC rooting.
+
+## 2. Build & Test
+
+```
+source ──► lexer ──► tokens ──► parser ──► AST ──► semantic checks ──► IR lowering ──► SSA optimise ──► runtime
+			│				│
+				▼			▼
+	   Control Flow Graph ────────────────► SSA (dominators, phi nodes, renamed values)
+```
+
+- **AST ➜ IR**: `frontend::lower_to_ir` translates well-typed syntax into the stack IR.
+- **IR ➜ CFG**: `ir::build_control_flow_graph` groups the flat instruction stream into basic blocks for analysis, SSA construction, and testing.
+- **IR ➜ SSA**: `ir::build_ssa` mirrors CFG layout, records dominator data, inserts phi nodes, and performs renaming.
+- **SSA ➜ Runtime**: the VM executes the optimised SSA program directly.
+
+Future passes (optimisation, codegen) will build on the SSA representation already in place.
+- `impulse-ir` — IR library (printer, builder, interpreter, CFG)
 - `impulse-runtime` — VM runtime
 - `impulse-frontend` — Parser and lowering
 - `impulse-tests` — Unit test suite
@@ -71,67 +77,51 @@ cd ../cli && go test ./...
 ### Layer Interactions
 
 ```
-source ──► lexer ──► tokens ──► parser ──► AST ──► semantic checks ──► IR lowering
-								│
-								▼
-							Control Flow Graph
-								│
-								▼
-						   Static Single Assignment
-								│
-								▼
-			     Future: Data-Flow Graph, liveness, register allocation, codegen
+source ──► lexer ──► tokens ──► parser ──► AST ──► semantic checks ──► IR lowering ──► interpreter
+				│					│
+				▼					▼
+		   Control Flow Graph ────────────────► SSA scaffold (structure + symbols)
 ```
 
-- **AST ➜ IR**: `frontend::lower_to_ir` translates well-typed syntax into stack-based IR.
-- **IR ➜ CFG**: `ir::build_control_flow_graph` groups the flat instruction stream into basic blocks so we know which edges exist.
-- **CFG ➜ SSA**: `ir::build_ssa` relies on the CFG topology to insert `phi` nodes and mint versioned variables.
-- **SSA ➜ Analyses**: optimisations (dead code elimination, common subexpression elimination, loop transforms), liveness, register allocation, and future code generators all build on top of SSA (and any derived DFG).
+- **AST ➜ IR**: `frontend::lower_to_ir` translates well-typed syntax into the stack IR.
+- **IR ➜ CFG**: `ir::build_control_flow_graph` groups the flat instruction stream into basic blocks for analysis, SSA, and testing.
+- **IR ➜ SSA**: `ir::build_ssa` currently mirrors CFG layout, records dominator data, and inserts placeholder phi nodes ahead of the full SSA rename pass.
+- **IR ➜ Runtime**: the interpreter executes the flattened instruction list directly.
 
-Documenting these boundaries keeps the repo approachable and makes it clear how a new pass should plug in.
+Future passes (optimisation, codegen) will build on the SSA representation once the transformation is complete.
 
 ## 5. Current Limitations & Roadmap
 
 ### What Works Now
-✅ Full expression parsing and evaluation  
-✅ Control flow (if/else, while)  
-✅ Function definitions and calls  
-✅ Local variables  
-✅ All operators  
-✅ For loops with initializer / condition / increment sections  
+✅ Full expression parsing and lowering  
+✅ Control flow (`if`/`else`, `while`, `for`)  
+✅ Function definitions, calls, recursion  
+✅ Local bindings with constant folding  
 ✅ Control-flow graph construction for IR functions  
-✅ Static single assignment construction and validation (dominance, phi insertion, renaming, verifier)  
+✅ SSA-aware interpreter executes optimised programs  
 
 ### Next Priorities
-1. **SSA optimizations** — Constant propagation, dead assignment elimination
-2. **SSA round-trip tooling** — IR ↔ SSA conversions for diagnostics
-3. **Type checking** — Semantic verification beyond syntax
-4. **Standard library** — Built-in print, file I/O
-5. **Loop control** — `break`/`continue` statements and loop scoping
+1. Broader semantic diagnostics and better error messages
+2. Minimal runtime helpers / standard library stubs
+3. Extend SSA optimiser with additional passes (value numbering, loop-aware rewrites) and expose optimisation metrics
+4. Investigate native backend options after interpreter stabilises
 
 ### Future Work
-- **GC** — Memory management for heap-allocated objects
-- **JIT** — Native code generation for hot paths
-- **Optimization** — Dead code elimination, constant folding
+- **Optimization** — Loop optimizations, inlining, register allocation
 - **Modules** — Import/export system
 - **Debugging** — Source maps, breakpoints
+- **Pattern matching** — Exhaustiveness checks and lowering
 
 ## 6. Testing Strategy
 
-### Current Tests (38 total)
-- Module header parsing
-- Numeric literals and strings
-- Expression parsing and precedence
-- Semantic validation (duplicates, const rules)
-- Operator functionality (arithmetic, logical, comparison)
-- Control flow execution (if/else, while)
-- For loop execution (initializer / condition / increment)
-- Control-flow graph construction
-- SSA renaming, phi validation, and verifier coverage
-- Constant evaluation
-- Function call execution
-- Expression statements with value dropping
-- Recursive execution paths
+### Current Tests
+- Lexer and parser suites (grammar coverage, precedence, modules)
+- Semantic validation (bindings, scopes, returns, struct/interface declarations)
+- Operator behaviour (arithmetic, logic, comparison, error cases)
+- Control-flow execution (`if`/`else`, `while`, `for`, `break`/`continue`)
+- Function call recursion scenarios
+- IR construction and CFG building
+- Runtime execution through the SSA interpreter (GC + array stress coverage)
 
 ### Test Coverage Goals
 - Parser: All grammar productions
@@ -180,14 +170,14 @@ Documenting these boundaries keeps the repo approachable and makes it clear how 
 
 ### Current Performance
 - Parsing: Fast enough for interactive use
-- Interpretation: Suitable for scripts and testing
-- No optimization yet
+- Interpretation: SSA interpreter handles regression suite comfortably
+- Baseline optimisation: constant propagation, copy propagation, and dead assignment elimination
 
 ### Future Optimization
 - JIT compilation for hot functions
-- Inline caching for common operations
-- Constant folding and propagation
-- Dead code elimination
+- Inline caching or specialised dispatch for common operations
+- Loop-aware SSA passes (value numbering, strength reduction, LICM)
+- Escape analysis and allocation sinking
 
 ## 10. Release Process (Future)
 

@@ -1,5 +1,6 @@
 add_library(impulse-runtime STATIC
 	src/runtime.cpp
+	src/gc_heap.cpp
 )
 
 target_include_directories(impulse-runtime PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

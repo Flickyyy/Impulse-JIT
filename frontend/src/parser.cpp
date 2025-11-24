@@ -290,6 +290,26 @@ auto Parser::parseStatement() -> std::optional<Statement> {
         return statement;
     }
 
+    if (match(TokenKind::KwBreak)) {
+        Statement statement;
+        statement.kind = Statement::Kind::Break;
+        const Token& keyword = previous();
+        statement.location = SourceLocation{keyword.line, keyword.column};
+        const Token* terminator = consume(TokenKind::Semicolon, "Expected ';' after 'break'");
+        (void)terminator;
+        return statement;
+    }
+
+    if (match(TokenKind::KwContinue)) {
+        Statement statement;
+        statement.kind = Statement::Kind::Continue;
+        const Token& keyword = previous();
+        statement.location = SourceLocation{keyword.line, keyword.column};
+        const Token* terminator = consume(TokenKind::Semicolon, "Expected ';' after 'continue'");
+        (void)terminator;
+        return statement;
+    }
+
     const auto bindingStatement = [this](TokenKind keyword, BindingKind kind) -> std::optional<Statement> {
         if (!match(keyword)) {
             return std::nullopt;
@@ -776,11 +796,14 @@ auto Parser::parsePostfixExpression() -> std::unique_ptr<Expression> {
                 }
             } while (match(TokenKind::Comma));
         }
-        
-        if (!consume(TokenKind::RParen, "Expected ')' after arguments")) {
+
+        const Token* rparen = consume(TokenKind::RParen, "Expected ')' after arguments");
+        if (rparen == nullptr) {
             return nullptr;
         }
-        
+
+        call->closing_location = SourceLocation{rparen->line, rparen->column};
+
         expr = std::move(call);
     }
     

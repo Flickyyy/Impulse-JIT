@@ -201,6 +201,10 @@ auto interpret_binding(const Binding& binding, const std::unordered_map<std::str
             case InstructionKind::BranchIf:
             case InstructionKind::Label:
             case InstructionKind::Call:
+            case InstructionKind::MakeArray:
+            case InstructionKind::ArrayGet:
+            case InstructionKind::ArraySet:
+            case InstructionKind::ArrayLength:
                 return BindingEvalResult{
                     .status = EvalStatus::NonConstant,
                     .value = std::nullopt,
@@ -432,6 +436,15 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
                         .value = std::nullopt,
                         .message = "function calls require runtime execution",
                     };
+                    case InstructionKind::MakeArray:
+                    case InstructionKind::ArrayGet:
+                    case InstructionKind::ArraySet:
+                    case InstructionKind::ArrayLength:
+                        return FunctionEvalResult{
+                            .status = EvalStatus::NonConstant,
+                            .value = std::nullopt,
+                            .message = "non-constant instruction encountered",
+                        };
                 case InstructionKind::Label:
                 case InstructionKind::Comment:
                     break;

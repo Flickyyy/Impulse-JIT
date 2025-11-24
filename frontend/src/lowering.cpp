@@ -24,12 +24,46 @@ int label_counter = 0;
     return "L" + std::to_string(label_counter++);
 }
 
-void lower_statement_to_instructions(const Statement& statement, std::vector<ir::Instruction>& instructions);
+struct LoopContext {
+    std::string continue_label;
+    std::string break_label;
+};
 
-void lower_statements_to_instructions(const std::vector<Statement>& statements, std::vector<ir::Instruction>& instructions) {
-    for (const auto& stmt : statements) {
-        lower_statement_to_instructions(stmt, instructions);
+struct ScopeLocal {
+    std::string name;
+    bool requires_drop = false;
+};
+
+void lower_statement_to_instructions(const Statement& statement, std::vector<ir::Instruction>& instructions,
+                                     std::vector<LoopContext>& loop_stack,
+                                     std::vector<std::vector<ScopeLocal>>& scope_stack);
+
+void emit_scope_drops(const std::vector<ScopeLocal>& locals, std::vector<ir::Instruction>& instructions) {
+    for (auto it = locals.rbegin(); it != locals.rend(); ++it) {
+        if (!it->requires_drop || it->name.empty()) {
+            continue;
+        }
+        ir::Instruction reference;
+        reference.kind = ir::InstructionKind::Reference;
+        reference.operands = std::vector<std::string>{it->name};
+        instructions.push_back(std::move(reference));
+
+        ir::Instruction drop;
+        drop.kind = ir::InstructionKind::Drop;
+        instructions.push_back(std::move(drop));
     }
+}
+
+void lower_statements_to_instructions(const std::vector<Statement>& statements,
+                                      std::vector<ir::Instruction>& instructions,
+                                      std::vector<LoopContext>& loop_stack,
+                                      std::vector<std::vector<ScopeLocal>>& scope_stack) {
+    scope_stack.emplace_back();
+    for (const auto& stmt : statements) {
+        lower_statement_to_instructions(stmt, instructions, loop_stack, scope_stack);
+    }
+    emit_scope_drops(scope_stack.back(), instructions);
+    scope_stack.pop_back();
 }
 
 [[nodiscard]] auto to_storage(BindingKind kind) -> ir::StorageClass {
@@ -126,7 +160,51 @@ void lower_expression_to_stack(const Expression& expr, std::vector<ir::Instructi
                 },
             });
             break;
-        case Expression::Kind::Call:
+        case Expression::Kind::Call: {
+            if (expr.callee == "array") {
+                for (const auto& arg : expr.arguments) {
+                    if (arg) {
+                        lower_expression_to_stack(*arg, instructions);
+                    }
+                }
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::MakeArray,
+                });
+                break;
+            }
+            if (expr.callee == "array_get") {
+                for (const auto& arg : expr.arguments) {
+                    if (arg) {
+                        lower_expression_to_stack(*arg, instructions);
+                    }
+                }
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::ArrayGet,
+                });
+                break;
+            }
+            if (expr.callee == "array_set") {
+                for (const auto& arg : expr.arguments) {
+                    if (arg) {
+                        lower_expression_to_stack(*arg, instructions);
+                    }
+                }
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::ArraySet,
+                });
+                break;
+            }
+            if (expr.callee == "array_length") {
+                for (const auto& arg : expr.arguments) {
+                    if (arg) {
+                        lower_expression_to_stack(*arg, instructions);
+                    }
+                }
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::ArrayLength,
+                });
+                break;
+            }
             for (const auto& arg : expr.arguments) {
                 lower_expression_to_stack(*arg, instructions);
             }
@@ -135,10 +213,13 @@ void lower_expression_to_stack(const Expression& expr, std::vector<ir::Instructi
                 .operands = std::vector<std::string>{expr.callee, std::to_string(expr.arguments.size())},
             });
             break;
+        }
     }
 }
 
-void lower_statement_to_instructions(const Statement& statement, std::vector<ir::Instruction>& instructions) {
+void lower_statement_to_instructions(const Statement& statement, std::vector<ir::Instruction>& instructions,
+                                     std::vector<LoopContext>& loop_stack,
+                                     std::vector<std::vector<ScopeLocal>>& scope_stack) {
     switch (statement.kind) {
         case Statement::Kind::Return:
             if (statement.return_expression) {
@@ -156,22 +237,27 @@ void lower_statement_to_instructions(const Statement& statement, std::vector<ir:
                     .kind = ir::InstructionKind::Store,
                     .operands = std::vector<std::string>{statement.binding.name.value},
                 });
+                if (!scope_stack.empty()) {
+                    scope_stack.back().push_back(ScopeLocal{statement.binding.name.value, false});
+                }
             }
             break;
         case Statement::Kind::If: {
-            if (!statement.condition) break;
-            
+            if (!statement.condition) {
+                break;
+            }
+
             const std::string else_label = generate_label();
             const std::string end_label = generate_label();
-            
+
             lower_expression_to_stack(*statement.condition, instructions);
             instructions.push_back(ir::Instruction{
                 .kind = ir::InstructionKind::BranchIf,
                 .operands = std::vector<std::string>{else_label, "0"},
             });
-            
-            lower_statements_to_instructions(statement.then_body, instructions);
-            
+
+            lower_statements_to_instructions(statement.then_body, instructions, loop_stack, scope_stack);
+
             if (!statement.else_body.empty()) {
                 instructions.push_back(ir::Instruction{
                     .kind = ir::InstructionKind::Branch,
@@ -181,7 +267,7 @@ void lower_statement_to_instructions(const Statement& statement, std::vector<ir:
                     .kind = ir::InstructionKind::Label,
                     .operands = std::vector<std::string>{else_label},
                 });
-                lower_statements_to_instructions(statement.else_body, instructions);
+                lower_statements_to_instructions(statement.else_body, instructions, loop_stack, scope_stack);
                 instructions.push_back(ir::Instruction{
                     .kind = ir::InstructionKind::Label,
                     .operands = std::vector<std::string>{end_label},
@@ -195,24 +281,28 @@ void lower_statement_to_instructions(const Statement& statement, std::vector<ir:
             break;
         }
         case Statement::Kind::While: {
-            if (!statement.condition) break;
-            
+            if (!statement.condition) {
+                break;
+            }
+
             const std::string loop_label = generate_label();
             const std::string end_label = generate_label();
-            
+
             instructions.push_back(ir::Instruction{
                 .kind = ir::InstructionKind::Label,
                 .operands = std::vector<std::string>{loop_label},
             });
-            
+
             lower_expression_to_stack(*statement.condition, instructions);
             instructions.push_back(ir::Instruction{
                 .kind = ir::InstructionKind::BranchIf,
                 .operands = std::vector<std::string>{end_label, "0"},
             });
-            
-            lower_statements_to_instructions(statement.then_body, instructions);
-            
+
+            loop_stack.push_back(LoopContext{.continue_label = loop_label, .break_label = end_label});
+            lower_statements_to_instructions(statement.then_body, instructions, loop_stack, scope_stack);
+            loop_stack.pop_back();
+
             instructions.push_back(ir::Instruction{
                 .kind = ir::InstructionKind::Branch,
                 .operands = std::vector<std::string>{loop_label},
@@ -225,11 +315,13 @@ void lower_statement_to_instructions(const Statement& statement, std::vector<ir:
         }
         case Statement::Kind::For: {
             if (statement.for_initializer) {
-                lower_statement_to_instructions(*statement.for_initializer, instructions);
+                lower_statement_to_instructions(*statement.for_initializer, instructions, loop_stack, scope_stack);
             }
 
             const std::string loop_label = generate_label();
             const std::string end_label = generate_label();
+            const bool has_increment = static_cast<bool>(statement.for_increment);
+            const std::string continue_label = has_increment ? generate_label() : loop_label;
 
             instructions.push_back(ir::Instruction{
                 .kind = ir::InstructionKind::Label,
@@ -244,10 +336,16 @@ void lower_statement_to_instructions(const Statement& statement, std::vector<ir:
                 });
             }
 
-            lower_statements_to_instructions(statement.then_body, instructions);
+            loop_stack.push_back(LoopContext{.continue_label = continue_label, .break_label = end_label});
+            lower_statements_to_instructions(statement.then_body, instructions, loop_stack, scope_stack);
+            loop_stack.pop_back();
 
-            if (statement.for_increment) {
-                lower_statement_to_instructions(*statement.for_increment, instructions);
+            if (has_increment) {
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::Label,
+                    .operands = std::vector<std::string>{continue_label},
+                });
+                lower_statement_to_instructions(*statement.for_increment, instructions, loop_stack, scope_stack);
             }
 
             instructions.push_back(ir::Instruction{
@@ -260,6 +358,22 @@ void lower_statement_to_instructions(const Statement& statement, std::vector<ir:
             });
             break;
         }
+        case Statement::Kind::Break:
+            if (!loop_stack.empty()) {
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::Branch,
+                    .operands = std::vector<std::string>{loop_stack.back().break_label},
+                });
+            }
+            break;
+        case Statement::Kind::Continue:
+            if (!loop_stack.empty()) {
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::Branch,
+                    .operands = std::vector<std::string>{loop_stack.back().continue_label},
+                });
+            }
+            break;
         case Statement::Kind::ExprStmt:
             if (statement.expr) {
                 lower_expression_to_stack(*statement.expr, instructions);
@@ -327,7 +441,10 @@ auto lower_to_ir(const Module& module) -> ir::Module {
                 if (!decl.function.parsed_body.statements.empty()) {
                     ir::FunctionBuilder builder(function);
                     auto& entry = builder.entry();
-                    lower_statements_to_instructions(decl.function.parsed_body.statements, entry.instructions);
+                    std::vector<LoopContext> loop_stack;
+                    std::vector<std::vector<ScopeLocal>> scope_stack;
+                    lower_statements_to_instructions(decl.function.parsed_body.statements, entry.instructions,
+                                                     loop_stack, scope_stack);
                 } else if (!function.body_snippet.empty()) {
                     ir::FunctionBuilder builder(function);
                     builder.appendComment(function.body_snippet);

@@ -1,67 +1,74 @@
 #pragma once
 
 #include <cstdint>
-#include <cstddef>
+#include <limits>
 #include <optional>
 #include <string>
 #include <vector>
 
-#include "impulse/ir/ir.h"
+#include "impulse/ir/cfg.h"
 
 namespace impulse::ir {
 
+using SymbolId = std::uint32_t;
+
 struct SsaValue {
-    std::string name;
+    SymbolId symbol = 0;
     std::uint32_t version = 0;
 
-    [[nodiscard]] auto to_string() const -> std::string;
-    [[nodiscard]] auto operator==(const SsaValue& other) const -> bool {
-        return name == other.name && version == other.version;
+    [[nodiscard]] auto is_valid() const -> bool { return version != 0 || symbol != 0; }
+    [[nodiscard]] auto to_string() const -> std::string {
+        return "v" + std::to_string(symbol) + "." + std::to_string(version);
     }
 };
 
-struct SsaPhiInput {
+struct PhiInput {
     std::size_t predecessor = 0;
     std::optional<SsaValue> value;
 };
 
-struct SsaPhiNode {
-    std::string variable;
+struct PhiNode {
     SsaValue result;
-    std::vector<SsaPhiInput> inputs;
-};
-
-enum class SsaOp : std::uint8_t {
-    Literal,
-    Binary,
-    Unary,
-    Call,
-    Store,
-    Drop,
-    Return,
-    Branch,
-    BranchIf,
+    SymbolId symbol = 0;
+    std::vector<PhiInput> inputs;
 };
 
 struct SsaInstruction {
-    SsaOp op = SsaOp::Literal;
-    std::optional<SsaValue> result;
+    std::string opcode;
     std::vector<SsaValue> arguments;
     std::vector<std::string> immediates;
+    std::optional<SsaValue> result;
 };
 
 struct SsaBlock {
+    std::size_t id = 0;
     std::string name;
-    std::vector<SsaPhiNode> phi_nodes;
+    std::vector<PhiNode> phi_nodes;
     std::vector<SsaInstruction> instructions;
     std::vector<std::size_t> successors;
+    std::vector<std::size_t> predecessors;
+    std::size_t immediate_dominator = std::numeric_limits<std::size_t>::max();
+    std::vector<std::size_t> dominator_children;
+    std::vector<std::size_t> dominance_frontier;
+};
+
+struct SsaSymbol {
+    SymbolId id = 0;
+    std::string name;
+    std::string type;
 };
 
 struct SsaFunction {
     std::string name;
+    std::vector<SsaSymbol> symbols;
     std::vector<SsaBlock> blocks;
+
+    [[nodiscard]] auto find_block(const std::string& block_name) const -> const SsaBlock*;
+    [[nodiscard]] auto find_symbol(SymbolId id) const -> const SsaSymbol*;
+    [[nodiscard]] auto find_symbol(const std::string& name) const -> const SsaSymbol*;
 };
 
+[[nodiscard]] auto build_ssa(const Function& function, const ControlFlowGraph& cfg) -> SsaFunction;
 [[nodiscard]] auto build_ssa(const Function& function) -> SsaFunction;
 
 }  // namespace impulse::ir

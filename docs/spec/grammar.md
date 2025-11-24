@@ -5,7 +5,7 @@
 module import export as
 func struct interface
 let var const
-if else while for in return
+if else while for in return break continue
 true false panic
 ```
 
@@ -32,12 +32,14 @@ Param       ::= Ident ":" Type
 
 ## Statements
 ```
-Stmt        ::= Block | IfStmt | WhileStmt | ForStmt | ReturnStmt | Binding | ExprStmt
+Stmt        ::= Block | IfStmt | WhileStmt | ForStmt | ReturnStmt | BreakStmt | ContinueStmt | Binding | ExprStmt
 Block       ::= "{" Stmt* "}"
 IfStmt      ::= "if" Expr Block ["else" Block]
 WhileStmt   ::= "while" Expr Block
 ForStmt     ::= "for" "(" ForInit? ";" Expr? ";" ForIncrement? ")" Block
 ReturnStmt  ::= "return" Expr? ";"
+BreakStmt   ::= "break" ";"
+ContinueStmt::= "continue" ";"
 ExprStmt    ::= Expr ";"
 
 ForInit     ::= Binding | Expr
@@ -54,7 +56,7 @@ Relational  ::= Add (("<"|"<="|">"|">=") Add)*
 Add         ::= Mul (("+"|"-") Mul)*
 Mul         ::= Unary (("*"|"/"|"%") Unary)*
 Unary       ::= ("!"|"-") Unary | Primary
-Primary     ::= IntLit | FloatLit | BoolLit | Ident | "(" Expr ")"
+Primary     ::= IntLit | FloatLit | BoolLit | StringLit | Ident | "(" Expr ")"
 ```
 
 ## Literals

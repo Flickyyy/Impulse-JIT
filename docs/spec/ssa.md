@@ -1,35 +1,50 @@
-# Static Single Assignment (SSA) Plan
+# Static Single Assignment (SSA)
 
-This document describes the roadmap for adding SSA form to the Impulse compiler. It defines the transformation pipeline, data structures, algorithms, and testing strategy required to build, validate, and consume SSA. The intent is to execute the work in milestones so the system never regresses while we expand capabilities.
+Impulse lowers stack-based IR to SSA form for every function before executing it in the runtime. This document captures the data structures, algorithms, optimiser passes, and validation strategy that underpin the current implementation, as well as areas earmarked for future work.
+
+## Implementation Snapshot
+
+- SSA data structures (`SsaFunction`, `SsaBlock`, symbol tables) mirror CFG layout, record parameter symbols, and cache dominator metadata (immediate dominators, dominator tree, dominance frontiers).
+- Definition analysis handles locals and parameters, placing phi nodes using dominance frontiers and wiring versioned inputs for every predecessor.
+- The rename pass materialises SSA instructions (temporaries, assignments, control flow) and feeds the optimiser suite available to both tests and the runtime.
 
 ## Goals
 
-- Produce SSA form for every lowered function using the existing IR and CFG.
-- Enable SSA-based optimizations (constant propagation, dead code elimination, copy propagation).
-- Preserve existing interpreter execution while providing a path to SSA-aware backends (future JIT, optimizer).
-- Provide clear extension points for dominance queries, data-flow analysis, and later register allocation.
+- Maintain SSA as the canonical form for optimisation and runtime execution.
+- Grow the optimiser suite beyond the current constant/copy propagation and dead assignment elimination passes.
+- Expose SSA introspection hooks for tooling, debugging, and future code generation backends.
+- Preserve clean extension points for dominance queries, data-flow analysis, and eventual register allocation.
 
 ## Milestones
 
 - [x] **Infrastructure**
-   - Extend IR module with SSA containers (blocks, values, phi nodes).
-   - Introduce symbol/version tables to track assignments inside basic blocks.
-   - Record dominance information (tree and frontiers) on top of the CFG builder.
+   - Extended the IR layer with SSA containers (blocks, values, phi nodes).
+   - Added symbol/version tables to track assignments within basic blocks.
+   - Recorded dominance information (immediate dominators, dominator tree, dominance frontiers) on top of the CFG builder.
 
 - [x] **Transformation Pass**
    - Compute dominators and immediate dominators for every block.
    - Compute dominance frontiers to place phi nodes per variable.
    - Rename variables so each definition is unique, producing SSA form.
-   - Materialize phi instructions in block headers with operand references.
+   - Materialise phi instructions in block headers with operand references.
 
-- [ ] **Validation & Round-Trip**
-   - [x] Add verification to ensure SSA invariants (single def per name, phi arguments from predecessors).
-   - Add IR → SSA → IR round-trip for interpreter fallback (spill SSA back to linear stack form when needed).
-   - Ensure constant evaluation and runtime execution still succeed for all existing tests.
+- [x] **Validation**
+   - Added verification to ensure SSA invariants (single def per name, phi arguments sourced from predecessors).
+   - Exercised the SSA interpreter across the full regression suite to guarantee behavioural parity with the original stack interpreter.
 
-- [ ] **SSA Consumers**
-   - Implement baseline optimizations using SSA data (constant propagation, dead assignment elimination).
-   - Expose SSA traces to future JIT backend.
+- [x] **SSA Consumers**
+   - Implemented constant propagation using SSA data.
+   - Added copy propagation.
+   - Added dead assignment elimination.
+   - Provided an optimisation driver that runs passes to a fixed point.
+
+- [ ] **Tooling & Backends**
+   - [ ] Expose SSA traces via the CLI and developer tooling.
+   - [ ] Surface SSA hooks to future JIT / code generation backends.
+### Optimisation Driver
+
+`optimize_ssa(SsaFunction&)` runs the current pass suite (constant propagation → copy propagation → dead assignment elimination) until no further changes occur. This keeps the individual passes simple while ensuring they feed one another (e.g. copy propagation exposes new dead stores).
+
 
 ## Role in the Pipeline
 
@@ -129,12 +144,9 @@ Implement validator to ensure:
 
 ## Testing Strategy
 
-- Extend `tests/main.cpp` with SSA-focused suites:
-  - Linear control flow (single block) renaming.
-  - Diamond pattern (`if`/`else`) verifying phi placement.
-  - Loop example ensuring phi nodes in headers for loop-carried variables.
-- Add negative tests for verifier (missing phi input, undefined use).
-- Keep interpreter tests running through SSA round-trip to guard regressions.
+- `tests/main.cpp` contains SSA-focused fixtures covering linear flow, diamonds (`if`/`else`), loops, optimiser interactions, and runtime execution paths.
+- Negative tests exercise the verifier (missing phi input, undefined use) to ensure diagnostics fire.
+- The full regression suite executes via the SSA interpreter to safeguard behavioural equivalence.
 
 ## Looking Ahead
 
@@ -146,8 +158,8 @@ Implement validator to ensure:
 
 1. **Documentation Update**: Keep README, STATUS, and `docs/spec/toolchain.md` synchronized with SSA capabilities.
 2. **Build Integration**: Register new SSA source files in `ir/CMakeLists.txt` and expose API through `ir/include` headers.
-3. **CLI Exposure**: Add `--dump-ssa` flag once SSA production is stable.
-4. **Performance Benchmarks**: After SSA + baseline optimizations, run factorial/sorting/prime programs to verify improvements.
+3. **CLI Exposure** *(future)*: provide a convenient flag for dumping SSA for inspection.
+4. **Performance Benchmarks**: run factorial/sorting/prime programs to track optimiser impact over time.
 
 ## Roadmap Beyond SSA
 

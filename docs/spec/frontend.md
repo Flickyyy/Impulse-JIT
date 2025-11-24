@@ -9,7 +9,7 @@ Parser supports:
 4. Functions: `func name(params) -> Type { stmts }`
 5. Structs: `struct Name { fields }`
 6. Interfaces: `interface Name { methods }`
-7. Control flow: `if/else`, `while`, `for (init; cond; incr)`
+7. Control flow: `if/else`, `while`, `for (init; cond; incr)`, `break`, `continue`
 8. Expressions: all operators with precedence
 
 ## AST Structure
@@ -17,7 +17,7 @@ Parser supports:
 ```
 Module → (ModuleDecl, Import*, Declaration*)
 Declaration → Binding | Function | Struct | Interface
-Statement → Return | Binding | If | While | For
+Statement → Return | Binding | If | While | For | Break | Continue | Expr
 Expression → Literal | Identifier | Binary | Unary
 ```
 

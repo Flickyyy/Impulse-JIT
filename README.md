@@ -1,62 +1,27 @@
 # Impulse JIT Compiler
 
-# Main goal (Task)
-- Static single assignment construction with dominance/phi insertion
- - executed apps must perform correctly
- - any technology is allowed, no restriction
-- SSA verification and optimization passes (const propagation, dead code elimination, copy propagation)
-  - Factorial calculation
-  - Array sorting
-  - Prime number generation
-
-## Performance:
-- Factorial of 20
-- Sort array of 10000 elements
-# C++ unit tests (38 tests in 9 groups)
-
-## Marks:
-- 4 – demonstrate benchmark execution
-- 5 – develop benchmark (Task 4) in 2 hours timeframe, using your language and successfully execute it
-
-### Task 1: Factorial Calculation (Recursive Function)
-
-*Objective:* Implement a function that calculates the factorial of a given number using recursion.
-
-*Purpose:* Test recursive function calls, stack management, and handling of large numbers.  
-
-*Purpose:* Test array handling, loop operations, and element comparison.  
-*Objective:* Implement an algorithm to generate prime numbers (e.g., Sieve of Eratosthenes).
-
-*Purpose:* Test array manipulation, loops, and arithmetic operations.  
-*Benchmark:* Measure the time it takes to generate all prime numbers up to 100,000.
+# Current Focus
+- Keep the SSA-based runtime and optimiser stable across the full regression suite
+- Improve diagnostics, documentation, and developer tooling around the pipeline
+- Grow example programs and CLI ergonomics for day-to-day experimentation
 
 ## Overview
 
-A modern, educational compiler implementation featuring a complete frontend (C++ parser + IR) with a bytecode VM, and a Go-based CLI interface. Designed for learning compiler construction while remaining practical and extensible.
+Impulse is a compact educational compiler for a small, statically scoped language. Source code flows through the C++ lexer, parser, semantic analyser, and IR lowering. The resulting stack-based IR is lifted to SSA, optimised, and executed by a lightweight runtime. A Go-based CLI (`impulsec`) wraps the C++ core for quick experiments.
 
 ## Features
 
-✨ **Production-Ready Features:**
-- Full expression parsing with operator precedence
-- All operators: arithmetic (`+`, `-`, `*`, `/`, `%`), logical (`&&`, `||`, `!`), comparison (`==`, `!=`, `<`, `<=`, `>`, `>=`), unary (`-`, `!`)
-- Control flow: `if`/`else`, `while` loops
-- `for` loops with initializer / condition / increment sections
-- Function definitions with parameters and return values
-- Function calls with argument passing (including nested calls)
-- Recursive execution support (factorial, mutual recursion)
-- Local variables with lexical scoping
-- Constant expression evaluation at compile-time
-- Stack-based IR with jump instructions (Branch, BranchIf, Label)
-- Control-flow graph extraction for IR functions
-- Static single assignment construction with dominance/phi insertion
-- Runtime VM with complete execution support
+### What Works Today
+- Lexer, parser, and semantic analysis for modules, functions, structs, interfaces, and structured control flow
+- Lowering to stack IR, CFG reconstruction, SSA conversion, and optimiser passes (constant propagation, copy propagation, dead assignment elimination)
+- Runtime VM that interprets optimised SSA with lightweight call frames, numeric values, and GC-managed arrays
+- Comprehensive regression tests covering frontend, IR, SSA, runtime, and GC behaviour
 
-🚀 **Active Roadmap:**
-- SSA verification and optimization passes (const propagation, dead code elimination, copy propagation)
-- Loop control statements (`break` / `continue`)
-- Type checking and inference layer
-- Garbage collector and improved runtime memory model
-- JIT backend with native code generation
+### What Comes Next
+- Broader semantic diagnostics and richer error recovery
+- Minimal standard library helpers plus additional runtime primitives
+- Extra SSA passes (value numbering, loop-aware rewrites) and performance instrumentation
+- Investigation of native code generation backends once interpreter profiling stabilises
 
 ## Quick Start
 
@@ -74,11 +39,7 @@ cd cli && go build ./cmd/impulsec
 ### Run Tests
 
 ```bash
-# C++ unit tests (38 tests in 9 groups)
 ./build/tests/impulse-tests
-
-# Go CLI tests
-cd cli && go test ./...
 ```
 
 ## Usage
@@ -90,10 +51,10 @@ cd cli && go test ./...
 # Emit IR for inspection
 ./cli/impulsec --file program.imp --emit-ir
 
-# Syntax check only
+# Syntax / semantic check only
 ./cli/impulsec --file program.imp --check
 
-# Evaluate constant expressions
+# Evaluate constant expressions without running the VM
 ./cli/impulsec --file program.imp --evaluate
 ```
 
@@ -145,9 +106,9 @@ func main() -> int {
 Impulse-JIT/
 ├── frontend/        # C++ Parser, AST, Semantic Analysis
 ├── ir/              # Intermediate Representation
-├── runtime/         # Stack-based Virtual Machine
+├── runtime/         # SSA interpreter + GC runtime
 ├── cli/             # Go CLI Interface
-├── tests/           # C++ Unit Tests (38 tests)
+├── tests/           # C++ unit tests grouped by subsystem
 ├── docs/spec/       # Language Specification
 └── tools/           # Additional Tools
 ```
@@ -164,39 +125,19 @@ Impulse-JIT/
 - **[docs/spec/runtime.md](docs/spec/runtime.md)** - VM behavior
 - **[docs/spec/toolchain.md](docs/spec/toolchain.md)** - Development workflow
 - **[docs/spec/types.md](docs/spec/types.md)** - Type system design
-- **[docs/spec/ssa.md](docs/spec/ssa.md)** - SSA architecture and plan
+- **[docs/spec/ssa.md](docs/spec/ssa.md)** - SSA representation and optimisation passes
 
-## Implementation Status
-
-✅ **Fully Working:**
-- Lexer, Parser, Semantic Analysis
-- All operators with correct precedence
-✅ Control flow (if/else, while, for)
-✅ Function calls with parameters (including recursion)
-✅ IR generation and execution
-✅ SSA construction with phi placement
-✅ 35 comprehensive unit tests
-
-🚧 **Planned:**
-- SSA-driven optimization passes
-- Loop controls (`break` / `continue`)
-- Type checking and inference
-- Standard library (print, file I/O)
-- Garbage collector and runtime services
-- JIT compilation pipeline
-
-See [STATUS.md](STATUS.md) for detailed status.
+See [STATUS.md](STATUS.md) for a detailed, regularly updated implementation snapshot.
 
 ## Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 Key areas for contribution:
-- Implement SSA-based optimization passes
-- Add type checking
-- Improve error messages
-- Add standard library functions
-- Expand runtime and SSA test coverage
+- Enhance diagnostics and error reporting in the frontend
+- Flesh out the runtime with basic I/O helpers and more heap primitives
+- Extend the SSA optimiser (value numbering, loop passes, inlining)
+- Experiment with native code generation once the interpreter matures
 
 ## License
 

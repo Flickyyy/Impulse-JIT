@@ -1,0 +1,662 @@
+enter function main
+enter block 0 (entry)
+    v6.1 = call imm(build_banner, 0)
+enter function build_banner
+enter block 0 (entry)
+    v3.1 = literal_string imm(=== )
+      -> v3.1 = "=== "
+    v4.1 = literal_string imm(runtime)
+      -> v4.1 = "runtime"
+    v5.1 = call args(v3.1, v4.1) imm(string_concat, 2)
+    builtin string_concat "=== runtime"
+      -> v5.1 = "=== runtime"
+    v1.1 = assign args(v5.1)
+      -> v1.1 = "=== runtime"
+    v6.1 = literal_string imm( demo ===)
+      -> v6.1 = " demo ==="
+    v7.1 = call args(v1.1, v6.1) imm(string_concat, 2)
+    builtin string_concat "=== runtime demo ==="
+      -> v7.1 = "=== runtime demo ==="
+    v2.1 = assign args(v7.1)
+      -> v2.1 = "=== runtime demo ==="
+    v8.1 = call args(v2.1) imm(println, 1)
+    builtin println "=== runtime demo ==="
+      -> v8.1 = 0
+    drop args(v8.1)
+    v9.1 = literal_string imm(=== runtime demo ===)
+      -> v9.1 = "=== runtime demo ==="
+    v10.1 = call args(v2.1, v9.1) imm(string_equals, 2)
+      -> v10.1 = 1
+    builtin string_equals "true"
+    branch_if args(v10.1) imm(L2, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    v11.1 = literal_string imm(banner matches reference)
+      -> v11.1 = "banner matches reference"
+    v12.1 = call args(v11.1) imm(println, 1)
+    builtin println "banner matches reference"
+      -> v12.1 = 0
+    drop args(v12.1)
+enter block 2 (L2)
+    v13.1 = call args(v2.1) imm(string_length, 1)
+      -> v13.1 = 20
+    return args(v13.1)
+    return 20
+exit function build_banner = 20
+      -> v6.1 = 20
+    v1.1 = assign args(v6.1)
+      -> v1.1 = 20
+    v7.1 = literal imm(6)
+      -> v7.1 = 6
+    v8.1 = call args(v7.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 6
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 5
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 5
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 4
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 4
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 3
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 3
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 2
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 2
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 1
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 1
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 1
+exit function fibonacci = 1
+      -> v6.1 = 1
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 0
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 0
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 0
+exit function fibonacci = 0
+      -> v9.1 = 0
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 1
+    return args(v10.1)
+    return 1
+exit function fibonacci = 1
+      -> v6.1 = 1
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 1
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 1
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 1
+exit function fibonacci = 1
+      -> v9.1 = 1
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 2
+    return args(v10.1)
+    return 2
+exit function fibonacci = 2
+      -> v6.1 = 2
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 2
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 2
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 1
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 1
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 1
+exit function fibonacci = 1
+      -> v6.1 = 1
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 0
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 0
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 0
+exit function fibonacci = 0
+      -> v9.1 = 0
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 1
+    return args(v10.1)
+    return 1
+exit function fibonacci = 1
+      -> v9.1 = 1
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 3
+    return args(v10.1)
+    return 3
+exit function fibonacci = 3
+      -> v6.1 = 3
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 3
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 3
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 2
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 2
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 1
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 1
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 1
+exit function fibonacci = 1
+      -> v6.1 = 1
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 0
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 0
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 0
+exit function fibonacci = 0
+      -> v9.1 = 0
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 1
+    return args(v10.1)
+    return 1
+exit function fibonacci = 1
+      -> v6.1 = 1
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 1
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 1
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 1
+exit function fibonacci = 1
+      -> v9.1 = 1
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 2
+    return args(v10.1)
+    return 2
+exit function fibonacci = 2
+      -> v9.1 = 2
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 5
+    return args(v10.1)
+    return 5
+exit function fibonacci = 5
+      -> v6.1 = 5
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 4
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 4
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 3
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 3
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 2
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 2
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 1
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 1
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 1
+exit function fibonacci = 1
+      -> v6.1 = 1
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 0
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 0
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 0
+exit function fibonacci = 0
+      -> v9.1 = 0
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 1
+    return args(v10.1)
+    return 1
+exit function fibonacci = 1
+      -> v6.1 = 1
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 1
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 1
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 1
+exit function fibonacci = 1
+      -> v9.1 = 1
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 2
+    return args(v10.1)
+    return 2
+exit function fibonacci = 2
+      -> v6.1 = 2
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 2
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 2
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 0
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = binary args(v1.1, v4.1) imm(-)
+      -> v5.1 = 1
+    v6.1 = call args(v5.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 1
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 1
+exit function fibonacci = 1
+      -> v6.1 = 1
+    v7.1 = literal imm(2)
+      -> v7.1 = 2
+    v8.1 = binary args(v1.1, v7.1) imm(-)
+      -> v8.1 = 0
+    v9.1 = call args(v8.1) imm(fibonacci, 1)
+enter function fibonacci
+      -> v1.1 = 0
+enter block 0 (entry)
+    v2.1 = literal imm(2)
+      -> v2.1 = 2
+    v3.1 = binary args(v1.1, v2.1) imm(<)
+      -> v3.1 = 1
+    branch_if args(v3.1) imm(L0, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    return args(v1.1)
+    return 0
+exit function fibonacci = 0
+      -> v9.1 = 0
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 1
+    return args(v10.1)
+    return 1
+exit function fibonacci = 1
+      -> v9.1 = 1
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 3
+    return args(v10.1)
+    return 3
+exit function fibonacci = 3
+      -> v9.1 = 3
+    v10.1 = binary args(v6.1, v9.1) imm(+)
+      -> v10.1 = 8
+    return args(v10.1)
+    return 8
+exit function fibonacci = 8
+      -> v8.1 = 8
+    v2.1 = assign args(v8.1)
+      -> v2.1 = 8
+    v9.1 = literal_string imm(fib(6) = )
+      -> v9.1 = "fib(6) = "
+    v10.1 = call args(v9.1, v2.1) imm(emit_value, 2)
+enter function emit_value
+      -> v2.1 = 8
+      -> v1.1 = "fib(6) = "
+enter block 0 (entry)
+    v3.1 = call args(v1.1) imm(print, 1)
+    builtin print "fib(6) = "
+      -> v3.1 = 0
+    drop args(v3.1)
+    v4.1 = call args(v2.1) imm(println, 1)
+    builtin println "8"
+      -> v4.1 = 0
+    drop args(v4.1)
+    return args(v2.1)
+    return 8
+exit function emit_value = 8
+      -> v10.1 = 8
+    drop args(v10.1)
+    v11.1 = literal imm(3)
+      -> v11.1 = 3
+    v12.1 = array_make args(v11.1)
+      -> v12.1 = [array length=3]
+    v3.1 = assign args(v12.1)
+      -> v3.1 = [array length=3]
+    v13.1 = literal imm(0)
+      -> v13.1 = 0
+    v14.1 = literal_string imm(width: )
+      -> v14.1 = "width: "
+    v15.1 = array_set args(v3.1, v13.1, v14.1)
+      -> v15.1 = "width: "
+    drop args(v15.1)
+    v16.1 = literal imm(1)
+      -> v16.1 = 1
+    v17.1 = array_set args(v3.1, v16.1, v1.1)
+      -> v17.1 = 20
+    drop args(v17.1)
+    v18.1 = literal imm(2)
+      -> v18.1 = 2
+    v19.1 = literal_string imm(, done
+)
+      -> v19.1 = ", done\n"
+    v20.1 = array_set args(v3.1, v18.1, v19.1)
+      -> v20.1 = ", done\n"
+    drop args(v20.1)
+    v21.1 = literal imm(0)
+      -> v21.1 = 0
+    v22.1 = array_get args(v3.1, v21.1)
+      -> v22.1 = "width: "
+    v23.1 = call args(v22.1) imm(print, 1)
+    builtin print "width: "
+      -> v23.1 = 0
+    drop args(v23.1)
+    v24.1 = literal imm(1)
+      -> v24.1 = 1
+    v25.1 = array_get args(v3.1, v24.1)
+      -> v25.1 = 20
+    v26.1 = call args(v25.1) imm(print, 1)
+    builtin print "20"
+      -> v26.1 = 0
+    drop args(v26.1)
+    v27.1 = literal imm(2)
+      -> v27.1 = 2
+    v28.1 = array_get args(v3.1, v27.1)
+      -> v28.1 = ", done\n"
+    v29.1 = call args(v28.1) imm(print, 1)
+    builtin print ", done\n"
+      -> v29.1 = 0
+    drop args(v29.1)
+    v30.1 = literal imm(4)
+      -> v30.1 = 4
+    v31.1 = array_make args(v30.1)
+      -> v31.1 = [array length=4]
+    v4.1 = assign args(v31.1)
+      -> v4.1 = [array length=4]
+    v32.1 = call args(v4.1, v2.1) imm(array_fill, 2)
+    builtin array_fill "len=4"
+      -> v32.1 = [array length=4]
+    drop args(v32.1)
+    v33.1 = literal imm(3)
+      -> v33.1 = 3
+    v34.1 = array_set args(v4.1, v33.1, v1.1)
+      -> v34.1 = 20
+    drop args(v34.1)
+    v35.1 = call args(v4.1) imm(array_sum, 1)
+    builtin array_sum "44.000000"
+      -> v35.1 = 44
+    v5.1 = assign args(v35.1)
+      -> v5.1 = 44
+    v36.1 = literal_string imm(sum = )
+      -> v36.1 = "sum = "
+    v37.1 = call args(v36.1, v5.1) imm(emit_value, 2)
+enter function emit_value
+      -> v2.1 = 44
+      -> v1.1 = "sum = "
+enter block 0 (entry)
+    v3.1 = call args(v1.1) imm(print, 1)
+    builtin print "sum = "
+      -> v3.1 = 0
+    drop args(v3.1)
+    v4.1 = call args(v2.1) imm(println, 1)
+    builtin println "44"
+      -> v4.1 = 0
+    drop args(v4.1)
+    return args(v2.1)
+    return 44
+exit function emit_value = 44
+      -> v37.1 = 44
+    drop args(v37.1)
+    v38.1 = literal imm(0)
+      -> v38.1 = 0
+    return args(v38.1)
+    return 0
+exit function main = 0

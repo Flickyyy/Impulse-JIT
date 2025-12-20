@@ -5,6 +5,7 @@ add_library(impulse-frontend STATIC
 	src/lowering.cpp
 	src/expression_eval.cpp
 	src/semantic.cpp
+	src/dump.cpp
 )
 
 target_include_directories(impulse-frontend PUBLIC

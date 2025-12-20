@@ -1,0 +1,28 @@
+module tests::strings;
+
+func banner(title: string) -> int {
+    print("[");
+    print(title);
+    println("]");
+    let width: int = string_length(title);
+    println(string_repeat("-", width));
+    let padded: string = "  " + title + "  ";
+    let trimmed: string = string_trim(padded);
+    println(string_upper(trimmed));
+    println(string_lower(trimmed));
+    println(string_slice(trimmed, 0, 3));
+    return width;
+}
+
+func main() -> int {
+    let greeting: string = "Hello";
+    let target: string = "world";
+    let full: string = greeting + ", " + target + "!";
+    println(full);
+
+    let width: int = banner("Impulse");
+    print("title width: ");
+    println(width);
+
+    return width;
+}

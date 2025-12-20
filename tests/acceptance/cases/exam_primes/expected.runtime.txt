@@ -1,0 +1,2 @@
+status=0 value=25 message='Number of primes up to 100: 25
+'

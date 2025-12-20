@@ -1,0 +1,47 @@
+module tests::control_flow
+
+func accumulate(limit: int) -> int {
+  ^entry:
+    literal 0
+    store total
+    literal 0
+    store i
+  L0:
+    reference i
+    reference limit
+    binary <
+    branch_if L1 when 0
+    reference i
+    literal 2
+    binary %
+    literal 0
+    binary ==
+    branch_if L2 when 0
+    reference total
+    reference i
+    binary +
+    store total
+    branch L3
+  L2:
+    reference total
+    reference i
+    binary -
+    store total
+  L3:
+    reference i
+    literal 1
+    binary +
+    store i
+    branch L0
+  L1:
+    reference total
+    return
+}
+
+func main() -> int {
+  ^entry:
+    literal 7
+    call accumulate (1 args)
+    return
+}
+

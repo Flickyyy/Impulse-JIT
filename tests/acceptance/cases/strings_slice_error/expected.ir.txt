@@ -1,0 +1,16 @@
+module tests::strings_slice_error
+
+func main() -> int {
+  ^entry:
+    literal_string "Impulse"
+    store value
+    reference value
+    literal 10
+    literal 1
+    call string_slice (3 args)
+    call println (1 args)
+    drop
+    literal 0
+    return
+}
+

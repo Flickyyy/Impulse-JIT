@@ -11,10 +11,10 @@ This document tracks the remaining work required to move from the current interp
 
 ## 2. Memory Management & GC
 - [x] Define heap object model (headers, type tags, payload layout)
-- [ ] Introduce allocation intrinsics in IR/SSA and runtime helper APIs
-- [ ] Track roots (globals, VM stack, SSA temporaries, native handles)
-- [ ] Implement mark-and-sweep collector and integrate with runtime
-- [ ] Add stress tests that force collections and validate liveness
+- [x] Introduce allocation intrinsics in IR/SSA and runtime helper APIs
+- [x] Track roots (globals, VM stack, SSA temporaries, native handles)
+- [x] Implement mark-and-sweep collector and integrate with runtime
+- [x] Add stress tests that force collections and validate liveness
 
 ## 3. Static Type Checker
 - [ ] Build symbol/type tables during semantic analysis
@@ -45,3 +45,9 @@ This document tracks the remaining work required to move from the current interp
 - Keep `STATUS.md` and this roadmap in sync after each milestone
 - Document new APIs/specs as they are introduced (`docs/spec/*`)
 - Ensure every feature lands with dedicated tests and CLI coverage
+
+## Phase 5 Outlook (In Progress)
+- (done) Replace the deterministic `read_line` stub with end-to-end CLI/runtime I/O plumbing and deterministic test hooks
+- Introduce advanced SSA passes (value numbering, LICM, basic inlining) with metrics and developer tooling
+- Implement structured diagnostics (IDs, hints, recovery) surfaced through the Go and C++ CLIs
+- Prototype native code generation once optimisation infrastructure is in place (target: x86-64 SysV)

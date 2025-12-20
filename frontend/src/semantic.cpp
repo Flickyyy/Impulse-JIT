@@ -157,6 +157,9 @@ void addDiagnostic(SemanticResult& result, const SourceLocation& location, std::
 }
 
 [[nodiscard]] auto isNumeric(const TypeInfo& type) -> bool {
+    if (type.kind == TypeKind::Unknown) {
+        return true;
+    }
     return type.kind == TypeKind::Int || type.kind == TypeKind::Float || type.kind == TypeKind::Bool;
 }
 
@@ -266,6 +269,11 @@ void reportConstDiagnostic(SemanticResult& result, const BindingDecl& binding, c
 void checkConstInitializer(SemanticResult& result, const BindingDecl& binding) {
     if (!binding.initializer_expr) {
         reportConstDiagnostic(result, binding, "requires an initializer");
+        return;
+    }
+
+    if (binding.initializer_expr->kind == Expression::Kind::Literal &&
+        binding.initializer_expr->literal_kind == Expression::LiteralKind::String) {
         return;
     }
 
@@ -570,6 +578,20 @@ public:
                     [[maybe_unused]] const TypeInfo exprType = checkExpression(*statement.expr, env);
                 }
                 break;
+            case Statement::Kind::Assign: {
+                // Check that target variable exists
+                const TypeInfo targetType = resolveIdentifier(statement.assign_target);
+                if (isError(targetType)) {
+                    // Error already reported by resolveIdentifier
+                    break;
+                }
+                // Check value expression
+                if (statement.assign_value) {
+                    [[maybe_unused]] const TypeInfo valueType = checkExpression(*statement.assign_value, env);
+                    // Type compatibility for dynamic typing is relaxed
+                }
+                break;
+            }
         }
         currentEnv = previousEnv;
         return statementReturns;
@@ -577,16 +599,22 @@ public:
 
 private:
     [[nodiscard]] auto typeForLiteral(const Expression& expr) -> TypeInfo {
-        if (expr.literal_value == "true" || expr.literal_value == "false") {
-            return makePrimitive(TypeKind::Bool);
+        switch (expr.literal_kind) {
+            case Expression::LiteralKind::Boolean:
+                return makePrimitive(TypeKind::Bool);
+            case Expression::LiteralKind::String:
+                return makePrimitive(TypeKind::String);
+            case Expression::LiteralKind::Number: {
+                const bool isFloatLiteral = expr.literal_value.find('.') != std::string::npos ||
+                                            expr.literal_value.find('e') != std::string::npos ||
+                                            expr.literal_value.find('E') != std::string::npos;
+                if (isFloatLiteral) {
+                    return makePrimitive(TypeKind::Float);
+                }
+                return makePrimitive(TypeKind::Int);
+            }
         }
-        const bool isFloatLiteral = expr.literal_value.find('.') != std::string::npos ||
-                                    expr.literal_value.find('e') != std::string::npos ||
-                                    expr.literal_value.find('E') != std::string::npos;
-        if (isFloatLiteral) {
-            return makePrimitive(TypeKind::Float);
-        }
-        return makePrimitive(TypeKind::Int);
+        return makeErrorType();
     }
 
     [[nodiscard]] auto resolveIdentifier(const Identifier& identifier) -> TypeInfo {
@@ -618,6 +646,10 @@ private:
 
         switch (expr.binary_operator) {
             case Expression::BinaryOperator::Add:
+                if (leftType.kind == TypeKind::String && rightType.kind == TypeKind::String) {
+                    return makePrimitive(TypeKind::String);
+                }
+                [[fallthrough]];
             case Expression::BinaryOperator::Subtract:
             case Expression::BinaryOperator::Multiply:
             case Expression::BinaryOperator::Divide:
@@ -785,6 +817,158 @@ private:
             return type;
         };
 
+        if (expr.callee == "print" || expr.callee == "println") {
+            for (std::size_t i = 0; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]) {
+                    (void)evaluateArgument(i);
+                }
+            }
+            return makePrimitive(TypeKind::Int);
+        }
+
+        if (expr.callee == "string_length") {
+            if (expr.arguments.size() != 1) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'string_length' expects 1 argument but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            if (!expr.arguments.empty() && expr.arguments[0]) {
+                const TypeInfo valueType = evaluateArgument(0);
+                if (!isError(valueType) && valueType.kind != TypeKind::String && valueType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[0]->location,
+                                  "string_length expects a string but got '" + typeToString(valueType) + "'");
+                }
+            }
+            for (std::size_t i = 1; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]) {
+                    (void)evaluateArgument(i);
+                }
+            }
+            return makePrimitive(TypeKind::Int);
+        }
+
+        if (expr.callee == "string_equals") {
+            if (expr.arguments.size() != 2) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'string_equals' expects 2 arguments but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            for (std::size_t i = 0; i < expr.arguments.size(); ++i) {
+                if (!expr.arguments[i]) {
+                    continue;
+                }
+                const TypeInfo valueType = evaluateArgument(i);
+                if (!isError(valueType) && valueType.kind != TypeKind::String && valueType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[i]->location,
+                                  "string_equals expects strings but got '" + typeToString(valueType) + "'");
+                }
+            }
+            return makePrimitive(TypeKind::Int);
+        }
+
+        if (expr.callee == "string_concat") {
+            if (expr.arguments.size() != 2) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'string_concat' expects 2 arguments but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            for (std::size_t i = 0; i < expr.arguments.size(); ++i) {
+                if (!expr.arguments[i]) {
+                    continue;
+                }
+                const TypeInfo valueType = evaluateArgument(i);
+                if (!isError(valueType) && valueType.kind != TypeKind::String && valueType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[i]->location,
+                                  "string_concat expects strings but got '" + typeToString(valueType) + "'");
+                }
+            }
+            return makePrimitive(TypeKind::String);
+        }
+
+        if (expr.callee == "string_repeat") {
+            if (expr.arguments.size() != 2) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'string_repeat' expects 2 arguments but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            if (!expr.arguments.empty() && expr.arguments[0]) {
+                const TypeInfo valueType = evaluateArgument(0);
+                if (!isError(valueType) && valueType.kind != TypeKind::String && valueType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[0]->location,
+                                  "string_repeat expects a string but got '" + typeToString(valueType) + "'");
+                }
+            }
+            if (expr.arguments.size() >= 2 && expr.arguments[1]) {
+                const TypeInfo countType = evaluateArgument(1);
+                if (!isError(countType) && countType.kind != TypeKind::Int && countType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[1]->location,
+                                  "string_repeat count must be an int but got '" + typeToString(countType) + "'");
+                }
+            }
+            for (std::size_t i = 2; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]) {
+                    (void)evaluateArgument(i);
+                }
+            }
+            return makePrimitive(TypeKind::String);
+        }
+
+        if (expr.callee == "string_slice") {
+            if (expr.arguments.size() != 3) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'string_slice' expects 3 arguments but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            if (!expr.arguments.empty() && expr.arguments[0]) {
+                const TypeInfo valueType = evaluateArgument(0);
+                if (!isError(valueType) && valueType.kind != TypeKind::String && valueType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[0]->location,
+                                  "string_slice expects a string but got '" + typeToString(valueType) + "'");
+                }
+            }
+            if (expr.arguments.size() >= 2 && expr.arguments[1]) {
+                const TypeInfo startType = evaluateArgument(1);
+                if (!isError(startType) && startType.kind != TypeKind::Int && startType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[1]->location,
+                                  "string_slice start must be an int but got '" + typeToString(startType) + "'");
+                }
+            }
+            if (expr.arguments.size() >= 3 && expr.arguments[2]) {
+                const TypeInfo countType = evaluateArgument(2);
+                if (!isError(countType) && countType.kind != TypeKind::Int && countType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[2]->location,
+                                  "string_slice count must be an int but got '" + typeToString(countType) + "'");
+                }
+            }
+            for (std::size_t i = 3; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]) {
+                    (void)evaluateArgument(i);
+                }
+            }
+            return makePrimitive(TypeKind::String);
+        }
+
+        if (expr.callee == "string_lower" || expr.callee == "string_upper" || expr.callee == "string_trim") {
+            if (expr.arguments.size() != 1) {
+                addDiagnostic(result, expr.location,
+                              "Builtin '" + expr.callee + "' expects 1 argument but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            if (!expr.arguments.empty() && expr.arguments[0]) {
+                const TypeInfo valueType = evaluateArgument(0);
+                if (!isError(valueType) && valueType.kind != TypeKind::String && valueType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[0]->location,
+                                  expr.callee + " expects a string but got '" + typeToString(valueType) + "'");
+                }
+            }
+            for (std::size_t i = 1; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]) {
+                    (void)evaluateArgument(i);
+                }
+            }
+            return makePrimitive(TypeKind::String);
+        }
+
         if (expr.callee == "array") {
             if (expr.arguments.size() != 1) {
                 addDiagnostic(result, expr.location,
@@ -831,7 +1015,127 @@ private:
                     (void)evaluateArgument(i);
                 }
             }
-            return makePrimitive(TypeKind::Float);
+            return TypeInfo{TypeKind::Unknown, "array_element"};
+        }
+
+        if (expr.callee == "array_fill") {
+            if (expr.arguments.size() != 2) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'array_fill' expects 2 arguments but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            if (!expr.arguments.empty() && expr.arguments[0]) {
+                const TypeInfo arrayType = evaluateArgument(0);
+                if (!isError(arrayType) && arrayType.kind != TypeKind::Array &&
+                    arrayType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[0]->location,
+                                  "array_fill expects an array but got '" + typeToString(arrayType) + "'");
+                }
+            }
+            if (expr.arguments.size() >= 2 && expr.arguments[1]) {
+                (void)evaluateArgument(1);
+            }
+            for (std::size_t i = 2; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]) {
+                    (void)evaluateArgument(i);
+                }
+            }
+            return makeArrayType();
+        }
+
+        if (expr.callee == "array_push") {
+            if (expr.arguments.size() != 2) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'array_push' expects 2 arguments but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            if (!expr.arguments.empty() && expr.arguments[0]) {
+                const TypeInfo arrayType = evaluateArgument(0);
+                if (!isError(arrayType) && arrayType.kind != TypeKind::Array && arrayType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[0]->location,
+                                  "array_push expects an array but got '" + typeToString(arrayType) + "'");
+                }
+            }
+            if (expr.arguments.size() >= 2 && expr.arguments[1]) {
+                (void)evaluateArgument(1);
+            }
+            for (std::size_t i = 2; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]) {
+                    (void)evaluateArgument(i);
+                }
+            }
+            return makeArrayType();
+        }
+
+        if (expr.callee == "array_pop") {
+            if (expr.arguments.size() != 1) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'array_pop' expects 1 argument but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            if (!expr.arguments.empty() && expr.arguments[0]) {
+                const TypeInfo arrayType = evaluateArgument(0);
+                if (!isError(arrayType) && arrayType.kind != TypeKind::Array && arrayType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[0]->location,
+                                  "array_pop expects an array but got '" + typeToString(arrayType) + "'");
+                }
+            }
+            for (std::size_t i = 1; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]) {
+                    (void)evaluateArgument(i);
+                }
+            }
+            return TypeInfo{TypeKind::Unknown, "array_element"};
+        }
+
+        if (expr.callee == "array_join") {
+            if (expr.arguments.size() != 2) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'array_join' expects 2 arguments but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            if (!expr.arguments.empty() && expr.arguments[0]) {
+                const TypeInfo arrayType = evaluateArgument(0);
+                if (!isError(arrayType) && arrayType.kind != TypeKind::Array && arrayType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[0]->location,
+                                  "array_join expects an array but got '" + typeToString(arrayType) + "'");
+                }
+            }
+            if (expr.arguments.size() >= 2 && expr.arguments[1]) {
+                const TypeInfo sepType = evaluateArgument(1);
+                if (!isError(sepType) && sepType.kind != TypeKind::String && sepType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[1]->location,
+                                  "array_join separator must be a string but got '" + typeToString(sepType) + "'");
+                }
+            }
+            for (std::size_t i = 2; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]) {
+                    (void)evaluateArgument(i);
+                }
+            }
+            return makePrimitive(TypeKind::String);
+        }
+
+        if (expr.callee == "array_sum") {
+            if (expr.arguments.size() != 1) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'array_sum' expects 1 argument but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            if (!expr.arguments.empty() && expr.arguments[0]) {
+                const TypeInfo arrayType = evaluateArgument(0);
+                if (!isError(arrayType) && arrayType.kind != TypeKind::Array &&
+                    arrayType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[0]->location,
+                                  "array_sum expects an array but got '" + typeToString(arrayType) + "'");
+                }
+            }
+            for (std::size_t i = 1; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]) {
+                    (void)evaluateArgument(i);
+                }
+            }
+            return makePrimitive(TypeKind::Int);
         }
 
         if (expr.callee == "array_set") {
@@ -857,11 +1161,6 @@ private:
             }
             if (expr.arguments.size() >= 3 && expr.arguments[2]) {
                 valueType = evaluateArgument(2);
-                if (!isError(valueType) && !isNumeric(valueType)) {
-                    addDiagnostic(result, expr.arguments[2]->location,
-                                  "array_set value must be numeric but got '" +
-                                      typeToString(valueType) + "'");
-                }
             }
             for (std::size_t i = 3; i < expr.arguments.size(); ++i) {
                 if (expr.arguments[i]) {
@@ -890,6 +1189,20 @@ private:
                 }
             }
             return makePrimitive(TypeKind::Int);
+        }
+
+        if (expr.callee == "read_line") {
+            if (!expr.arguments.empty()) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'read_line' expects 0 arguments but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            for (std::size_t i = 0; i < expr.arguments.size(); ++i) {
+                if (expr.arguments[i]) {
+                    (void)evaluateArgument(i);
+                }
+            }
+            return makePrimitive(TypeKind::String);
         }
 
         return std::nullopt;

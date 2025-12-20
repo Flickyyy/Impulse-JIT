@@ -1,0 +1,128 @@
+Function banner
+== Before optimisation ==
+Function banner
+  Block #0 (entry) idom=0
+    Instructions
+      v5.1 = literal_string | [
+      v6.1 = call v5.1 | print 1
+      drop v6.1
+      v7.1 = call v1.1 | print 1
+      drop v7.1
+      v8.1 = literal_string | ]
+      v9.1 = call v8.1 | println 1
+      drop v9.1
+      v10.1 = call v1.1 | string_length 1
+      v2.1 = assign v10.1
+      v11.1 = literal_string | -
+      v12.1 = call v11.1 v2.1 | string_repeat 2
+      v13.1 = call v12.1 | println 1
+      drop v13.1
+      v14.1 = literal_string |   
+      v15.1 = binary v14.1 v1.1 | +
+      v16.1 = literal_string |   
+      v17.1 = binary v15.1 v16.1 | +
+      v3.1 = assign v17.1
+      v18.1 = call v3.1 | string_trim 1
+      v4.1 = assign v18.1
+      v19.1 = call v4.1 | string_upper 1
+      v20.1 = call v19.1 | println 1
+      drop v20.1
+      v21.1 = call v4.1 | string_lower 1
+      v22.1 = call v21.1 | println 1
+      drop v22.1
+      v23.1 = literal | 0
+      v24.1 = literal | 3
+      v25.1 = call v4.1 v23.1 v24.1 | string_slice 3
+      v26.1 = call v25.1 | println 1
+      drop v26.1
+      return v2.1
+== After optimisation ==
+Function banner
+  Block #0 (entry) idom=0
+    Instructions
+      v5.1 = literal_string | [
+      v6.1 = call v5.1 | print 1
+      drop v6.1
+      v7.1 = call v1.1 | print 1
+      drop v7.1
+      v8.1 = literal_string | ]
+      v9.1 = call v8.1 | println 1
+      drop v9.1
+      v10.1 = call v1.1 | string_length 1
+      v2.1 = assign v10.1
+      v11.1 = literal_string | -
+      v12.1 = call v11.1 v2.1 | string_repeat 2
+      v13.1 = call v12.1 | println 1
+      drop v13.1
+      v14.1 = literal_string |   
+      v15.1 = binary v14.1 v1.1 | +
+      v16.1 = literal_string |   
+      v17.1 = binary v15.1 v16.1 | +
+      v3.1 = assign v17.1
+      v18.1 = call v3.1 | string_trim 1
+      v4.1 = assign v18.1
+      v19.1 = call v4.1 | string_upper 1
+      v20.1 = call v19.1 | println 1
+      drop v20.1
+      v21.1 = call v4.1 | string_lower 1
+      v22.1 = call v21.1 | println 1
+      drop v22.1
+      v23.1 = literal | 0
+      v24.1 = literal | 3
+      v25.1 = call v4.1 v23.1 v24.1 | string_slice 3
+      v26.1 = call v25.1 | println 1
+      drop v26.1
+      return v2.1
+
+Function main
+== Before optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v5.1 = literal_string | Hello
+      v1.1 = assign v5.1
+      v6.1 = literal_string | world
+      v2.1 = assign v6.1
+      v7.1 = literal_string | , 
+      v8.1 = binary v1.1 v7.1 | +
+      v9.1 = binary v8.1 v2.1 | +
+      v10.1 = literal_string | !
+      v11.1 = binary v9.1 v10.1 | +
+      v3.1 = assign v11.1
+      v12.1 = call v3.1 | println 1
+      drop v12.1
+      v13.1 = literal_string | Impulse
+      v14.1 = call v13.1 | banner 1
+      v4.1 = assign v14.1
+      v15.1 = literal_string | title width: 
+      v16.1 = call v15.1 | print 1
+      drop v16.1
+      v17.1 = call v4.1 | println 1
+      drop v17.1
+      return v4.1
+== After optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v5.1 = literal_string | Hello
+      v1.1 = assign v5.1
+      v6.1 = literal_string | world
+      v2.1 = assign v6.1
+      v7.1 = literal_string | , 
+      v8.1 = binary v1.1 v7.1 | +
+      v9.1 = binary v8.1 v2.1 | +
+      v10.1 = literal_string | !
+      v11.1 = binary v9.1 v10.1 | +
+      v3.1 = assign v11.1
+      v12.1 = call v3.1 | println 1
+      drop v12.1
+      v13.1 = literal_string | Impulse
+      v14.1 = call v13.1 | banner 1
+      v4.1 = assign v14.1
+      v15.1 = literal_string | title width: 
+      v16.1 = call v15.1 | print 1
+      drop v16.1
+      v17.1 = call v4.1 | println 1
+      drop v17.1
+      return v4.1
+

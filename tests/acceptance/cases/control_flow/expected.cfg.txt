@@ -1,0 +1,71 @@
+Function accumulate
+CFG
+  Block entry (#0..4)
+    Successors 1
+    Instructions
+      literal 0
+      store total
+      literal 0
+      store i
+  Block L0 (#4..9)
+    Successors 6 2
+    Predecessors 0 5
+    Instructions
+      L0:
+      reference i
+      reference limit
+      binary <
+      branch_if L1 when 0
+  Block block2 (#9..15)
+    Successors 4 3
+    Predecessors 1
+    Instructions
+      reference i
+      literal 2
+      binary %
+      literal 0
+      binary ==
+      branch_if L2 when 0
+  Block block3 (#15..20)
+    Successors 5
+    Predecessors 2
+    Instructions
+      reference total
+      reference i
+      binary +
+      store total
+      branch L3
+  Block L2 (#20..25)
+    Successors 5
+    Predecessors 2
+    Instructions
+      L2:
+      reference total
+      reference i
+      binary -
+      store total
+  Block L3 (#25..31)
+    Successors 1
+    Predecessors 3 4
+    Instructions
+      L3:
+      reference i
+      literal 1
+      binary +
+      store i
+      branch L0
+  Block L1 (#31..34)
+    Predecessors 1
+    Instructions
+      L1:
+      reference total
+      return
+
+Function main
+CFG
+  Block entry (#0..3)
+    Instructions
+      literal 7
+      call accumulate (1 args)
+      return
+

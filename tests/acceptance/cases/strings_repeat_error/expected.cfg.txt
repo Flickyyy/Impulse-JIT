@@ -1,0 +1,13 @@
+Function main
+CFG
+  Block entry (#0..8)
+    Instructions
+      literal_string "na"
+      literal 2
+      unary -
+      call string_repeat (2 args)
+      call println (1 args)
+      drop
+      literal 0
+      return
+

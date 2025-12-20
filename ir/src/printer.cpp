@@ -21,6 +21,34 @@ namespace {
     return os.str();
 }
 
+[[nodiscard]] auto escape_string(const std::string& value) -> std::string {
+    std::string escaped;
+    escaped.reserve(value.size() + 2);
+    for (char ch : value) {
+        switch (ch) {
+            case '\\':
+                escaped += "\\\\";
+                break;
+            case '"':
+                escaped += "\\\"";
+                break;
+            case '\n':
+                escaped += "\\n";
+                break;
+            case '\t':
+                escaped += "\\t";
+                break;
+            case '\r':
+                escaped += "\\r";
+                break;
+            default:
+                escaped.push_back(ch);
+                break;
+        }
+    }
+    return escaped;
+}
+
 [[nodiscard]] auto to_string(StorageClass storage) -> std::string {
     switch (storage) {
         case StorageClass::Let:
@@ -53,6 +81,12 @@ namespace {
             out << "literal";
             if (!inst.operands.empty()) {
                 out << ' ' << inst.operands.front();
+            }
+            break;
+        case InstructionKind::StringLiteral:
+            out << "literal_string";
+            if (!inst.operands.empty()) {
+                out << " \"" << escape_string(inst.operands.front()) << "\"";
             }
             break;
         case InstructionKind::Reference:

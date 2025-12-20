@@ -1,0 +1,24 @@
+module tests::arrays;
+
+func join_words() -> int {
+    let words: array = array(0);
+    array_push(words, "Impulse");
+    array_push(words, "JIT");
+    array_push(words, "rocks");
+
+    let sentence: string = array_join(words, " ");
+    println(sentence);
+
+    let popped: string = array_pop(words);
+    println(string_concat("popped: ", popped));
+
+    println(array_join(words, "-"));
+    array_push(words, string_upper(popped));
+    println(array_join(words, "+"));
+
+    return string_length(sentence);
+}
+
+func main() -> int {
+    return join_words();
+}

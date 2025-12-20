@@ -244,6 +244,18 @@ private:
                         eval_stack.push_back(result);
                         break;
                     }
+                    case InstructionKind::StringLiteral: {
+                        SsaInstruction out;
+                        out.opcode = "literal_string";
+                        if (!inst->operands.empty()) {
+                            out.immediates.push_back(inst->operands.front());
+                        }
+                        const auto result = make_temporary();
+                        out.result = result;
+                        materialized.push_back(out);
+                        eval_stack.push_back(result);
+                        break;
+                    }
                     case InstructionKind::Reference: {
                         if (inst->operands.empty()) {
                             break;

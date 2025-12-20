@@ -1,0 +1,26 @@
+Function main
+== Before optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v1.1 = literal_string | na
+      v2.1 = literal | 2
+      v3.1 = unary v2.1 | -
+      v4.1 = call v1.1 v3.1 | string_repeat 2
+      v5.1 = call v4.1 | println 1
+      drop v5.1
+      v6.1 = literal | 0
+      return v6.1
+== After optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v1.1 = literal_string | na
+      v2.1 = literal | 2
+      v3.1 = unary v2.1 | -
+      v4.1 = call v1.1 v3.1 | string_repeat 2
+      v5.1 = call v4.1 | println 1
+      drop v5.1
+      v6.1 = literal | 0
+      return v6.1
+

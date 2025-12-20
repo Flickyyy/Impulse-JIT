@@ -1,0 +1,96 @@
+Function join_words
+== Before optimisation ==
+Function join_words
+  Block #0 (entry) idom=0
+    Instructions
+      v4.1 = literal | 0
+      v5.1 = array_make v4.1
+      v1.1 = assign v5.1
+      v6.1 = literal_string | Impulse
+      v7.1 = call v1.1 v6.1 | array_push 2
+      drop v7.1
+      v8.1 = literal_string | JIT
+      v9.1 = call v1.1 v8.1 | array_push 2
+      drop v9.1
+      v10.1 = literal_string | rocks
+      v11.1 = call v1.1 v10.1 | array_push 2
+      drop v11.1
+      v12.1 = literal_string |  
+      v13.1 = call v1.1 v12.1 | array_join 2
+      v2.1 = assign v13.1
+      v14.1 = call v2.1 | println 1
+      drop v14.1
+      v15.1 = call v1.1 | array_pop 1
+      v3.1 = assign v15.1
+      v16.1 = literal_string | popped: 
+      v17.1 = call v16.1 v3.1 | string_concat 2
+      v18.1 = call v17.1 | println 1
+      drop v18.1
+      v19.1 = literal_string | -
+      v20.1 = call v1.1 v19.1 | array_join 2
+      v21.1 = call v20.1 | println 1
+      drop v21.1
+      v22.1 = call v3.1 | string_upper 1
+      v23.1 = call v1.1 v22.1 | array_push 2
+      drop v23.1
+      v24.1 = literal_string | +
+      v25.1 = call v1.1 v24.1 | array_join 2
+      v26.1 = call v25.1 | println 1
+      drop v26.1
+      v27.1 = call v2.1 | string_length 1
+      return v27.1
+== After optimisation ==
+Function join_words
+  Block #0 (entry) idom=0
+    Instructions
+      v4.1 = literal | 0
+      v5.1 = array_make v4.1
+      v1.1 = assign v5.1
+      v6.1 = literal_string | Impulse
+      v7.1 = call v1.1 v6.1 | array_push 2
+      drop v7.1
+      v8.1 = literal_string | JIT
+      v9.1 = call v1.1 v8.1 | array_push 2
+      drop v9.1
+      v10.1 = literal_string | rocks
+      v11.1 = call v1.1 v10.1 | array_push 2
+      drop v11.1
+      v12.1 = literal_string |  
+      v13.1 = call v1.1 v12.1 | array_join 2
+      v2.1 = assign v13.1
+      v14.1 = call v2.1 | println 1
+      drop v14.1
+      v15.1 = call v1.1 | array_pop 1
+      v3.1 = assign v15.1
+      v16.1 = literal_string | popped: 
+      v17.1 = call v16.1 v3.1 | string_concat 2
+      v18.1 = call v17.1 | println 1
+      drop v18.1
+      v19.1 = literal_string | -
+      v20.1 = call v1.1 v19.1 | array_join 2
+      v21.1 = call v20.1 | println 1
+      drop v21.1
+      v22.1 = call v3.1 | string_upper 1
+      v23.1 = call v1.1 v22.1 | array_push 2
+      drop v23.1
+      v24.1 = literal_string | +
+      v25.1 = call v1.1 v24.1 | array_join 2
+      v26.1 = call v25.1 | println 1
+      drop v26.1
+      v27.1 = call v2.1 | string_length 1
+      return v27.1
+
+Function main
+== Before optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v1.1 = call | join_words 0
+      return v1.1
+== After optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v1.1 = call | join_words 0
+      return v1.1
+

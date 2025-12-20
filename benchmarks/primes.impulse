@@ -1,0 +1,65 @@
+module benchmark::primes;
+
+// Benchmark: Generate primes up to 100000
+// Algorithm: Trial division (for VM-based evaluation)
+// Demonstrates: loops, arithmetic operations, function calls
+
+func is_prime(n: int) -> int {
+    if n < 2 {
+        return 0;
+    }
+    if n == 2 {
+        return 1;
+    }
+    let remainder: int = n % 2;
+    if remainder == 0 {
+        return 0;
+    }
+    let i: int = 3;
+    while i * i <= n {
+        let r: int = n % i;
+        if r == 0 {
+            return 0;
+        }
+        i = i + 2;
+    }
+    return 1;
+}
+
+func count_primes(limit: int) -> int {
+    let count: int = 0;
+    let n: int = 2;
+    while n <= limit {
+        let prime: int = is_prime(n);
+        if prime == 1 {
+            count = count + 1;
+        }
+        n = n + 1;
+    }
+    return count;
+}
+
+func main() -> int {
+    println("=== Prime Numbers Benchmark ===");
+    
+    // Count primes up to 1000
+    let limit: int = 1000;
+    
+    print("Counting primes up to ");
+    print(limit);
+    println("...");
+    
+    let count: int = count_primes(limit);
+    
+    print("Number of primes: ");
+    println(count);
+    
+    // There are 168 primes up to 1000
+    if count == 168 {
+        println("SUCCESS: Correct prime count!");
+    } else {
+        println("ERROR: Incorrect prime count!");
+    }
+    
+    return count;
+}

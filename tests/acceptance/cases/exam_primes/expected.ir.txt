@@ -1,0 +1,115 @@
+module exam::primes
+
+func is_prime(n: int) -> int {
+  ^entry:
+    reference n
+    literal 2
+    binary <
+    branch_if L0 when 0
+    literal 0
+    return
+  L0:
+    reference n
+    literal 2
+    binary ==
+    branch_if L2 when 0
+    literal 1
+    return
+  L2:
+    reference n
+    literal 2
+    binary %
+    store remainder
+    reference remainder
+    literal 0
+    binary ==
+    branch_if L4 when 0
+    literal 0
+    return
+  L4:
+    literal 3
+    store i
+  L6:
+    reference i
+    reference i
+    binary *
+    reference n
+    binary <=
+    branch_if L7 when 0
+    reference n
+    reference i
+    binary %
+    store remainder
+    reference remainder
+    literal 0
+    binary ==
+    branch_if L8 when 0
+    literal 0
+    return
+  L8:
+    reference i
+    literal 2
+    binary +
+    store i
+    branch L6
+  L7:
+    literal 1
+    return
+}
+
+func count_primes(limit: int) -> int {
+  ^entry:
+    literal 0
+    store count
+    literal 2
+    store n
+  L10:
+    reference n
+    reference limit
+    binary <=
+    branch_if L11 when 0
+    reference n
+    call is_prime (1 args)
+    store prime
+    reference prime
+    literal 1
+    binary ==
+    branch_if L12 when 0
+    reference count
+    literal 1
+    binary +
+    store count
+  L12:
+    reference n
+    literal 1
+    binary +
+    store n
+    branch L10
+  L11:
+    reference count
+    return
+}
+
+func main() -> int {
+  ^entry:
+    literal 100
+    store limit
+    reference limit
+    call count_primes (1 args)
+    store count
+    literal_string "Number of primes up to "
+    call print (1 args)
+    drop
+    reference limit
+    call print (1 args)
+    drop
+    literal_string ": "
+    call print (1 args)
+    drop
+    reference count
+    call println (1 args)
+    drop
+    reference count
+    return
+}
+

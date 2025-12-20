@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <iosfwd>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -38,6 +41,10 @@ public:
 
     [[nodiscard]] auto run(const std::string& module_name, const std::string& entry) const -> VmResult;
 
+    void set_trace_stream(std::ostream* stream) const;
+    void set_input_stream(std::istream* stream) const;
+    void set_read_line_provider(std::function<std::optional<std::string>()> provider) const;
+
     void collect_garbage() const;
 
 private:
@@ -55,7 +62,8 @@ private:
     };
 
     [[nodiscard]] auto execute_function(const LoadedModule& module, const ir::Function& function,
-                                        const std::unordered_map<std::string, Value>& parameters) const -> VmResult;
+                                        const std::unordered_map<std::string, Value>& parameters,
+                                        std::string* output_buffer) const -> VmResult;
 
     [[nodiscard]] static auto normalize_module_name(const ir::Module& module) -> std::string;
 
@@ -68,6 +76,10 @@ private:
     mutable GcHeap heap_;
     mutable std::vector<ExecutionFrame> frames_;
     mutable std::vector<Value*> root_buffer_;
+    mutable std::ostream* trace_stream_ = nullptr;
+    mutable std::istream* input_stream_ = nullptr;
+    mutable std::function<std::optional<std::string>()> read_line_provider_;
+    mutable std::string output_buffer_;
 };
 
 }  // namespace impulse::runtime

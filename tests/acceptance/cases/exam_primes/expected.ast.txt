@@ -1,0 +1,326 @@
+Module
+  ModuleDecl
+    Identifier value="exam" loc=1:8
+    Identifier value="primes" loc=1:14
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="is_prime" loc=7:6
+        Identifier value="int" loc=7:26
+        Parameters
+          Param[0]
+            Identifier value="n" loc=7:15
+            Identifier value="int" loc=7:18
+        Body
+          Statement[0]
+            Kind If loc=8:5
+              Condition
+                Expression kind=Binary loc=8:10
+                  Operator <
+                  Left
+                    Expression kind=Identifier loc=8:8
+                      Identifier value="n" loc=8:8
+                  Right
+                    Expression kind=Literal loc=8:12
+                      Literal kind=Number value="2"
+              Then
+                Statement[0]
+                  Kind Return loc=9:9
+                    ReturnValue
+                      Expression kind=Literal loc=9:16
+                        Literal kind=Number value="0"
+              Else
+          Statement[1]
+            Kind If loc=11:5
+              Condition
+                Expression kind=Binary loc=11:10
+                  Operator ==
+                  Left
+                    Expression kind=Identifier loc=11:8
+                      Identifier value="n" loc=11:8
+                  Right
+                    Expression kind=Literal loc=11:13
+                      Literal kind=Number value="2"
+              Then
+                Statement[0]
+                  Kind Return loc=12:9
+                    ReturnValue
+                      Expression kind=Literal loc=12:16
+                        Literal kind=Number value="1"
+              Else
+          Statement[2]
+            Kind Binding loc=14:5
+              Binding kind=let
+                Identifier value="remainder" loc=14:9
+                Identifier value="int" loc=14:20
+                InitializerExpr
+                  Expression kind=Binary loc=14:28
+                    Operator %
+                    Left
+                      Expression kind=Identifier loc=14:26
+                        Identifier value="n" loc=14:26
+                    Right
+                      Expression kind=Literal loc=14:30
+                        Literal kind=Number value="2"
+          Statement[3]
+            Kind If loc=15:5
+              Condition
+                Expression kind=Binary loc=15:18
+                  Operator ==
+                  Left
+                    Expression kind=Identifier loc=15:8
+                      Identifier value="remainder" loc=15:8
+                  Right
+                    Expression kind=Literal loc=15:21
+                      Literal kind=Number value="0"
+              Then
+                Statement[0]
+                  Kind Return loc=16:9
+                    ReturnValue
+                      Expression kind=Literal loc=16:16
+                        Literal kind=Number value="0"
+              Else
+          Statement[4]
+            Kind Binding loc=18:5
+              Binding kind=let
+                Identifier value="i" loc=18:9
+                Identifier value="int" loc=18:12
+                InitializerExpr
+                  Expression kind=Literal loc=18:18
+                    Literal kind=Number value="3"
+          Statement[5]
+            Kind While loc=19:5
+              Condition
+                Expression kind=Binary loc=19:17
+                  Operator <=
+                  Left
+                    Expression kind=Binary loc=19:13
+                      Operator *
+                      Left
+                        Expression kind=Identifier loc=19:11
+                          Identifier value="i" loc=19:11
+                      Right
+                        Expression kind=Identifier loc=19:15
+                          Identifier value="i" loc=19:15
+                  Right
+                    Expression kind=Identifier loc=19:20
+                      Identifier value="n" loc=19:20
+              Body
+                Statement[0]
+                  Kind Binding loc=20:9
+                    Binding kind=let
+                      Identifier value="remainder" loc=20:13
+                      Identifier value="int" loc=20:24
+                      InitializerExpr
+                        Expression kind=Binary loc=20:32
+                          Operator %
+                          Left
+                            Expression kind=Identifier loc=20:30
+                              Identifier value="n" loc=20:30
+                          Right
+                            Expression kind=Identifier loc=20:34
+                              Identifier value="i" loc=20:34
+                Statement[1]
+                  Kind If loc=21:9
+                    Condition
+                      Expression kind=Binary loc=21:22
+                        Operator ==
+                        Left
+                          Expression kind=Identifier loc=21:12
+                            Identifier value="remainder" loc=21:12
+                        Right
+                          Expression kind=Literal loc=21:25
+                            Literal kind=Number value="0"
+                    Then
+                      Statement[0]
+                        Kind Return loc=22:13
+                          ReturnValue
+                            Expression kind=Literal loc=22:20
+                              Literal kind=Number value="0"
+                    Else
+                Statement[2]
+                  Kind Binding loc=24:9
+                    Binding kind=let
+                      Identifier value="i" loc=24:13
+                      Identifier value="int" loc=24:16
+                      InitializerExpr
+                        Expression kind=Binary loc=24:24
+                          Operator +
+                          Left
+                            Expression kind=Identifier loc=24:22
+                              Identifier value="i" loc=24:22
+                          Right
+                            Expression kind=Literal loc=24:26
+                              Literal kind=Number value="2"
+          Statement[6]
+            Kind Return loc=26:5
+              ReturnValue
+                Expression kind=Literal loc=26:12
+                  Literal kind=Number value="1"
+  Decl[1]
+    Declaration exported=false
+      Function
+        Identifier value="count_primes" loc=29:6
+        Identifier value="int" loc=29:34
+        Parameters
+          Param[0]
+            Identifier value="limit" loc=29:19
+            Identifier value="int" loc=29:26
+        Body
+          Statement[0]
+            Kind Binding loc=30:5
+              Binding kind=let
+                Identifier value="count" loc=30:9
+                Identifier value="int" loc=30:16
+                InitializerExpr
+                  Expression kind=Literal loc=30:22
+                    Literal kind=Number value="0"
+          Statement[1]
+            Kind Binding loc=31:5
+              Binding kind=let
+                Identifier value="n" loc=31:9
+                Identifier value="int" loc=31:12
+                InitializerExpr
+                  Expression kind=Literal loc=31:18
+                    Literal kind=Number value="2"
+          Statement[2]
+            Kind While loc=32:5
+              Condition
+                Expression kind=Binary loc=32:13
+                  Operator <=
+                  Left
+                    Expression kind=Identifier loc=32:11
+                      Identifier value="n" loc=32:11
+                  Right
+                    Expression kind=Identifier loc=32:16
+                      Identifier value="limit" loc=32:16
+              Body
+                Statement[0]
+                  Kind Binding loc=33:9
+                    Binding kind=let
+                      Identifier value="prime" loc=33:13
+                      Identifier value="int" loc=33:20
+                      InitializerExpr
+                        Expression kind=Call loc=33:26
+                          Callee is_prime
+                          Arguments
+                            Arg[0]
+                              Expression kind=Identifier loc=33:35
+                                Identifier value="n" loc=33:35
+                Statement[1]
+                  Kind If loc=34:9
+                    Condition
+                      Expression kind=Binary loc=34:18
+                        Operator ==
+                        Left
+                          Expression kind=Identifier loc=34:12
+                            Identifier value="prime" loc=34:12
+                        Right
+                          Expression kind=Literal loc=34:21
+                            Literal kind=Number value="1"
+                    Then
+                      Statement[0]
+                        Kind Binding loc=35:13
+                          Binding kind=let
+                            Identifier value="count" loc=35:17
+                            Identifier value="int" loc=35:24
+                            InitializerExpr
+                              Expression kind=Binary loc=35:36
+                                Operator +
+                                Left
+                                  Expression kind=Identifier loc=35:30
+                                    Identifier value="count" loc=35:30
+                                Right
+                                  Expression kind=Literal loc=35:38
+                                    Literal kind=Number value="1"
+                    Else
+                Statement[2]
+                  Kind Binding loc=37:9
+                    Binding kind=let
+                      Identifier value="n" loc=37:13
+                      Identifier value="int" loc=37:16
+                      InitializerExpr
+                        Expression kind=Binary loc=37:24
+                          Operator +
+                          Left
+                            Expression kind=Identifier loc=37:22
+                              Identifier value="n" loc=37:22
+                          Right
+                            Expression kind=Literal loc=37:26
+                              Literal kind=Number value="1"
+          Statement[3]
+            Kind Return loc=39:5
+              ReturnValue
+                Expression kind=Identifier loc=39:12
+                  Identifier value="count" loc=39:12
+  Decl[2]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=42:6
+        Identifier value="int" loc=42:16
+        Parameters
+        Body
+          Statement[0]
+            Kind Binding loc=45:5
+              Binding kind=let
+                Identifier value="limit" loc=45:9
+                Identifier value="int" loc=45:16
+                InitializerExpr
+                  Expression kind=Literal loc=45:22
+                    Literal kind=Number value="100"
+          Statement[1]
+            Kind Binding loc=46:5
+              Binding kind=let
+                Identifier value="count" loc=46:9
+                Identifier value="int" loc=46:16
+                InitializerExpr
+                  Expression kind=Call loc=46:22
+                    Callee count_primes
+                    Arguments
+                      Arg[0]
+                        Expression kind=Identifier loc=46:35
+                          Identifier value="limit" loc=46:35
+          Statement[2]
+            Kind ExprStmt loc=48:5
+              Expression
+                Expression kind=Call loc=48:5
+                  Callee print
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=48:11
+                        Literal kind=String value="Number of primes up to "
+          Statement[3]
+            Kind ExprStmt loc=49:5
+              Expression
+                Expression kind=Call loc=49:5
+                  Callee print
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=49:11
+                        Identifier value="limit" loc=49:11
+          Statement[4]
+            Kind ExprStmt loc=50:5
+              Expression
+                Expression kind=Call loc=50:5
+                  Callee print
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=50:11
+                        Literal kind=String value=": "
+          Statement[5]
+            Kind ExprStmt loc=51:5
+              Expression
+                Expression kind=Call loc=51:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=51:13
+                        Identifier value="count" loc=51:13
+          Statement[6]
+            Kind Return loc=53:5
+              ReturnValue
+                Expression kind=Identifier loc=53:12
+                  Identifier value="count" loc=53:12

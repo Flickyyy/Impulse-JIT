@@ -1,0 +1,226 @@
+Function counter
+== Before optimisation ==
+Function counter
+  Block #0 (entry) idom=0
+    Instructions
+      v2.1 = literal | 0
+      v1.1 = assign v2.1
+      v3.1 = literal | 1
+      v4.1 = binary v1.1 v3.1 | +
+      v1.2 = assign v4.1
+      v5.1 = literal | 1
+      v6.1 = binary v1.2 v5.1 | +
+      v1.3 = assign v6.1
+      v7.1 = literal | 1
+      v8.1 = binary v1.3 v7.1 | +
+      v1.4 = assign v8.1
+      return v1.4
+== After optimisation ==
+Function counter
+  Block #0 (entry) idom=0
+    Instructions
+      v2.1 = literal | 0
+      v1.1 = assign v2.1
+      v3.1 = literal | 1
+      v4.1 = binary v1.1 v3.1 | +
+      v1.2 = assign v4.1
+      v5.1 = literal | 1
+      v6.1 = binary v1.2 v5.1 | +
+      v1.3 = assign v6.1
+      v7.1 = literal | 1
+      v8.1 = binary v1.3 v7.1 | +
+      v1.4 = assign v8.1
+      return v1.4
+
+Function accumulate
+== Before optimisation ==
+Function accumulate
+  Block #0 (entry) idom=0
+    Instructions
+      v4.1 = literal | 0
+      v2.1 = assign v4.1
+      v5.1 = literal | 1
+      v3.1 = assign v5.1
+    Successors 1
+    DomChildren 1
+  Block #1 (L0) idom=0
+    Phi
+      v3.2 = phi
+        from block 0 v3.1
+        from block 2 v3.3
+      v2.2 = phi
+        from block 0 v2.1
+        from block 2 v2.3
+    Instructions
+      v6.1 = binary v3.2 v1.1 | <=
+      branch_if v6.1 | L1 0
+    Successors 3 2
+    Predecessors 0 2
+    DomChildren 2 3
+    DomFrontier 1
+  Block #2 (block2) idom=1
+    Instructions
+      v7.1 = binary v2.2 v3.2 | +
+      v2.3 = assign v7.1
+      v8.1 = literal | 1
+      v9.1 = binary v3.2 v8.1 | +
+      v3.3 = assign v9.1
+      branch | L0
+    Successors 1
+    Predecessors 1
+    DomFrontier 1
+  Block #3 (L1) idom=1
+    Instructions
+      return v2.2
+    Predecessors 1
+== After optimisation ==
+Function accumulate
+  Block #0 (entry) idom=0
+    Instructions
+      v4.1 = literal | 0
+      v2.1 = assign v4.1
+      v5.1 = literal | 1
+      v3.1 = assign v5.1
+    Successors 1
+    DomChildren 1
+  Block #1 (L0) idom=0
+    Phi
+      v3.2 = phi
+        from block 0 v3.1
+        from block 2 v3.3
+      v2.2 = phi
+        from block 0 v2.1
+        from block 2 v2.3
+    Instructions
+      v6.1 = binary v3.2 v1.1 | <=
+      branch_if v6.1 | L1 0
+    Successors 3 2
+    Predecessors 0 2
+    DomChildren 2 3
+    DomFrontier 1
+  Block #2 (block2) idom=1
+    Instructions
+      v7.1 = binary v2.2 v3.2 | +
+      v2.3 = assign v7.1
+      v8.1 = literal | 1
+      v9.1 = binary v3.2 v8.1 | +
+      v3.3 = assign v9.1
+      branch | L0
+    Successors 1
+    Predecessors 1
+    DomFrontier 1
+  Block #3 (L1) idom=1
+    Instructions
+      return v2.2
+    Predecessors 1
+
+Function main
+== Before optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v3.1 = call | counter 0
+      v1.1 = assign v3.1
+      v4.1 = literal_string | counter: 
+      v5.1 = call v4.1 | print 1
+      drop v5.1
+      v6.1 = call v1.1 | println 1
+      drop v6.1
+      v7.1 = literal | 10
+      v8.1 = call v7.1 | accumulate 1
+      v2.1 = assign v8.1
+      v9.1 = literal_string | sum 1..10: 
+      v10.1 = call v9.1 | print 1
+      drop v10.1
+      v11.1 = call v2.1 | println 1
+      drop v11.1
+      v12.1 = literal | 3
+      v13.1 = binary v1.1 v12.1 | ==
+      branch_if v13.1 | L2 0
+    Successors 4 1
+    DomChildren 1 4
+  Block #1 (block1) idom=0
+    Instructions
+      v14.1 = literal | 55
+      v15.1 = binary v2.1 v14.1 | ==
+      branch_if v15.1 | L4 0
+    Successors 3 2
+    Predecessors 0
+    DomChildren 2 3
+    DomFrontier 4
+  Block #2 (block2) idom=1
+    Instructions
+      v16.1 = literal_string | SUCCESS: Assignment works correctly!
+      v17.1 = call v16.1 | println 1
+      drop v17.1
+      v18.1 = literal | 1
+      return v18.1
+    Predecessors 1
+  Block #3 (L4) idom=1
+    Instructions
+    Successors 4
+    Predecessors 1
+    DomFrontier 4
+  Block #4 (L2) idom=0
+    Instructions
+      v19.1 = literal_string | ERROR: Assignment failed!
+      v20.1 = call v19.1 | println 1
+      drop v20.1
+      v21.1 = literal | 0
+      return v21.1
+    Predecessors 0 3
+== After optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v3.1 = call | counter 0
+      v1.1 = assign v3.1
+      v4.1 = literal_string | counter: 
+      v5.1 = call v4.1 | print 1
+      drop v5.1
+      v6.1 = call v1.1 | println 1
+      drop v6.1
+      v7.1 = literal | 10
+      v8.1 = call v7.1 | accumulate 1
+      v2.1 = assign v8.1
+      v9.1 = literal_string | sum 1..10: 
+      v10.1 = call v9.1 | print 1
+      drop v10.1
+      v11.1 = call v2.1 | println 1
+      drop v11.1
+      v12.1 = literal | 3
+      v13.1 = binary v1.1 v12.1 | ==
+      branch_if v13.1 | L2 0
+    Successors 4 1
+    DomChildren 1 4
+  Block #1 (block1) idom=0
+    Instructions
+      v14.1 = literal | 55
+      v15.1 = binary v2.1 v14.1 | ==
+      branch_if v15.1 | L4 0
+    Successors 3 2
+    Predecessors 0
+    DomChildren 2 3
+    DomFrontier 4
+  Block #2 (block2) idom=1
+    Instructions
+      v16.1 = literal_string | SUCCESS: Assignment works correctly!
+      v17.1 = call v16.1 | println 1
+      drop v17.1
+      v18.1 = literal | 1
+      return v18.1
+    Predecessors 1
+  Block #3 (L4) idom=1
+    Instructions
+    Successors 4
+    Predecessors 1
+    DomFrontier 4
+  Block #4 (L2) idom=0
+    Instructions
+      v19.1 = literal_string | ERROR: Assignment failed!
+      v20.1 = call v19.1 | println 1
+      drop v20.1
+      v21.1 = literal | 0
+      return v21.1
+    Predecessors 0 3
+

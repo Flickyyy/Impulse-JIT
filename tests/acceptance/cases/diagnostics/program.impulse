@@ -1,0 +1,13 @@
+module tests::diagnostics;
+
+func broken(message: int) -> int {
+    let label: string = 42;
+    if message {
+        return "fail";
+    }
+    return message;
+}
+
+func main() -> int {
+    return broken(0);
+}

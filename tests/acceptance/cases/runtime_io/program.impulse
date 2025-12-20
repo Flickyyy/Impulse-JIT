@@ -1,0 +1,12 @@
+module tests::runtime_io;
+
+func main() -> int {
+    println("enter value:");
+    let input: string = read_line();
+    if string_length(input) == 0 {
+        println("[no input]");
+    } else {
+        println(string_concat("echo: ", input));
+    }
+    return string_length(input);
+}

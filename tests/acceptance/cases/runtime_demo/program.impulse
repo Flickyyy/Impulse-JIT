@@ -1,0 +1,47 @@
+module tests::runtime_demo;
+
+func fibonacci(n: int) -> int {
+    if n < 2 {
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+func emit_value(label: string, value: int) -> int {
+    print(label);
+    println(value);
+    return value;
+}
+
+func build_banner() -> int {
+    let prefix: string = string_concat("=== ", "runtime");
+    let line: string = string_concat(prefix, " demo ===");
+    println(line);
+    if string_equals(line, "=== runtime demo ===") {
+        println("banner matches reference");
+    }
+    return string_length(line);
+}
+
+func main() -> int {
+    let width: int = build_banner();
+    let fib: int = fibonacci(6);
+    emit_value("fib(6) = ", fib);
+
+    let buffer: array = array(3);
+    array_set(buffer, 0, "width: ");
+    array_set(buffer, 1, width);
+    array_set(buffer, 2, ", done\n");
+
+    print(array_get(buffer, 0));
+    print(array_get(buffer, 1));
+    print(array_get(buffer, 2));
+
+    let totals: array = array(4);
+    array_fill(totals, fib);
+    array_set(totals, 3, width);
+    let sum: int = array_sum(totals);
+    emit_value("sum = ", sum);
+
+    return 0;
+}

@@ -1,0 +1,4 @@
+status=0 value=1 message='counter: 3
+sum 1..10: 55
+SUCCESS: Assignment works correctly!
+'

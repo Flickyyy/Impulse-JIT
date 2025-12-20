@@ -1,0 +1,35 @@
+module exam::factorial
+
+func factorial(n: int) -> int {
+  ^entry:
+    reference n
+    literal 1
+    binary <=
+    branch_if L0 when 0
+    literal 1
+    return
+  L0:
+    reference n
+    reference n
+    literal 1
+    binary -
+    call factorial (1 args)
+    binary *
+    return
+}
+
+func main() -> int {
+  ^entry:
+    literal 12
+    call factorial (1 args)
+    store res
+    literal_string "factorial(12) = "
+    call println (1 args)
+    drop
+    reference res
+    call println (1 args)
+    drop
+    reference res
+    return
+}
+

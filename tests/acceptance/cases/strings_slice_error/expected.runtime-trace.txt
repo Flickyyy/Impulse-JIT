@@ -1,0 +1,12 @@
+enter function main
+enter block 0 (entry)
+    v2.1 = literal_string imm(Impulse)
+      -> v2.1 = "Impulse"
+    v1.1 = assign args(v2.1)
+      -> v1.1 = "Impulse"
+    v3.1 = literal imm(10)
+      -> v3.1 = 10
+    v4.1 = literal imm(1)
+      -> v4.1 = 1
+    v5.1 = call args(v1.1, v3.1, v4.1) imm(string_slice, 3)
+exit function main status=3 message='string_slice start exceeds string length'

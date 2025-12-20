@@ -1,0 +1,87 @@
+Module
+  ModuleDecl
+    Identifier value="tests" loc=1:8
+    Identifier value="diagnostics_builtins" loc=1:15
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=3:6
+        Identifier value="int" loc=3:16
+        Parameters
+        Body
+          Statement[0]
+            Kind Binding loc=4:5
+              Binding kind=let
+                Identifier value="source" loc=4:9
+                Identifier value="string" loc=4:17
+                InitializerExpr
+                  Expression kind=Literal loc=4:26
+                    Literal kind=Number value="42"
+          Statement[1]
+            Kind Binding loc=5:5
+              Binding kind=let
+                Identifier value="trimmed" loc=5:9
+                Identifier value="string" loc=5:18
+                InitializerExpr
+                  Expression kind=Call loc=5:27
+                    Callee string_trim
+                    Arguments
+                      Arg[0]
+                        Expression kind=Literal loc=5:39
+                          Literal kind=Number value="123"
+          Statement[2]
+            Kind Binding loc=6:5
+              Binding kind=let
+                Identifier value="slice" loc=6:9
+                Identifier value="string" loc=6:16
+                InitializerExpr
+                  Expression kind=Call loc=6:25
+                    Callee string_slice
+                    Arguments
+                      Arg[0]
+                        Expression kind=Literal loc=6:38
+                          Literal kind=String value="abc"
+                      Arg[1]
+                        Expression kind=Literal loc=6:45
+                          Literal kind=Number value="0"
+          Statement[3]
+            Kind ExprStmt loc=7:5
+              Expression
+                Expression kind=Call loc=7:5
+                  Callee array_push
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=7:16
+                        Literal kind=Number value="7"
+                    Arg[1]
+                      Expression kind=Literal loc=7:19
+                        Literal kind=String value="value"
+          Statement[4]
+            Kind ExprStmt loc=8:5
+              Expression
+                Expression kind=Call loc=8:5
+                  Callee array_join
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=8:16
+                        Literal kind=String value="not array"
+                    Arg[1]
+                      Expression kind=Literal loc=8:29
+                        Literal kind=String value=","
+          Statement[5]
+            Kind ExprStmt loc=9:5
+              Expression
+                Expression kind=Call loc=9:5
+                  Callee read_line
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=9:15
+                        Literal kind=Number value="1"
+          Statement[6]
+            Kind Return loc=10:5
+              ReturnValue
+                Expression kind=Literal loc=10:12
+                  Literal kind=Number value="0"

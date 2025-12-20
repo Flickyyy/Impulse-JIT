@@ -1,0 +1,98 @@
+Module
+  ModuleDecl
+    Identifier value="exam" loc=1:8
+    Identifier value="factorial" loc=1:14
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="factorial" loc=8:6
+        Identifier value="int" loc=8:27
+        Parameters
+          Param[0]
+            Identifier value="n" loc=8:16
+            Identifier value="int" loc=8:19
+        Body
+          Statement[0]
+            Kind If loc=9:5
+              Condition
+                Expression kind=Binary loc=9:10
+                  Operator <=
+                  Left
+                    Expression kind=Identifier loc=9:8
+                      Identifier value="n" loc=9:8
+                  Right
+                    Expression kind=Literal loc=9:13
+                      Literal kind=Number value="1"
+              Then
+                Statement[0]
+                  Kind Return loc=10:9
+                    ReturnValue
+                      Expression kind=Literal loc=10:16
+                        Literal kind=Number value="1"
+              Else
+          Statement[1]
+            Kind Return loc=12:5
+              ReturnValue
+                Expression kind=Binary loc=12:14
+                  Operator *
+                  Left
+                    Expression kind=Identifier loc=12:12
+                      Identifier value="n" loc=12:12
+                  Right
+                    Expression kind=Call loc=12:16
+                      Callee factorial
+                      Arguments
+                        Arg[0]
+                          Expression kind=Binary loc=12:28
+                            Operator -
+                            Left
+                              Expression kind=Identifier loc=12:26
+                                Identifier value="n" loc=12:26
+                            Right
+                              Expression kind=Literal loc=12:30
+                                Literal kind=Number value="1"
+  Decl[1]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=15:6
+        Identifier value="int" loc=15:16
+        Parameters
+        Body
+          Statement[0]
+            Kind Binding loc=18:5
+              Binding kind=let
+                Identifier value="res" loc=18:9
+                Identifier value="int" loc=18:14
+                InitializerExpr
+                  Expression kind=Call loc=18:20
+                    Callee factorial
+                    Arguments
+                      Arg[0]
+                        Expression kind=Literal loc=18:30
+                          Literal kind=Number value="12"
+          Statement[1]
+            Kind ExprStmt loc=19:5
+              Expression
+                Expression kind=Call loc=19:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=19:13
+                        Literal kind=String value="factorial(12) = "
+          Statement[2]
+            Kind ExprStmt loc=20:5
+              Expression
+                Expression kind=Call loc=20:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=20:13
+                        Identifier value="res" loc=20:13
+          Statement[3]
+            Kind Return loc=21:5
+              ReturnValue
+                Expression kind=Identifier loc=21:12
+                  Identifier value="res" loc=21:12

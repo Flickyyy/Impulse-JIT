@@ -1,0 +1,38 @@
+Module
+  ModuleDecl
+    Identifier value="tests" loc=1:8
+    Identifier value="strings_repeat_error" loc=1:15
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=3:6
+        Identifier value="int" loc=3:16
+        Parameters
+        Body
+          Statement[0]
+            Kind ExprStmt loc=4:5
+              Expression
+                Expression kind=Call loc=4:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Call loc=4:13
+                        Callee string_repeat
+                        Arguments
+                          Arg[0]
+                            Expression kind=Literal loc=4:27
+                              Literal kind=String value="na"
+                          Arg[1]
+                            Expression kind=Unary loc=4:33
+                              Operator -
+                              Operand
+                                Expression kind=Literal loc=4:34
+                                  Literal kind=Number value="2"
+          Statement[1]
+            Kind Return loc=5:5
+              ReturnValue
+                Expression kind=Literal loc=5:12
+                  Literal kind=Number value="0"

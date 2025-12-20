@@ -4,8 +4,9 @@
 
 ### Current Implementation
 - **`frontend/`** — C++ lexer, parser, semantic analysis, and lowering to stack IR
-- **`ir/`** — Stack-based IR utilities (builder, printer, CFG, constant evaluator, SSA with dominators, rename, instruction materialisation, constant/copy propagation, copy propagation, dead assignment elimination, and an optimisation driver)
-- **`runtime/`** — SSA-aware interpreter that rebuilds & optimises functions before execution, with GC-backed arrays
+- **`ir/`** — Stack-based IR utilities (builder, printer, CFG, SSA with dominators, rename, instruction materialisation)
+- **`runtime/`** — SSA-aware interpreter with GC-backed arrays
+- **`jit/`** — x86-64 JIT compiler infrastructure (CodeBuffer, machine code emission)
 - **`cli/`** — Go CLI wrapper (`impulsec`) communicating with C++ via CGO (mirrors the C++ `impulse-cpp` tool)
 - **`tests/`** — Unit tests covering lexer, parser, semantics, IR, and runtime execution
 ```
@@ -18,8 +19,8 @@ source ──► lexer ──► tokens ──► parser ──► AST ──►
 - **AST ➜ IR**: `frontend::lower_to_ir` translates well-typed syntax into the stack IR.
 - **IR ➜ CFG**: `ir::build_control_flow_graph` groups the flat instruction stream into basic blocks for analysis and SSA construction.
 - **IR ➜ SSA**: `ir::build_ssa` mirrors CFG layout, records dominance data, places phi nodes, and materialises SSA instructions.
-- **SSA ➜ Optimiser**: `ir::optimize_ssa` runs constant propagation, copy propagation, and dead assignment elimination to a fixed point.
-- **SSA ➜ Runtime**: the VM evaluates the optimised SSA program directly while maintaining GC rooting.
+- **SSA ➨ Optimiser**: `ir::optimize_ssa` is a stub for future optimization passes.
+- **SSA ➨ Runtime**: the VM evaluates the SSA program directly while maintaining GC rooting.
 
 ## 2. Build & Test
 
@@ -101,10 +102,10 @@ Future passes (optimisation, codegen) will build on the SSA representation once 
 ✅ SSA-aware interpreter executes optimised programs  
 
 ### Next Priorities
-1. Broader semantic diagnostics and better error messages
-2. Minimal runtime helpers / standard library stubs
-3. Extend SSA optimiser with additional passes (value numbering, loop-aware rewrites) and expose optimisation metrics
-4. Investigate native backend options after interpreter stabilises
+1. Expose end-to-end I/O through the CLI/runtime boundary (replace deterministic stubs, surface errors cleanly)
+2. Extend the SSA optimiser with additional passes (value numbering, loop-aware rewrites) and capture optimisation metrics
+3. Improve observability: richer tracing/logging toggles, diagnostic IDs, and CLI ergonomics for inspection
+4. Investigate native backend options after the expanded optimisation stack stabilises
 
 ### Future Work
 - **Optimization** — Loop optimizations, inlining, register allocation
@@ -114,6 +115,8 @@ Future passes (optimisation, codegen) will build on the SSA representation once 
 
 ## 6. Testing Strategy
 
+Refer to [`docs/spec/testing.md`](testing.md) for the detailed acceptance matrix, demo programs, and inspection tooling plan.
+
 ### Current Tests
 - Lexer and parser suites (grammar coverage, precedence, modules)
 - Semantic validation (bindings, scopes, returns, struct/interface declarations)
@@ -122,6 +125,7 @@ Future passes (optimisation, codegen) will build on the SSA representation once 
 - Function call recursion scenarios
 - IR construction and CFG building
 - Runtime execution through the SSA interpreter (GC + array stress coverage)
+- Acceptance harness (`tests/acceptance/`) exercising the entire pipeline and diffing tokens, AST, IR, SSA, optimiser logs, and runtime traces against goldens
 
 ### Test Coverage Goals
 - Parser: All grammar productions
@@ -171,7 +175,7 @@ Future passes (optimisation, codegen) will build on the SSA representation once 
 ### Current Performance
 - Parsing: Fast enough for interactive use
 - Interpretation: SSA interpreter handles regression suite comfortably
-- Baseline optimisation: constant propagation, copy propagation, and dead assignment elimination
+- JIT: Infrastructure ready for native code generation
 
 ### Future Optimization
 - JIT compilation for hot functions

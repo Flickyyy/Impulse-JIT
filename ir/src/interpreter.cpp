@@ -93,6 +93,12 @@ auto interpret_binding(const Binding& binding, const std::unordered_map<std::str
                 stack.push_back(*parsed);
                 break;
             }
+            case InstructionKind::StringLiteral:
+                return BindingEvalResult{
+                    EvalStatus::NonConstant,
+                    std::nullopt,
+                    std::string{"string literal requires runtime evaluation"},
+                };
             case InstructionKind::Reference: {
                 if (inst.operands.empty()) {
                     return make_error("reference instruction missing operand");
@@ -272,6 +278,12 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
                 stack.push_back(*parsed);
                 break;
             }
+            case InstructionKind::StringLiteral:
+                return FunctionEvalResult{
+                    EvalStatus::NonConstant,
+                    std::nullopt,
+                    std::string{"string literal requires runtime evaluation"},
+                };
             case InstructionKind::Reference: {
                     if (inst.operands.empty()) {
                         return make_function_error("reference instruction missing operand");

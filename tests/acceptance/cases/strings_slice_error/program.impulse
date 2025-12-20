@@ -1,0 +1,7 @@
+module tests::strings_slice_error;
+
+func main() -> int {
+    let value: string = "Impulse";
+    println(string_slice(value, 10, 1));
+    return 0;
+}

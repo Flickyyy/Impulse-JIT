@@ -1,0 +1,46 @@
+Module
+  ModuleDecl
+    Identifier value="tests" loc=1:8
+    Identifier value="strings_slice_error" loc=1:15
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=3:6
+        Identifier value="int" loc=3:16
+        Parameters
+        Body
+          Statement[0]
+            Kind Binding loc=4:5
+              Binding kind=let
+                Identifier value="value" loc=4:9
+                Identifier value="string" loc=4:16
+                InitializerExpr
+                  Expression kind=Literal loc=4:25
+                    Literal kind=String value="Impulse"
+          Statement[1]
+            Kind ExprStmt loc=5:5
+              Expression
+                Expression kind=Call loc=5:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Call loc=5:13
+                        Callee string_slice
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=5:26
+                              Identifier value="value" loc=5:26
+                          Arg[1]
+                            Expression kind=Literal loc=5:33
+                              Literal kind=Number value="10"
+                          Arg[2]
+                            Expression kind=Literal loc=5:37
+                              Literal kind=Number value="1"
+          Statement[2]
+            Kind Return loc=6:5
+              ReturnValue
+                Expression kind=Literal loc=6:12
+                  Literal kind=Number value="0"

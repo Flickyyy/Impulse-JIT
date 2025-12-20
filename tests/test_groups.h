@@ -8,3 +8,4 @@ auto runOperatorTests() -> int;
 auto runControlFlowTests() -> int;
 auto runFunctionCallTests() -> int;
 auto runRuntimeTests() -> int;
+auto runAcceptanceTests() -> int;

@@ -1,0 +1,78 @@
+Function main
+== Before optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v2.1 = literal_string | enter value:
+      v3.1 = call v2.1 | println 1
+      drop v3.1
+      v4.1 = call | read_line 0
+      v1.1 = assign v4.1
+      v5.1 = call v1.1 | string_length 1
+      v6.1 = literal | 0
+      v7.1 = binary v5.1 v6.1 | ==
+      branch_if v7.1 | L0 0
+    Successors 2 1
+    DomChildren 1 2 3
+  Block #1 (block1) idom=0
+    Instructions
+      v8.1 = literal_string | [no input]
+      v9.1 = call v8.1 | println 1
+      drop v9.1
+      branch | L1
+    Successors 3
+    Predecessors 0
+    DomFrontier 3
+  Block #2 (L0) idom=0
+    Instructions
+      v10.1 = literal_string | echo: 
+      v11.1 = call v10.1 v1.1 | string_concat 2
+      v12.1 = call v11.1 | println 1
+      drop v12.1
+    Successors 3
+    Predecessors 0
+    DomFrontier 3
+  Block #3 (L1) idom=0
+    Instructions
+      v13.1 = call v1.1 | string_length 1
+      return v13.1
+    Predecessors 1 2
+== After optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v2.1 = literal_string | enter value:
+      v3.1 = call v2.1 | println 1
+      drop v3.1
+      v4.1 = call | read_line 0
+      v1.1 = assign v4.1
+      v5.1 = call v1.1 | string_length 1
+      v6.1 = literal | 0
+      v7.1 = binary v5.1 v6.1 | ==
+      branch_if v7.1 | L0 0
+    Successors 2 1
+    DomChildren 1 2 3
+  Block #1 (block1) idom=0
+    Instructions
+      v8.1 = literal_string | [no input]
+      v9.1 = call v8.1 | println 1
+      drop v9.1
+      branch | L1
+    Successors 3
+    Predecessors 0
+    DomFrontier 3
+  Block #2 (L0) idom=0
+    Instructions
+      v10.1 = literal_string | echo: 
+      v11.1 = call v10.1 v1.1 | string_concat 2
+      v12.1 = call v11.1 | println 1
+      drop v12.1
+    Successors 3
+    Predecessors 0
+    DomFrontier 3
+  Block #3 (L1) idom=0
+    Instructions
+      v13.1 = call v1.1 | string_length 1
+      return v13.1
+    Predecessors 1 2
+

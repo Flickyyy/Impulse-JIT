@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -131,6 +132,188 @@ func main() -> float {
     assert(result.message.find("array_get index out of bounds") != std::string::npos);
 }
 
+void testStringBuiltinsExecution() {
+    const std::string source = R"(module demo;
+
+func main() -> int {
+    let pattern: string = "na";
+    let chorus: string = string_repeat(pattern, 4);
+    if string_equals(chorus, "nananana") {
+        println(string_concat(chorus, " Batman"));
+        return string_length(chorus);
+    }
+    return -1;
+}
+)";
+
+    impulse::frontend::Parser parser(source);
+    impulse::frontend::ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+    if (!semantic.success) {
+        for (const auto& diagnostic : semantic.diagnostics) {
+            std::fprintf(stderr, "semantic error: %s\n", diagnostic.message.c_str());
+        }
+    }
+    assert(semantic.success && "semantic analysis failed");
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 8.0) < 1e-9);
+}
+
+void testStringSliceAndTransforms() {
+    const std::string source = R"(module demo;
+
+func main() -> int {
+    let original: string = "  Impulse ";
+    let trimmed: string = string_trim(original);
+    if !string_equals(trimmed, "Impulse") {
+        return -1;
+    }
+    let lower: string = string_lower(trimmed);
+    let upper: string = string_upper(trimmed);
+    if !string_equals(lower, "impulse") {
+        return -2;
+    }
+    let slice: string = string_slice(upper, 1, 3);
+    if !string_equals(slice, "MPU") {
+        return -3;
+    }
+    return string_length(slice) + string_length(lower);
+}
+)";
+
+    impulse::frontend::Parser parser(source);
+    impulse::frontend::ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+    assert(semantic.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 10.0) < 1e-9);
+}
+
+void testArrayStackBuiltins() {
+    const std::string source = R"(module demo;
+
+func main() -> int {
+    let items: array = array(0);
+    array_push(items, "a");
+    array_push(items, "b");
+    array_push(items, "c");
+    let joined: string = array_join(items, "-");
+    let popped: string = array_pop(items);
+    if !string_equals(popped, "c") {
+        return -1;
+    }
+    array_push(items, string_upper(popped));
+    let final: string = array_join(items, ":");
+    println(final);
+    if !string_equals(joined, "a-b-c") {
+        return -2;
+    }
+    if !string_equals(final, "a:b:C") {
+        return -3;
+    }
+    return string_length(joined);
+}
+)";
+
+    impulse::frontend::Parser parser(source);
+    impulse::frontend::ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+    assert(semantic.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 5.0) < 1e-9);
+}
+
+void testReadLineBuiltin() {
+    const std::string source = R"(module demo;
+
+func main() -> int {
+    let value: string = read_line();
+    return string_length(value);
+}
+)";
+
+    impulse::frontend::Parser parser(source);
+    impulse::frontend::ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+    assert(semantic.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+
+    impulse::runtime::Vm vm;
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value) < 1e-9);
+}
+
+void testReadLineFromStream() {
+    const std::string source = R"(module demo;
+
+func main() -> int {
+    let value: string = read_line();
+    return string_length(value);
+}
+)";
+
+    impulse::frontend::Parser parser(source);
+    impulse::frontend::ParseResult parseResult = parser.parseModule();
+    assert(parseResult.success);
+
+    const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
+    assert(semantic.success);
+
+    const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
+
+    impulse::runtime::Vm vm;
+    std::istringstream input("Impulse!\n");
+    vm.set_input_stream(&input);
+    const auto loadResult = vm.load(lowered);
+    assert(loadResult.success);
+
+    const auto result = vm.run("demo", "main");
+    assert(result.status == impulse::runtime::VmStatus::Success);
+    assert(result.has_value);
+    assert(std::abs(result.value - 8.0) < 1e-9);
+}
+
 void testGcPreservesRoots() {
     GcHeap heap;
     heap.set_next_gc_threshold(1);
@@ -170,7 +353,12 @@ auto runRuntimeTests() -> int {
     testCollectHandlesEmptyRoots();
     testArrayBuiltinsExecution();
     testArrayRuntimeErrors();
+    testStringBuiltinsExecution();
+    testStringSliceAndTransforms();
+    testArrayStackBuiltins();
+    testReadLineBuiltin();
+    testReadLineFromStream();
     testGcPreservesRoots();
     testGcCollectsWhenThresholdExceeded();
-    return 7;
+    return 12;
 }

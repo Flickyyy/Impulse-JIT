@@ -166,27 +166,60 @@ The runtime rebuilds SSA per function invocation, applies optimiser passes, and 
   - Provides direct function calls, recursion, and array primitives backed by a mark-sweep heap
   - Reports structured errors for malformed SSA (missing operands, invalid control flow, type mismatches)
 
-### 4. CLI (Go)
+### 4. JIT Compiler (C++)
 
-**Location:** `cli/`
+**Location:** `jit/`
 
-The Command-Line Interface provides user-friendly access to the compiler.
+The JIT compiler generates native x86-64 machine code from SSA functions.
 
-#### Frontend Interface (`internal/frontend/`)
-- **Purpose:** CGO bridge to C++ compiler
-- **Features:** Call C++ functions from Go
+#### CodeBuffer (`jit.h`, `jit.cpp`)
+- **Purpose:** Low-level machine code emission
+- **Features:**
+  - x86-64 instruction encoding
+  - SSE instructions for floating-point (movsd, addsd, subsd, mulsd, divsd)
+  - Comparison instructions (ucomisd + setcc)
+  - Control flow (jmp, jne, je)
+  - Memory management with mmap/VirtualAlloc
 
-#### Commands (`cmd/impulsec/`)
+#### JitCompiler (`jit.h`, `jit.cpp`)
+- **Purpose:** Compile SSA functions to native code
+- **Features:**
+  - SSA value to stack slot mapping
+  - Function prologue/epilogue generation
+  - Label tracking for jump patching
+  - Returns callable function pointer
+
+**Example JIT flow:**
+```
+SSA Function
+    ↓
+[allocate stack slots]
+    ↓
+[emit prologue]
+    ↓
+[compile each block]
+    ↓
+[patch jump targets]
+    ↓
+[finalize to executable]
+    ↓
+Native x86-64 Code (callable)
+```
+
+### 5. CLI (C++)
+
+**Location:** `tools/cpp-cli/`
+
+The Command-Line Interface provides access to the compiler.
+
+#### Commands
 - `--file`: Input source file
-- `--emit-ir`: Output IR text
-- `--check`: Syntax/semantic check only
-- `--evaluate`: Evaluate constant expressions
+- `--dump-tokens`: Output tokens
+- `--dump-ast`: Output AST
+- `--dump-ir`: Output IR
+- `--dump-cfg`: Output CFG
+- `--dump-ssa`: Output SSA
 - `--run`: Compile and execute program
-
-#### Design Philosophy
-- Keep Go layer thin
-- Heavy lifting in C++
-- Simple, predictable CLI
 
 ## Design Decisions
 
@@ -195,15 +228,10 @@ The Command-Line Interface provides user-friendly access to the compiler.
 - **Portability**: Platform-independent
 - **Foundation**: Can be converted to SSA or native code later
 
-### Why C++ Frontend?
+### Why C++?
 - **Performance**: Fast parsing and compilation
 - **Education**: Learn C++ and compiler techniques
 - **Industry standard**: Most production compilers use C++
-
-### Why Go CLI?
-- **Ergonomics**: Easy CLI development
-- **Cross-compilation**: Simple to build for multiple platforms
-- **CGO**: Clean C++ interop
 
 ### Why Not JIT Yet?
 - **Incremental**: Build working interpreter first
@@ -213,7 +241,7 @@ The Command-Line Interface provides user-friendly access to the compiler.
 ### Testing Strategy
 
 ### Unit Tests (`tests/main.cpp`)
-Organised into 7 groups:
+Organised into 9 groups:
 
 1. **Lexer Tests**: Token recognition
 2. **Parser Tests**: AST construction
@@ -222,6 +250,8 @@ Organised into 7 groups:
 5. **Operator Tests**: Arithmetic, logic, comparison behaviour
 6. **Control Flow Tests**: `if`/`else`, `while`, `for`, `break`, `continue`
 7. **Function Call Tests**: Parameter passing, nested calls, recursion
+8. **Runtime Tests**: VM execution, GC behaviour
+9. **Acceptance Tests**: End-to-end golden file tests
 
 ### Test Philosophy
 - Test at each layer independently
@@ -268,19 +298,26 @@ Impulse-JIT/
 │   │   └── interpreter.h           # IR interpreter
 │   └── src/                        # Implementation files
 │
+├── jit/
+│   ├── include/impulse/jit/
+│   │   └── jit.h                   # JIT compiler interface
+│   └── src/
+│       └── jit.cpp                 # x86-64 code generation
+│
 ├── runtime/
 │   ├── include/impulse/runtime/
 │   │   └── runtime.h               # VM interface
 │   └── src/
 │       └── runtime.cpp             # SSA interpreter + GC runtime
 │
-├── cli/
-│   ├── cmd/impulsec/               # CLI entry point
-│   ├── internal/frontend/          # CGO interface
-│   └── go.mod                      # Go dependencies
+├── tools/cpp-cli/
+│   └── main.cpp                    # CLI entry point
 │
 ├── tests/
-│   └── main.cpp                    # Unit test suite
+│   ├── main.cpp                    # Test suite entry
+│   └── acceptance/                 # Golden file tests
+│
+├── benchmarks/                     # Exam benchmark programs
 │
 └── docs/
   └── spec/                       # Language & backend specifications
@@ -289,17 +326,15 @@ Impulse-JIT/
 ## Future Architecture
 
 ### Planned Additions
-1. **Type Checking**: Full semantic type validation and diagnostics
-2. **GC**: Mark/sweep collector integrated with VM frames and heap
-3. **Optimization Pipeline**: Loop optimisations, inlining, pass manager infrastructure
-4. **Native Backend**: LLVM-based or custom x86-64 code generation
-5. **Stdlib & Benchmarks**: Foundational runtime modules and performance suites
+1. **JIT Runtime Integration**: Connect JIT compiler to VM for actual execution
+2. **Advanced Optimizations**: Loop optimisations, inlining
+3. **Register Allocation**: Replace stack slots with register assignment
 
 ### Extensibility Points
 - **New IR instructions**: Add to `ir.h`, implement in `interpreter.cpp` and `runtime.cpp`
 - **New operators**: Add to lexer tokens, parser precedence, and evaluator
 - **New statements**: Add to parser, lowering, and VM
-- **New optimizations**: Implement as IR → IR passes
+- **New optimizations**: Implement as SSA → SSA passes
 
 ## Performance Considerations
 
@@ -310,9 +345,8 @@ Impulse-JIT/
 
 ### Future Optimization
 - **JIT compilation**: Hot path native code generation
-- **Deeper SSA**: Value numbering, loop optimisations, inlining, register-friendly form
+- **Deeper SSA**: Value numbering, loop optimisations, inlining
 - **Memory management**: Arena allocation, object pooling
-- **Parallelization**: Multi-threaded compilation
 
 ## Learning Resources
 
@@ -321,9 +355,12 @@ This compiler is designed for learning. Key concepts demonstrated:
 - **Lexical Analysis**: Regular expressions to tokens
 - **Parsing**: Recursive descent, operator precedence
 - **AST Construction**: Tree representation of code
-- **Semantic Analysis**: Type checking, scope resolution
+- **Semantic Analysis**: Scope resolution, validation
 - **IR Generation**: Lowering high-level constructs
+- **SSA Form**: Phi nodes, value versioning
+- **Optimization**: Constant/copy propagation, dead code elimination
 - **VM Design**: SSA interpreter, control-flow evaluation
+- **Garbage Collection**: Mark-sweep algorithm
 - **Error Handling**: Diagnostics with source locations
 
 ## Conclusion

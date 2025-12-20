@@ -1,0 +1,6 @@
+module tests::strings_repeat_error;
+
+func main() -> int {
+    println(string_repeat("na", -2));
+    return 0;
+}

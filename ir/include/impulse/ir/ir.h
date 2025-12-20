@@ -19,6 +19,7 @@ enum class InstructionKind : std::uint8_t {
     Comment,
     Return,
     Literal,
+    StringLiteral,
     Reference,
     Binary,
     Unary,

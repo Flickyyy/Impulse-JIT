@@ -1,0 +1,26 @@
+module benchmark::factorial;
+
+// Benchmark: Factorial of 20
+// Expected result: 2432902008176640000 (as float)
+// Demonstrates: recursive function calls, stack management
+
+func factorial(n: float) -> float {
+    if n <= 1 {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+func main() -> int {
+    println("=== Factorial Benchmark ===");
+    
+    // Calculate factorial of 20
+    let res: float = factorial(20);
+    
+    print("factorial(20) = ");
+    println(res);
+    
+    // Verify result (approximately)
+    // 20! = 2432902008176640000
+    return 0;
+}

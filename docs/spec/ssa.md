@@ -10,8 +10,8 @@ Impulse lowers stack-based IR to SSA form for every function before executing it
 
 ## Goals
 
-- Maintain SSA as the canonical form for optimisation and runtime execution.
-- Grow the optimiser suite beyond the current constant/copy propagation and dead assignment elimination passes.
+- Maintain SSA as the canonical form for runtime execution.
+- Provide foundation for future optimization passes and JIT compilation.
 - Expose SSA introspection hooks for tooling, debugging, and future code generation backends.
 - Preserve clean extension points for dominance queries, data-flow analysis, and eventual register allocation.
 
@@ -33,17 +33,15 @@ Impulse lowers stack-based IR to SSA form for every function before executing it
    - Exercised the SSA interpreter across the full regression suite to guarantee behavioural parity with the original stack interpreter.
 
 - [x] **SSA Consumers**
-   - Implemented constant propagation using SSA data.
-   - Added copy propagation.
-   - Added dead assignment elimination.
-   - Provided an optimisation driver that runs passes to a fixed point.
+   - JIT compiler infrastructure uses SSA for code generation.
+   - VM interpreter executes SSA directly.
 
 - [ ] **Tooling & Backends**
    - [ ] Expose SSA traces via the CLI and developer tooling.
    - [ ] Surface SSA hooks to future JIT / code generation backends.
 ### Optimisation Driver
 
-`optimize_ssa(SsaFunction&)` runs the current pass suite (constant propagation → copy propagation → dead assignment elimination) until no further changes occur. This keeps the individual passes simple while ensuring they feed one another (e.g. copy propagation exposes new dead stores).
+`optimize_ssa(SsaFunction&)` is a stub function that returns false (no optimizations applied). The infrastructure exists for future optimization passes.
 
 
 ## Role in the Pipeline

@@ -1,0 +1,127 @@
+Module
+  ModuleDecl
+    Identifier value="tests" loc=1:8
+    Identifier value="control_flow" loc=1:15
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="accumulate" loc=3:6
+        Identifier value="int" loc=3:32
+        Parameters
+          Param[0]
+            Identifier value="limit" loc=3:17
+            Identifier value="int" loc=3:24
+        Body
+          Statement[0]
+            Kind Binding loc=4:5
+              Binding kind=let
+                Identifier value="total" loc=4:9
+                Identifier value="int" loc=4:16
+                InitializerExpr
+                  Expression kind=Literal loc=4:22
+                    Literal kind=Number value="0"
+          Statement[1]
+            Kind Binding loc=5:5
+              Binding kind=let
+                Identifier value="i" loc=5:9
+                Identifier value="int" loc=5:12
+                InitializerExpr
+                  Expression kind=Literal loc=5:18
+                    Literal kind=Number value="0"
+          Statement[2]
+            Kind While loc=6:5
+              Condition
+                Expression kind=Binary loc=6:13
+                  Operator <
+                  Left
+                    Expression kind=Identifier loc=6:11
+                      Identifier value="i" loc=6:11
+                  Right
+                    Expression kind=Identifier loc=6:15
+                      Identifier value="limit" loc=6:15
+              Body
+                Statement[0]
+                  Kind If loc=7:9
+                    Condition
+                      Expression kind=Binary loc=7:18
+                        Operator ==
+                        Left
+                          Expression kind=Binary loc=7:14
+                            Operator %
+                            Left
+                              Expression kind=Identifier loc=7:12
+                                Identifier value="i" loc=7:12
+                            Right
+                              Expression kind=Literal loc=7:16
+                                Literal kind=Number value="2"
+                        Right
+                          Expression kind=Literal loc=7:21
+                            Literal kind=Number value="0"
+                    Then
+                      Statement[0]
+                        Kind Binding loc=8:13
+                          Binding kind=let
+                            Identifier value="total" loc=8:17
+                            Identifier value="int" loc=8:24
+                            InitializerExpr
+                              Expression kind=Binary loc=8:36
+                                Operator +
+                                Left
+                                  Expression kind=Identifier loc=8:30
+                                    Identifier value="total" loc=8:30
+                                Right
+                                  Expression kind=Identifier loc=8:38
+                                    Identifier value="i" loc=8:38
+                    Else
+                      Statement[0]
+                        Kind Binding loc=10:13
+                          Binding kind=let
+                            Identifier value="total" loc=10:17
+                            Identifier value="int" loc=10:24
+                            InitializerExpr
+                              Expression kind=Binary loc=10:36
+                                Operator -
+                                Left
+                                  Expression kind=Identifier loc=10:30
+                                    Identifier value="total" loc=10:30
+                                Right
+                                  Expression kind=Identifier loc=10:38
+                                    Identifier value="i" loc=10:38
+                Statement[1]
+                  Kind Binding loc=12:9
+                    Binding kind=let
+                      Identifier value="i" loc=12:13
+                      Identifier value="int" loc=12:16
+                      InitializerExpr
+                        Expression kind=Binary loc=12:24
+                          Operator +
+                          Left
+                            Expression kind=Identifier loc=12:22
+                              Identifier value="i" loc=12:22
+                          Right
+                            Expression kind=Literal loc=12:26
+                              Literal kind=Number value="1"
+          Statement[3]
+            Kind Return loc=14:5
+              ReturnValue
+                Expression kind=Identifier loc=14:12
+                  Identifier value="total" loc=14:12
+  Decl[1]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=17:6
+        Identifier value="int" loc=17:16
+        Parameters
+        Body
+          Statement[0]
+            Kind Return loc=18:5
+              ReturnValue
+                Expression kind=Call loc=18:12
+                  Callee accumulate
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=18:23
+                        Literal kind=Number value="7"

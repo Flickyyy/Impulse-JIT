@@ -126,10 +126,17 @@ void lower_statements_to_instructions(const std::vector<Statement>& statements,
 void lower_expression_to_stack(const Expression& expr, std::vector<ir::Instruction>& instructions) {
     switch (expr.kind) {
         case Expression::Kind::Literal:
-            instructions.push_back(ir::Instruction{
-                .kind = ir::InstructionKind::Literal,
-                .operands = std::vector<std::string>{expr.literal_value},
-            });
+            if (expr.literal_kind == Expression::LiteralKind::String) {
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::StringLiteral,
+                    .operands = std::vector<std::string>{expr.literal_value},
+                });
+            } else {
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::Literal,
+                    .operands = std::vector<std::string>{expr.literal_value},
+                });
+            }
             break;
         case Expression::Kind::Identifier:
             instructions.push_back(ir::Instruction{
@@ -383,12 +390,22 @@ void lower_statement_to_instructions(const Statement& statement, std::vector<ir:
                 });
             }
             break;
+        case Statement::Kind::Assign:
+            if (statement.assign_value) {
+                lower_expression_to_stack(*statement.assign_value, instructions);
+                instructions.push_back(ir::Instruction{
+                    .kind = ir::InstructionKind::Store,
+                    .operands = std::vector<std::string>{statement.assign_target.value},
+                });
+            }
+            break;
     }
 }
 
 }  // namespace
 
 auto lower_to_ir(const Module& module) -> ir::Module {
+    label_counter = 0;
     ir::Module lowered;
     lowered.path.reserve(module.decl.path.size());
     for (const auto& segment : module.decl.path) {

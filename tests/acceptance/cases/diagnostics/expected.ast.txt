@@ -1,0 +1,58 @@
+Module
+  ModuleDecl
+    Identifier value="tests" loc=1:8
+    Identifier value="diagnostics" loc=1:15
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="broken" loc=3:6
+        Identifier value="int" loc=3:30
+        Parameters
+          Param[0]
+            Identifier value="message" loc=3:13
+            Identifier value="int" loc=3:22
+        Body
+          Statement[0]
+            Kind Binding loc=4:5
+              Binding kind=let
+                Identifier value="label" loc=4:9
+                Identifier value="string" loc=4:16
+                InitializerExpr
+                  Expression kind=Literal loc=4:25
+                    Literal kind=Number value="42"
+          Statement[1]
+            Kind If loc=5:5
+              Condition
+                Expression kind=Identifier loc=5:8
+                  Identifier value="message" loc=5:8
+              Then
+                Statement[0]
+                  Kind Return loc=6:9
+                    ReturnValue
+                      Expression kind=Literal loc=6:16
+                        Literal kind=String value="fail"
+              Else
+          Statement[2]
+            Kind Return loc=8:5
+              ReturnValue
+                Expression kind=Identifier loc=8:12
+                  Identifier value="message" loc=8:12
+  Decl[1]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=11:6
+        Identifier value="int" loc=11:16
+        Parameters
+        Body
+          Statement[0]
+            Kind Return loc=12:5
+              ReturnValue
+                Expression kind=Call loc=12:12
+                  Callee broken
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=12:19
+                        Literal kind=Number value="0"

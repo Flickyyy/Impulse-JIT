@@ -1,0 +1,128 @@
+module tests::runtime_demo
+
+func fibonacci(n: int) -> int {
+  ^entry:
+    reference n
+    literal 2
+    binary <
+    branch_if L0 when 0
+    reference n
+    return
+  L0:
+    reference n
+    literal 1
+    binary -
+    call fibonacci (1 args)
+    reference n
+    literal 2
+    binary -
+    call fibonacci (1 args)
+    binary +
+    return
+}
+
+func emit_value(label: string, value: int) -> int {
+  ^entry:
+    reference label
+    call print (1 args)
+    drop
+    reference value
+    call println (1 args)
+    drop
+    reference value
+    return
+}
+
+func build_banner() -> int {
+  ^entry:
+    literal_string "=== "
+    literal_string "runtime"
+    call string_concat (2 args)
+    store prefix
+    reference prefix
+    literal_string " demo ==="
+    call string_concat (2 args)
+    store line
+    reference line
+    call println (1 args)
+    drop
+    reference line
+    literal_string "=== runtime demo ==="
+    call string_equals (2 args)
+    branch_if L2 when 0
+    literal_string "banner matches reference"
+    call println (1 args)
+    drop
+  L2:
+    reference line
+    call string_length (1 args)
+    return
+}
+
+func main() -> int {
+  ^entry:
+    call build_banner (0 args)
+    store width
+    literal 6
+    call fibonacci (1 args)
+    store fib
+    literal_string "fib(6) = "
+    reference fib
+    call emit_value (2 args)
+    drop
+    literal 3
+    make_array
+    store buffer
+    reference buffer
+    literal 0
+    literal_string "width: "
+    array_set
+    drop
+    reference buffer
+    literal 1
+    reference width
+    array_set
+    drop
+    reference buffer
+    literal 2
+    literal_string ", done\n"
+    array_set
+    drop
+    reference buffer
+    literal 0
+    array_get
+    call print (1 args)
+    drop
+    reference buffer
+    literal 1
+    array_get
+    call print (1 args)
+    drop
+    reference buffer
+    literal 2
+    array_get
+    call print (1 args)
+    drop
+    literal 4
+    make_array
+    store totals
+    reference totals
+    reference fib
+    call array_fill (2 args)
+    drop
+    reference totals
+    literal 3
+    reference width
+    array_set
+    drop
+    reference totals
+    call array_sum (1 args)
+    store sum
+    literal_string "sum = "
+    reference sum
+    call emit_value (2 args)
+    drop
+    literal 0
+    return
+}
+

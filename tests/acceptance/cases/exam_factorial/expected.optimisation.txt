@@ -1,0 +1,6 @@
+Function factorial
+  optimizations disabled - using JIT
+
+Function main
+  optimizations disabled - using JIT
+

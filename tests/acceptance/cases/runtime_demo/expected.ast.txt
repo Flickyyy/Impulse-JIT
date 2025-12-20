@@ -1,0 +1,392 @@
+Module
+  ModuleDecl
+    Identifier value="tests" loc=1:8
+    Identifier value="runtime_demo" loc=1:15
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="fibonacci" loc=3:6
+        Identifier value="int" loc=3:27
+        Parameters
+          Param[0]
+            Identifier value="n" loc=3:16
+            Identifier value="int" loc=3:19
+        Body
+          Statement[0]
+            Kind If loc=4:5
+              Condition
+                Expression kind=Binary loc=4:10
+                  Operator <
+                  Left
+                    Expression kind=Identifier loc=4:8
+                      Identifier value="n" loc=4:8
+                  Right
+                    Expression kind=Literal loc=4:12
+                      Literal kind=Number value="2"
+              Then
+                Statement[0]
+                  Kind Return loc=5:9
+                    ReturnValue
+                      Expression kind=Identifier loc=5:16
+                        Identifier value="n" loc=5:16
+              Else
+          Statement[1]
+            Kind Return loc=7:5
+              ReturnValue
+                Expression kind=Binary loc=7:29
+                  Operator +
+                  Left
+                    Expression kind=Call loc=7:12
+                      Callee fibonacci
+                      Arguments
+                        Arg[0]
+                          Expression kind=Binary loc=7:24
+                            Operator -
+                            Left
+                              Expression kind=Identifier loc=7:22
+                                Identifier value="n" loc=7:22
+                            Right
+                              Expression kind=Literal loc=7:26
+                                Literal kind=Number value="1"
+                  Right
+                    Expression kind=Call loc=7:31
+                      Callee fibonacci
+                      Arguments
+                        Arg[0]
+                          Expression kind=Binary loc=7:43
+                            Operator -
+                            Left
+                              Expression kind=Identifier loc=7:41
+                                Identifier value="n" loc=7:41
+                            Right
+                              Expression kind=Literal loc=7:45
+                                Literal kind=Number value="2"
+  Decl[1]
+    Declaration exported=false
+      Function
+        Identifier value="emit_value" loc=10:6
+        Identifier value="int" loc=10:47
+        Parameters
+          Param[0]
+            Identifier value="label" loc=10:17
+            Identifier value="string" loc=10:24
+          Param[1]
+            Identifier value="value" loc=10:32
+            Identifier value="int" loc=10:39
+        Body
+          Statement[0]
+            Kind ExprStmt loc=11:5
+              Expression
+                Expression kind=Call loc=11:5
+                  Callee print
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=11:11
+                        Identifier value="label" loc=11:11
+          Statement[1]
+            Kind ExprStmt loc=12:5
+              Expression
+                Expression kind=Call loc=12:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=12:13
+                        Identifier value="value" loc=12:13
+          Statement[2]
+            Kind Return loc=13:5
+              ReturnValue
+                Expression kind=Identifier loc=13:12
+                  Identifier value="value" loc=13:12
+  Decl[2]
+    Declaration exported=false
+      Function
+        Identifier value="build_banner" loc=16:6
+        Identifier value="int" loc=16:24
+        Parameters
+        Body
+          Statement[0]
+            Kind Binding loc=17:5
+              Binding kind=let
+                Identifier value="prefix" loc=17:9
+                Identifier value="string" loc=17:17
+                InitializerExpr
+                  Expression kind=Call loc=17:26
+                    Callee string_concat
+                    Arguments
+                      Arg[0]
+                        Expression kind=Literal loc=17:40
+                          Literal kind=String value="=== "
+                      Arg[1]
+                        Expression kind=Literal loc=17:48
+                          Literal kind=String value="runtime"
+          Statement[1]
+            Kind Binding loc=18:5
+              Binding kind=let
+                Identifier value="line" loc=18:9
+                Identifier value="string" loc=18:15
+                InitializerExpr
+                  Expression kind=Call loc=18:24
+                    Callee string_concat
+                    Arguments
+                      Arg[0]
+                        Expression kind=Identifier loc=18:38
+                          Identifier value="prefix" loc=18:38
+                      Arg[1]
+                        Expression kind=Literal loc=18:46
+                          Literal kind=String value=" demo ==="
+          Statement[2]
+            Kind ExprStmt loc=19:5
+              Expression
+                Expression kind=Call loc=19:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=19:13
+                        Identifier value="line" loc=19:13
+          Statement[3]
+            Kind If loc=20:5
+              Condition
+                Expression kind=Call loc=20:8
+                  Callee string_equals
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=20:22
+                        Identifier value="line" loc=20:22
+                    Arg[1]
+                      Expression kind=Literal loc=20:28
+                        Literal kind=String value="=== runtime demo ==="
+              Then
+                Statement[0]
+                  Kind ExprStmt loc=21:9
+                    Expression
+                      Expression kind=Call loc=21:9
+                        Callee println
+                        Arguments
+                          Arg[0]
+                            Expression kind=Literal loc=21:17
+                              Literal kind=String value="banner matches reference"
+              Else
+          Statement[4]
+            Kind Return loc=23:5
+              ReturnValue
+                Expression kind=Call loc=23:12
+                  Callee string_length
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=23:26
+                        Identifier value="line" loc=23:26
+  Decl[3]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=26:6
+        Identifier value="int" loc=26:16
+        Parameters
+        Body
+          Statement[0]
+            Kind Binding loc=27:5
+              Binding kind=let
+                Identifier value="width" loc=27:9
+                Identifier value="int" loc=27:16
+                InitializerExpr
+                  Expression kind=Call loc=27:22
+                    Callee build_banner
+          Statement[1]
+            Kind Binding loc=28:5
+              Binding kind=let
+                Identifier value="fib" loc=28:9
+                Identifier value="int" loc=28:14
+                InitializerExpr
+                  Expression kind=Call loc=28:20
+                    Callee fibonacci
+                    Arguments
+                      Arg[0]
+                        Expression kind=Literal loc=28:30
+                          Literal kind=Number value="6"
+          Statement[2]
+            Kind ExprStmt loc=29:5
+              Expression
+                Expression kind=Call loc=29:5
+                  Callee emit_value
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=29:16
+                        Literal kind=String value="fib(6) = "
+                    Arg[1]
+                      Expression kind=Identifier loc=29:29
+                        Identifier value="fib" loc=29:29
+          Statement[3]
+            Kind Binding loc=31:5
+              Binding kind=let
+                Identifier value="buffer" loc=31:9
+                Identifier value="array" loc=31:17
+                InitializerExpr
+                  Expression kind=Call loc=31:25
+                    Callee array
+                    Arguments
+                      Arg[0]
+                        Expression kind=Literal loc=31:31
+                          Literal kind=Number value="3"
+          Statement[4]
+            Kind ExprStmt loc=32:5
+              Expression
+                Expression kind=Call loc=32:5
+                  Callee array_set
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=32:15
+                        Identifier value="buffer" loc=32:15
+                    Arg[1]
+                      Expression kind=Literal loc=32:23
+                        Literal kind=Number value="0"
+                    Arg[2]
+                      Expression kind=Literal loc=32:26
+                        Literal kind=String value="width: "
+          Statement[5]
+            Kind ExprStmt loc=33:5
+              Expression
+                Expression kind=Call loc=33:5
+                  Callee array_set
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=33:15
+                        Identifier value="buffer" loc=33:15
+                    Arg[1]
+                      Expression kind=Literal loc=33:23
+                        Literal kind=Number value="1"
+                    Arg[2]
+                      Expression kind=Identifier loc=33:26
+                        Identifier value="width" loc=33:26
+          Statement[6]
+            Kind ExprStmt loc=34:5
+              Expression
+                Expression kind=Call loc=34:5
+                  Callee array_set
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=34:15
+                        Identifier value="buffer" loc=34:15
+                    Arg[1]
+                      Expression kind=Literal loc=34:23
+                        Literal kind=Number value="2"
+                    Arg[2]
+                      Expression kind=Literal loc=34:26
+                        Literal kind=String value=", done\n"
+          Statement[7]
+            Kind ExprStmt loc=36:5
+              Expression
+                Expression kind=Call loc=36:5
+                  Callee print
+                  Arguments
+                    Arg[0]
+                      Expression kind=Call loc=36:11
+                        Callee array_get
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=36:21
+                              Identifier value="buffer" loc=36:21
+                          Arg[1]
+                            Expression kind=Literal loc=36:29
+                              Literal kind=Number value="0"
+          Statement[8]
+            Kind ExprStmt loc=37:5
+              Expression
+                Expression kind=Call loc=37:5
+                  Callee print
+                  Arguments
+                    Arg[0]
+                      Expression kind=Call loc=37:11
+                        Callee array_get
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=37:21
+                              Identifier value="buffer" loc=37:21
+                          Arg[1]
+                            Expression kind=Literal loc=37:29
+                              Literal kind=Number value="1"
+          Statement[9]
+            Kind ExprStmt loc=38:5
+              Expression
+                Expression kind=Call loc=38:5
+                  Callee print
+                  Arguments
+                    Arg[0]
+                      Expression kind=Call loc=38:11
+                        Callee array_get
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=38:21
+                              Identifier value="buffer" loc=38:21
+                          Arg[1]
+                            Expression kind=Literal loc=38:29
+                              Literal kind=Number value="2"
+          Statement[10]
+            Kind Binding loc=40:5
+              Binding kind=let
+                Identifier value="totals" loc=40:9
+                Identifier value="array" loc=40:17
+                InitializerExpr
+                  Expression kind=Call loc=40:25
+                    Callee array
+                    Arguments
+                      Arg[0]
+                        Expression kind=Literal loc=40:31
+                          Literal kind=Number value="4"
+          Statement[11]
+            Kind ExprStmt loc=41:5
+              Expression
+                Expression kind=Call loc=41:5
+                  Callee array_fill
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=41:16
+                        Identifier value="totals" loc=41:16
+                    Arg[1]
+                      Expression kind=Identifier loc=41:24
+                        Identifier value="fib" loc=41:24
+          Statement[12]
+            Kind ExprStmt loc=42:5
+              Expression
+                Expression kind=Call loc=42:5
+                  Callee array_set
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=42:15
+                        Identifier value="totals" loc=42:15
+                    Arg[1]
+                      Expression kind=Literal loc=42:23
+                        Literal kind=Number value="3"
+                    Arg[2]
+                      Expression kind=Identifier loc=42:26
+                        Identifier value="width" loc=42:26
+          Statement[13]
+            Kind Binding loc=43:5
+              Binding kind=let
+                Identifier value="sum" loc=43:9
+                Identifier value="int" loc=43:14
+                InitializerExpr
+                  Expression kind=Call loc=43:20
+                    Callee array_sum
+                    Arguments
+                      Arg[0]
+                        Expression kind=Identifier loc=43:30
+                          Identifier value="totals" loc=43:30
+          Statement[14]
+            Kind ExprStmt loc=44:5
+              Expression
+                Expression kind=Call loc=44:5
+                  Callee emit_value
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=44:16
+                        Literal kind=String value="sum = "
+                    Arg[1]
+                      Expression kind=Identifier loc=44:26
+                        Identifier value="sum" loc=44:26
+          Statement[15]
+            Kind Return loc=46:5
+              ReturnValue
+                Expression kind=Literal loc=46:12
+                  Literal kind=Number value="0"

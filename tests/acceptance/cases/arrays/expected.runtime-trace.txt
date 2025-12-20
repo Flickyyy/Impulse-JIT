@@ -1,0 +1,88 @@
+enter function main
+enter block 0 (entry)
+    v1.1 = call imm(join_words, 0)
+enter function join_words
+enter block 0 (entry)
+    v4.1 = literal imm(0)
+      -> v4.1 = 0
+    v5.1 = array_make args(v4.1)
+      -> v5.1 = [array length=0]
+    v1.1 = assign args(v5.1)
+      -> v1.1 = [array length=0]
+    v6.1 = literal_string imm(Impulse)
+      -> v6.1 = "Impulse"
+    v7.1 = call args(v1.1, v6.1) imm(array_push, 2)
+    builtin array_push "len=1"
+      -> v7.1 = [array length=1]
+    drop args(v7.1)
+    v8.1 = literal_string imm(JIT)
+      -> v8.1 = "JIT"
+    v9.1 = call args(v1.1, v8.1) imm(array_push, 2)
+    builtin array_push "len=2"
+      -> v9.1 = [array length=2]
+    drop args(v9.1)
+    v10.1 = literal_string imm(rocks)
+      -> v10.1 = "rocks"
+    v11.1 = call args(v1.1, v10.1) imm(array_push, 2)
+    builtin array_push "len=3"
+      -> v11.1 = [array length=3]
+    drop args(v11.1)
+    v12.1 = literal_string imm( )
+      -> v12.1 = " "
+    v13.1 = call args(v1.1, v12.1) imm(array_join, 2)
+    builtin array_join "Impulse JIT rocks"
+      -> v13.1 = "Impulse JIT rocks"
+    v2.1 = assign args(v13.1)
+      -> v2.1 = "Impulse JIT rocks"
+    v14.1 = call args(v2.1) imm(println, 1)
+    builtin println "Impulse JIT rocks"
+      -> v14.1 = 0
+    drop args(v14.1)
+    v15.1 = call args(v1.1) imm(array_pop, 1)
+    builtin array_pop "\"rocks\""
+      -> v15.1 = "rocks"
+    v3.1 = assign args(v15.1)
+      -> v3.1 = "rocks"
+    v16.1 = literal_string imm(popped: )
+      -> v16.1 = "popped: "
+    v17.1 = call args(v16.1, v3.1) imm(string_concat, 2)
+    builtin string_concat "popped: rocks"
+      -> v17.1 = "popped: rocks"
+    v18.1 = call args(v17.1) imm(println, 1)
+    builtin println "popped: rocks"
+      -> v18.1 = 0
+    drop args(v18.1)
+    v19.1 = literal_string imm(-)
+      -> v19.1 = "-"
+    v20.1 = call args(v1.1, v19.1) imm(array_join, 2)
+    builtin array_join "Impulse-JIT"
+      -> v20.1 = "Impulse-JIT"
+    v21.1 = call args(v20.1) imm(println, 1)
+    builtin println "Impulse-JIT"
+      -> v21.1 = 0
+    drop args(v21.1)
+    v22.1 = call args(v3.1) imm(string_upper, 1)
+    builtin string_upper "ROCKS"
+      -> v22.1 = "ROCKS"
+    v23.1 = call args(v1.1, v22.1) imm(array_push, 2)
+    builtin array_push "len=3"
+      -> v23.1 = [array length=3]
+    drop args(v23.1)
+    v24.1 = literal_string imm(+)
+      -> v24.1 = "+"
+    v25.1 = call args(v1.1, v24.1) imm(array_join, 2)
+    builtin array_join "Impulse+JIT+ROCKS"
+      -> v25.1 = "Impulse+JIT+ROCKS"
+    v26.1 = call args(v25.1) imm(println, 1)
+    builtin println "Impulse+JIT+ROCKS"
+      -> v26.1 = 0
+    drop args(v26.1)
+    v27.1 = call args(v2.1) imm(string_length, 1)
+      -> v27.1 = 17
+    return args(v27.1)
+    return 17
+exit function join_words = 17
+      -> v1.1 = 17
+    return args(v1.1)
+    return 17
+exit function main = 17

@@ -1,0 +1,78 @@
+Function banner
+CFG
+  Block entry (#0..42)
+    Instructions
+      literal_string "["
+      call print (1 args)
+      drop
+      reference title
+      call print (1 args)
+      drop
+      literal_string "]"
+      call println (1 args)
+      drop
+      reference title
+      call string_length (1 args)
+      store width
+      literal_string "-"
+      reference width
+      call string_repeat (2 args)
+      call println (1 args)
+      drop
+      literal_string "  "
+      reference title
+      binary +
+      literal_string "  "
+      binary +
+      store padded
+      reference padded
+      call string_trim (1 args)
+      store trimmed
+      reference trimmed
+      call string_upper (1 args)
+      call println (1 args)
+      drop
+      reference trimmed
+      call string_lower (1 args)
+      call println (1 args)
+      drop
+      reference trimmed
+      literal 0
+      literal 3
+      call string_slice (3 args)
+      call println (1 args)
+      drop
+      reference width
+      return
+
+Function main
+CFG
+  Block entry (#0..26)
+    Instructions
+      literal_string "Hello"
+      store greeting
+      literal_string "world"
+      store target
+      reference greeting
+      literal_string ", "
+      binary +
+      reference target
+      binary +
+      literal_string "!"
+      binary +
+      store full
+      reference full
+      call println (1 args)
+      drop
+      literal_string "Impulse"
+      call banner (1 args)
+      store width
+      literal_string "title width: "
+      call print (1 args)
+      drop
+      reference width
+      call println (1 args)
+      drop
+      reference width
+      return
+

@@ -1,0 +1,54 @@
+module exam::primes;
+
+// Task 3: Prime Number Generation 
+// Simplified trial division for correctness demonstration
+// Purpose: Test loop operations, arithmetic operations, recursion
+
+func is_prime(n: int) -> int {
+    if n < 2 {
+        return 0;
+    }
+    if n == 2 {
+        return 1;
+    }
+    let remainder: int = n % 2;
+    if remainder == 0 {
+        return 0;
+    }
+    let i: int = 3;
+    while i * i <= n {
+        let remainder: int = n % i;
+        if remainder == 0 {
+            return 0;
+        }
+        let i: int = i + 2;
+    }
+    return 1;
+}
+
+func count_primes(limit: int) -> int {
+    let count: int = 0;
+    let n: int = 2;
+    while n <= limit {
+        let prime: int = is_prime(n);
+        if prime == 1 {
+            let count: int = count + 1;
+        }
+        let n: int = n + 1;
+    }
+    return count;
+}
+
+func main() -> int {
+    // For acceptance test, use smaller limit (100)
+    // There are 25 primes up to 100
+    let limit: int = 100;
+    let count: int = count_primes(limit);
+    
+    print("Number of primes up to ");
+    print(limit);
+    print(": ");
+    println(count);
+    
+    return count;
+}

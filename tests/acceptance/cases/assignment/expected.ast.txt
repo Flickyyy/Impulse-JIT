@@ -1,0 +1,252 @@
+Module
+  ModuleDecl
+    Identifier value="test" loc=1:8
+    Identifier value="assignment" loc=1:14
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="counter" loc=5:6
+        Identifier value="int" loc=5:19
+        Parameters
+        Body
+          Statement[0]
+            Kind Binding loc=6:5
+              Binding kind=let
+                Identifier value="count" loc=6:9
+                Identifier value="int" loc=6:16
+                InitializerExpr
+                  Expression kind=Literal loc=6:22
+                    Literal kind=Number value="0"
+          Statement[1]
+            Kind Assign loc=7:5
+              Target
+                Identifier value="count" loc=7:5
+              Value
+                Expression kind=Binary loc=7:19
+                  Operator +
+                  Left
+                    Expression kind=Identifier loc=7:13
+                      Identifier value="count" loc=7:13
+                  Right
+                    Expression kind=Literal loc=7:21
+                      Literal kind=Number value="1"
+          Statement[2]
+            Kind Assign loc=8:5
+              Target
+                Identifier value="count" loc=8:5
+              Value
+                Expression kind=Binary loc=8:19
+                  Operator +
+                  Left
+                    Expression kind=Identifier loc=8:13
+                      Identifier value="count" loc=8:13
+                  Right
+                    Expression kind=Literal loc=8:21
+                      Literal kind=Number value="1"
+          Statement[3]
+            Kind Assign loc=9:5
+              Target
+                Identifier value="count" loc=9:5
+              Value
+                Expression kind=Binary loc=9:19
+                  Operator +
+                  Left
+                    Expression kind=Identifier loc=9:13
+                      Identifier value="count" loc=9:13
+                  Right
+                    Expression kind=Literal loc=9:21
+                      Literal kind=Number value="1"
+          Statement[4]
+            Kind Return loc=10:5
+              ReturnValue
+                Expression kind=Identifier loc=10:12
+                  Identifier value="count" loc=10:12
+  Decl[1]
+    Declaration exported=false
+      Function
+        Identifier value="accumulate" loc=13:6
+        Identifier value="int" loc=13:28
+        Parameters
+          Param[0]
+            Identifier value="n" loc=13:17
+            Identifier value="int" loc=13:20
+        Body
+          Statement[0]
+            Kind Binding loc=14:5
+              Binding kind=let
+                Identifier value="sum" loc=14:9
+                Identifier value="int" loc=14:14
+                InitializerExpr
+                  Expression kind=Literal loc=14:20
+                    Literal kind=Number value="0"
+          Statement[1]
+            Kind Binding loc=15:5
+              Binding kind=let
+                Identifier value="i" loc=15:9
+                Identifier value="int" loc=15:12
+                InitializerExpr
+                  Expression kind=Literal loc=15:18
+                    Literal kind=Number value="1"
+          Statement[2]
+            Kind While loc=16:5
+              Condition
+                Expression kind=Binary loc=16:13
+                  Operator <=
+                  Left
+                    Expression kind=Identifier loc=16:11
+                      Identifier value="i" loc=16:11
+                  Right
+                    Expression kind=Identifier loc=16:16
+                      Identifier value="n" loc=16:16
+              Body
+                Statement[0]
+                  Kind Assign loc=17:9
+                    Target
+                      Identifier value="sum" loc=17:9
+                    Value
+                      Expression kind=Binary loc=17:19
+                        Operator +
+                        Left
+                          Expression kind=Identifier loc=17:15
+                            Identifier value="sum" loc=17:15
+                        Right
+                          Expression kind=Identifier loc=17:21
+                            Identifier value="i" loc=17:21
+                Statement[1]
+                  Kind Assign loc=18:9
+                    Target
+                      Identifier value="i" loc=18:9
+                    Value
+                      Expression kind=Binary loc=18:15
+                        Operator +
+                        Left
+                          Expression kind=Identifier loc=18:13
+                            Identifier value="i" loc=18:13
+                        Right
+                          Expression kind=Literal loc=18:17
+                            Literal kind=Number value="1"
+          Statement[3]
+            Kind Return loc=20:5
+              ReturnValue
+                Expression kind=Identifier loc=20:12
+                  Identifier value="sum" loc=20:12
+  Decl[2]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=23:6
+        Identifier value="int" loc=23:16
+        Parameters
+        Body
+          Statement[0]
+            Kind Binding loc=24:5
+              Binding kind=let
+                Identifier value="c" loc=24:9
+                Identifier value="int" loc=24:12
+                InitializerExpr
+                  Expression kind=Call loc=24:18
+                    Callee counter
+          Statement[1]
+            Kind ExprStmt loc=25:5
+              Expression
+                Expression kind=Call loc=25:5
+                  Callee print
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=25:11
+                        Literal kind=String value="counter: "
+          Statement[2]
+            Kind ExprStmt loc=26:5
+              Expression
+                Expression kind=Call loc=26:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=26:13
+                        Identifier value="c" loc=26:13
+          Statement[3]
+            Kind Binding loc=28:5
+              Binding kind=let
+                Identifier value="s" loc=28:9
+                Identifier value="int" loc=28:12
+                InitializerExpr
+                  Expression kind=Call loc=28:18
+                    Callee accumulate
+                    Arguments
+                      Arg[0]
+                        Expression kind=Literal loc=28:29
+                          Literal kind=Number value="10"
+          Statement[4]
+            Kind ExprStmt loc=29:5
+              Expression
+                Expression kind=Call loc=29:5
+                  Callee print
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=29:11
+                        Literal kind=String value="sum 1..10: "
+          Statement[5]
+            Kind ExprStmt loc=30:5
+              Expression
+                Expression kind=Call loc=30:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=30:13
+                        Identifier value="s" loc=30:13
+          Statement[6]
+            Kind If loc=33:5
+              Condition
+                Expression kind=Binary loc=33:10
+                  Operator ==
+                  Left
+                    Expression kind=Identifier loc=33:8
+                      Identifier value="c" loc=33:8
+                  Right
+                    Expression kind=Literal loc=33:13
+                      Literal kind=Number value="3"
+              Then
+                Statement[0]
+                  Kind If loc=34:9
+                    Condition
+                      Expression kind=Binary loc=34:14
+                        Operator ==
+                        Left
+                          Expression kind=Identifier loc=34:12
+                            Identifier value="s" loc=34:12
+                        Right
+                          Expression kind=Literal loc=34:17
+                            Literal kind=Number value="55"
+                    Then
+                      Statement[0]
+                        Kind ExprStmt loc=35:13
+                          Expression
+                            Expression kind=Call loc=35:13
+                              Callee println
+                              Arguments
+                                Arg[0]
+                                  Expression kind=Literal loc=35:21
+                                    Literal kind=String value="SUCCESS: Assignment works correctly!"
+                      Statement[1]
+                        Kind Return loc=36:13
+                          ReturnValue
+                            Expression kind=Literal loc=36:20
+                              Literal kind=Number value="1"
+                    Else
+              Else
+          Statement[7]
+            Kind ExprStmt loc=39:5
+              Expression
+                Expression kind=Call loc=39:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=39:13
+                        Literal kind=String value="ERROR: Assignment failed!"
+          Statement[8]
+            Kind Return loc=40:5
+              ReturnValue
+                Expression kind=Literal loc=40:12
+                  Literal kind=Number value="0"

@@ -1,0 +1,183 @@
+Module
+  ModuleDecl
+    Identifier value="tests" loc=1:8
+    Identifier value="arrays" loc=1:15
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="join_words" loc=3:6
+        Identifier value="int" loc=3:22
+        Parameters
+        Body
+          Statement[0]
+            Kind Binding loc=4:5
+              Binding kind=let
+                Identifier value="words" loc=4:9
+                Identifier value="array" loc=4:16
+                InitializerExpr
+                  Expression kind=Call loc=4:24
+                    Callee array
+                    Arguments
+                      Arg[0]
+                        Expression kind=Literal loc=4:30
+                          Literal kind=Number value="0"
+          Statement[1]
+            Kind ExprStmt loc=5:5
+              Expression
+                Expression kind=Call loc=5:5
+                  Callee array_push
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=5:16
+                        Identifier value="words" loc=5:16
+                    Arg[1]
+                      Expression kind=Literal loc=5:23
+                        Literal kind=String value="Impulse"
+          Statement[2]
+            Kind ExprStmt loc=6:5
+              Expression
+                Expression kind=Call loc=6:5
+                  Callee array_push
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=6:16
+                        Identifier value="words" loc=6:16
+                    Arg[1]
+                      Expression kind=Literal loc=6:23
+                        Literal kind=String value="JIT"
+          Statement[3]
+            Kind ExprStmt loc=7:5
+              Expression
+                Expression kind=Call loc=7:5
+                  Callee array_push
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=7:16
+                        Identifier value="words" loc=7:16
+                    Arg[1]
+                      Expression kind=Literal loc=7:23
+                        Literal kind=String value="rocks"
+          Statement[4]
+            Kind Binding loc=9:5
+              Binding kind=let
+                Identifier value="sentence" loc=9:9
+                Identifier value="string" loc=9:19
+                InitializerExpr
+                  Expression kind=Call loc=9:28
+                    Callee array_join
+                    Arguments
+                      Arg[0]
+                        Expression kind=Identifier loc=9:39
+                          Identifier value="words" loc=9:39
+                      Arg[1]
+                        Expression kind=Literal loc=9:46
+                          Literal kind=String value=" "
+          Statement[5]
+            Kind ExprStmt loc=10:5
+              Expression
+                Expression kind=Call loc=10:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=10:13
+                        Identifier value="sentence" loc=10:13
+          Statement[6]
+            Kind Binding loc=12:5
+              Binding kind=let
+                Identifier value="popped" loc=12:9
+                Identifier value="string" loc=12:17
+                InitializerExpr
+                  Expression kind=Call loc=12:26
+                    Callee array_pop
+                    Arguments
+                      Arg[0]
+                        Expression kind=Identifier loc=12:36
+                          Identifier value="words" loc=12:36
+          Statement[7]
+            Kind ExprStmt loc=13:5
+              Expression
+                Expression kind=Call loc=13:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Call loc=13:13
+                        Callee string_concat
+                        Arguments
+                          Arg[0]
+                            Expression kind=Literal loc=13:27
+                              Literal kind=String value="popped: "
+                          Arg[1]
+                            Expression kind=Identifier loc=13:39
+                              Identifier value="popped" loc=13:39
+          Statement[8]
+            Kind ExprStmt loc=15:5
+              Expression
+                Expression kind=Call loc=15:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Call loc=15:13
+                        Callee array_join
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=15:24
+                              Identifier value="words" loc=15:24
+                          Arg[1]
+                            Expression kind=Literal loc=15:31
+                              Literal kind=String value="-"
+          Statement[9]
+            Kind ExprStmt loc=16:5
+              Expression
+                Expression kind=Call loc=16:5
+                  Callee array_push
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=16:16
+                        Identifier value="words" loc=16:16
+                    Arg[1]
+                      Expression kind=Call loc=16:23
+                        Callee string_upper
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=16:36
+                              Identifier value="popped" loc=16:36
+          Statement[10]
+            Kind ExprStmt loc=17:5
+              Expression
+                Expression kind=Call loc=17:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Call loc=17:13
+                        Callee array_join
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=17:24
+                              Identifier value="words" loc=17:24
+                          Arg[1]
+                            Expression kind=Literal loc=17:31
+                              Literal kind=String value="+"
+          Statement[11]
+            Kind Return loc=19:5
+              ReturnValue
+                Expression kind=Call loc=19:12
+                  Callee string_length
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=19:26
+                        Identifier value="sentence" loc=19:26
+  Decl[1]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=22:6
+        Identifier value="int" loc=22:16
+        Parameters
+        Body
+          Statement[0]
+            Kind Return loc=23:5
+              ReturnValue
+                Expression kind=Call loc=23:12
+                  Callee join_words

@@ -1,0 +1,364 @@
+Function is_prime
+== Before optimisation ==
+Function is_prime
+  Block #0 (entry) idom=0
+    Instructions
+      v4.1 = literal | 2
+      v5.1 = binary v1.1 v4.1 | <
+      branch_if v5.1 | L0 0
+    Successors 2 1
+    DomChildren 1 2
+  Block #1 (block1) idom=0
+    Instructions
+      v6.1 = literal | 0
+      return v6.1
+    Predecessors 0
+  Block #2 (L0) idom=0
+    Instructions
+      v7.1 = literal | 2
+      v8.1 = binary v1.1 v7.1 | ==
+      branch_if v8.1 | L2 0
+    Successors 4 3
+    Predecessors 0
+    DomChildren 3 4
+  Block #3 (block3) idom=2
+    Instructions
+      v9.1 = literal | 1
+      return v9.1
+    Predecessors 2
+  Block #4 (L2) idom=2
+    Instructions
+      v10.1 = literal | 2
+      v11.1 = binary v1.1 v10.1 | %
+      v2.1 = assign v11.1
+      v12.1 = literal | 0
+      v13.1 = binary v2.1 v12.1 | ==
+      branch_if v13.1 | L4 0
+    Successors 6 5
+    Predecessors 2
+    DomChildren 5 6
+  Block #5 (block5) idom=4
+    Instructions
+      v14.1 = literal | 0
+      return v14.1
+    Predecessors 4
+  Block #6 (L4) idom=4
+    Instructions
+      v15.1 = literal | 3
+      v3.1 = assign v15.1
+    Successors 7
+    Predecessors 4
+    DomChildren 7
+  Block #7 (L6) idom=6
+    Phi
+      v3.2 = phi
+        from block 6 v3.1
+        from block 10 v3.3
+      v2.2 = phi
+        from block 6 v2.1
+        from block 10 v2.3
+    Instructions
+      v16.1 = binary v3.2 v3.2 | *
+      v17.1 = binary v16.1 v1.1 | <=
+      branch_if v17.1 | L7 0
+    Successors 11 8
+    Predecessors 6 10
+    DomChildren 8 11
+    DomFrontier 7
+  Block #8 (block8) idom=7
+    Instructions
+      v18.1 = binary v1.1 v3.2 | %
+      v2.3 = assign v18.1
+      v19.1 = literal | 0
+      v20.1 = binary v2.3 v19.1 | ==
+      branch_if v20.1 | L8 0
+    Successors 10 9
+    Predecessors 7
+    DomChildren 9 10
+    DomFrontier 7
+  Block #9 (block9) idom=8
+    Instructions
+      v21.1 = literal | 0
+      return v21.1
+    Predecessors 8
+  Block #10 (L8) idom=8
+    Instructions
+      v22.1 = literal | 2
+      v23.1 = binary v3.2 v22.1 | +
+      v3.3 = assign v23.1
+      branch | L6
+    Successors 7
+    Predecessors 8
+    DomFrontier 7
+  Block #11 (L7) idom=7
+    Instructions
+      v24.1 = literal | 1
+      return v24.1
+    Predecessors 7
+== After optimisation ==
+Function is_prime
+  Block #0 (entry) idom=0
+    Instructions
+      v4.1 = literal | 2
+      v5.1 = binary v1.1 v4.1 | <
+      branch_if v5.1 | L0 0
+    Successors 2 1
+    DomChildren 1 2
+  Block #1 (block1) idom=0
+    Instructions
+      v6.1 = literal | 0
+      return v6.1
+    Predecessors 0
+  Block #2 (L0) idom=0
+    Instructions
+      v7.1 = literal | 2
+      v8.1 = binary v1.1 v7.1 | ==
+      branch_if v8.1 | L2 0
+    Successors 4 3
+    Predecessors 0
+    DomChildren 3 4
+  Block #3 (block3) idom=2
+    Instructions
+      v9.1 = literal | 1
+      return v9.1
+    Predecessors 2
+  Block #4 (L2) idom=2
+    Instructions
+      v10.1 = literal | 2
+      v11.1 = binary v1.1 v10.1 | %
+      v2.1 = assign v11.1
+      v12.1 = literal | 0
+      v13.1 = binary v2.1 v12.1 | ==
+      branch_if v13.1 | L4 0
+    Successors 6 5
+    Predecessors 2
+    DomChildren 5 6
+  Block #5 (block5) idom=4
+    Instructions
+      v14.1 = literal | 0
+      return v14.1
+    Predecessors 4
+  Block #6 (L4) idom=4
+    Instructions
+      v15.1 = literal | 3
+      v3.1 = assign v15.1
+    Successors 7
+    Predecessors 4
+    DomChildren 7
+  Block #7 (L6) idom=6
+    Phi
+      v3.2 = phi
+        from block 6 v3.1
+        from block 10 v3.3
+      v2.2 = phi
+        from block 6 v2.1
+        from block 10 v2.3
+    Instructions
+      v16.1 = binary v3.2 v3.2 | *
+      v17.1 = binary v16.1 v1.1 | <=
+      branch_if v17.1 | L7 0
+    Successors 11 8
+    Predecessors 6 10
+    DomChildren 8 11
+    DomFrontier 7
+  Block #8 (block8) idom=7
+    Instructions
+      v18.1 = binary v1.1 v3.2 | %
+      v2.3 = assign v18.1
+      v19.1 = literal | 0
+      v20.1 = binary v2.3 v19.1 | ==
+      branch_if v20.1 | L8 0
+    Successors 10 9
+    Predecessors 7
+    DomChildren 9 10
+    DomFrontier 7
+  Block #9 (block9) idom=8
+    Instructions
+      v21.1 = literal | 0
+      return v21.1
+    Predecessors 8
+  Block #10 (L8) idom=8
+    Instructions
+      v22.1 = literal | 2
+      v23.1 = binary v3.2 v22.1 | +
+      v3.3 = assign v23.1
+      branch | L6
+    Successors 7
+    Predecessors 8
+    DomFrontier 7
+  Block #11 (L7) idom=7
+    Instructions
+      v24.1 = literal | 1
+      return v24.1
+    Predecessors 7
+
+Function count_primes
+== Before optimisation ==
+Function count_primes
+  Block #0 (entry) idom=0
+    Instructions
+      v5.1 = literal | 0
+      v2.1 = assign v5.1
+      v6.1 = literal | 2
+      v3.1 = assign v6.1
+    Successors 1
+    DomChildren 1
+  Block #1 (L10) idom=0
+    Phi
+      v4.1 = phi
+        from block 0 <undefined>
+        from block 4 v4.2
+      v3.2 = phi
+        from block 0 v3.1
+        from block 4 v3.3
+      v2.2 = phi
+        from block 0 v2.1
+        from block 4 v2.4
+    Instructions
+      v7.1 = binary v3.2 v1.1 | <=
+      branch_if v7.1 | L11 0
+    Successors 5 2
+    Predecessors 0 4
+    DomChildren 2 5
+    DomFrontier 1
+  Block #2 (block2) idom=1
+    Instructions
+      v8.1 = call v3.2 | is_prime 1
+      v4.2 = assign v8.1
+      v9.1 = literal | 1
+      v10.1 = binary v4.2 v9.1 | ==
+      branch_if v10.1 | L12 0
+    Successors 4 3
+    Predecessors 1
+    DomChildren 3 4
+    DomFrontier 1
+  Block #3 (block3) idom=2
+    Instructions
+      v11.1 = literal | 1
+      v12.1 = binary v2.2 v11.1 | +
+      v2.3 = assign v12.1
+    Successors 4
+    Predecessors 2
+    DomFrontier 4
+  Block #4 (L12) idom=2
+    Phi
+      v2.4 = phi
+        from block 2 v2.2
+        from block 3 v2.3
+    Instructions
+      v13.1 = literal | 1
+      v14.1 = binary v3.2 v13.1 | +
+      v3.3 = assign v14.1
+      branch | L10
+    Successors 1
+    Predecessors 2 3
+    DomFrontier 1
+  Block #5 (L11) idom=1
+    Instructions
+      return v2.2
+    Predecessors 1
+== After optimisation ==
+Function count_primes
+  Block #0 (entry) idom=0
+    Instructions
+      v5.1 = literal | 0
+      v2.1 = assign v5.1
+      v6.1 = literal | 2
+      v3.1 = assign v6.1
+    Successors 1
+    DomChildren 1
+  Block #1 (L10) idom=0
+    Phi
+      v4.1 = phi
+        from block 0 <undefined>
+        from block 4 v4.2
+      v3.2 = phi
+        from block 0 v3.1
+        from block 4 v3.3
+      v2.2 = phi
+        from block 0 v2.1
+        from block 4 v2.4
+    Instructions
+      v7.1 = binary v3.2 v1.1 | <=
+      branch_if v7.1 | L11 0
+    Successors 5 2
+    Predecessors 0 4
+    DomChildren 2 5
+    DomFrontier 1
+  Block #2 (block2) idom=1
+    Instructions
+      v8.1 = call v3.2 | is_prime 1
+      v4.2 = assign v8.1
+      v9.1 = literal | 1
+      v10.1 = binary v4.2 v9.1 | ==
+      branch_if v10.1 | L12 0
+    Successors 4 3
+    Predecessors 1
+    DomChildren 3 4
+    DomFrontier 1
+  Block #3 (block3) idom=2
+    Instructions
+      v11.1 = literal | 1
+      v12.1 = binary v2.2 v11.1 | +
+      v2.3 = assign v12.1
+    Successors 4
+    Predecessors 2
+    DomFrontier 4
+  Block #4 (L12) idom=2
+    Phi
+      v2.4 = phi
+        from block 2 v2.2
+        from block 3 v2.3
+    Instructions
+      v13.1 = literal | 1
+      v14.1 = binary v3.2 v13.1 | +
+      v3.3 = assign v14.1
+      branch | L10
+    Successors 1
+    Predecessors 2 3
+    DomFrontier 1
+  Block #5 (L11) idom=1
+    Instructions
+      return v2.2
+    Predecessors 1
+
+Function main
+== Before optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v3.1 = literal | 100
+      v1.1 = assign v3.1
+      v4.1 = call v1.1 | count_primes 1
+      v2.1 = assign v4.1
+      v5.1 = literal_string | Number of primes up to 
+      v6.1 = call v5.1 | print 1
+      drop v6.1
+      v7.1 = call v1.1 | print 1
+      drop v7.1
+      v8.1 = literal_string | : 
+      v9.1 = call v8.1 | print 1
+      drop v9.1
+      v10.1 = call v2.1 | println 1
+      drop v10.1
+      return v2.1
+== After optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v3.1 = literal | 100
+      v1.1 = assign v3.1
+      v4.1 = call v1.1 | count_primes 1
+      v2.1 = assign v4.1
+      v5.1 = literal_string | Number of primes up to 
+      v6.1 = call v5.1 | print 1
+      drop v6.1
+      v7.1 = call v1.1 | print 1
+      drop v7.1
+      v8.1 = literal_string | : 
+      v9.1 = call v8.1 | print 1
+      drop v9.1
+      v10.1 = call v2.1 | println 1
+      drop v10.1
+      return v2.1
+

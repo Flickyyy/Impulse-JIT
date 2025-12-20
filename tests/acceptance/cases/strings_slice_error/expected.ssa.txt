@@ -1,0 +1,28 @@
+Function main
+== Before optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v2.1 = literal_string | Impulse
+      v1.1 = assign v2.1
+      v3.1 = literal | 10
+      v4.1 = literal | 1
+      v5.1 = call v1.1 v3.1 v4.1 | string_slice 3
+      v6.1 = call v5.1 | println 1
+      drop v6.1
+      v7.1 = literal | 0
+      return v7.1
+== After optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v2.1 = literal_string | Impulse
+      v1.1 = assign v2.1
+      v3.1 = literal | 10
+      v4.1 = literal | 1
+      v5.1 = call v1.1 v3.1 v4.1 | string_slice 3
+      v6.1 = call v5.1 | println 1
+      drop v6.1
+      v7.1 = literal | 0
+      return v7.1
+

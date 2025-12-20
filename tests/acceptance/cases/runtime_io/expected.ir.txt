@@ -1,0 +1,30 @@
+module tests::runtime_io
+
+func main() -> int {
+  ^entry:
+    literal_string "enter value:"
+    call println (1 args)
+    drop
+    call read_line (0 args)
+    store input
+    reference input
+    call string_length (1 args)
+    literal 0
+    binary ==
+    branch_if L0 when 0
+    literal_string "[no input]"
+    call println (1 args)
+    drop
+    branch L1
+  L0:
+    literal_string "echo: "
+    reference input
+    call string_concat (2 args)
+    call println (1 args)
+    drop
+  L1:
+    reference input
+    call string_length (1 args)
+    return
+}
+

@@ -1,0 +1,41 @@
+module test::assignment;
+
+// Test variable reassignment with the new assignment statement syntax
+
+func counter() -> int {
+    let count: int = 0;
+    count = count + 1;
+    count = count + 1;
+    count = count + 1;
+    return count;
+}
+
+func accumulate(n: int) -> int {
+    let sum: int = 0;
+    let i: int = 1;
+    while i <= n {
+        sum = sum + i;
+        i = i + 1;
+    }
+    return sum;
+}
+
+func main() -> int {
+    let c: int = counter();
+    print("counter: ");
+    println(c);
+    
+    let s: int = accumulate(10);
+    print("sum 1..10: ");
+    println(s);
+    
+    // Verify results
+    if c == 3 {
+        if s == 55 {
+            println("SUCCESS: Assignment works correctly!");
+            return 1;
+        }
+    }
+    println("ERROR: Assignment failed!");
+    return 0;
+}

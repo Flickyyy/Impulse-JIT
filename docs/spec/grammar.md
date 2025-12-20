@@ -32,7 +32,7 @@ Param       ::= Ident ":" Type
 
 ## Statements
 ```
-Stmt        ::= Block | IfStmt | WhileStmt | ForStmt | ReturnStmt | BreakStmt | ContinueStmt | Binding | ExprStmt
+Stmt        ::= Block | IfStmt | WhileStmt | ForStmt | ReturnStmt | BreakStmt | ContinueStmt | AssignStmt | Binding | ExprStmt
 Block       ::= "{" Stmt* "}"
 IfStmt      ::= "if" Expr Block ["else" Block]
 WhileStmt   ::= "while" Expr Block
@@ -40,6 +40,7 @@ ForStmt     ::= "for" "(" ForInit? ";" Expr? ";" ForIncrement? ")" Block
 ReturnStmt  ::= "return" Expr? ";"
 BreakStmt   ::= "break" ";"
 ContinueStmt::= "continue" ";"
+AssignStmt  ::= Ident "=" Expr ";"
 ExprStmt    ::= Expr ";"
 
 ForInit     ::= Binding | Expr

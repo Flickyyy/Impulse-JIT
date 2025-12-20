@@ -1,0 +1,6 @@
+status=0 value=0 message='=== runtime demo ===
+banner matches reference
+fib(6) = 8
+width: 20, done
+sum = 44
+'

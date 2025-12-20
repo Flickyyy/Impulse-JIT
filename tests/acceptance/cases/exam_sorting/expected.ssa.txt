@@ -1,0 +1,518 @@
+Function swap
+== Before optimisation ==
+Function swap
+  Block #0 (entry) idom=0
+    Instructions
+      v5.1 = array_get v1.1 v2.1
+      v4.1 = assign v5.1
+      v6.1 = array_get v1.1 v3.1
+      v7.1 = array_set v1.1 v2.1 v6.1
+      drop v7.1
+      v8.1 = array_set v1.1 v3.1 v4.1
+      drop v8.1
+      v9.1 = literal | 0
+      return v9.1
+== After optimisation ==
+Function swap
+  Block #0 (entry) idom=0
+    Instructions
+      v5.1 = array_get v1.1 v2.1
+      v4.1 = assign v5.1
+      v6.1 = array_get v1.1 v3.1
+      v7.1 = array_set v1.1 v2.1 v6.1
+      drop v7.1
+      v8.1 = array_set v1.1 v3.1 v4.1
+      drop v8.1
+      v9.1 = literal | 0
+      return v9.1
+
+Function partition
+== Before optimisation ==
+Function partition
+  Block #0 (entry) idom=0
+    Instructions
+      v7.1 = array_get v1.1 v3.1
+      v4.1 = assign v7.1
+      v8.1 = literal | 1
+      v9.1 = binary v2.1 v8.1 | -
+      v5.1 = assign v9.1
+      v6.1 = assign v2.1
+    Successors 1
+    DomChildren 1
+  Block #1 (L0) idom=0
+    Phi
+      v6.2 = phi
+        from block 0 v6.1
+        from block 4 v6.3
+      v5.2 = phi
+        from block 0 v5.1
+        from block 4 v5.4
+    Instructions
+      v10.1 = binary v6.2 v3.1 | <
+      branch_if v10.1 | L1 0
+    Successors 5 2
+    Predecessors 0 4
+    DomChildren 2 5
+    DomFrontier 1
+  Block #2 (block2) idom=1
+    Instructions
+      v11.1 = array_get v1.1 v6.2
+      v12.1 = binary v11.1 v4.1 | <=
+      branch_if v12.1 | L2 0
+    Successors 4 3
+    Predecessors 1
+    DomChildren 3 4
+    DomFrontier 1
+  Block #3 (block3) idom=2
+    Instructions
+      v13.1 = literal | 1
+      v14.1 = binary v5.2 v13.1 | +
+      v5.3 = assign v14.1
+      v15.1 = call v1.1 v5.3 v6.2 | swap 3
+      drop v15.1
+    Successors 4
+    Predecessors 2
+    DomFrontier 4
+  Block #4 (L2) idom=2
+    Phi
+      v5.4 = phi
+        from block 2 v5.2
+        from block 3 v5.3
+    Instructions
+      v16.1 = literal | 1
+      v17.1 = binary v6.2 v16.1 | +
+      v6.3 = assign v17.1
+      branch | L0
+    Successors 1
+    Predecessors 2 3
+    DomFrontier 1
+  Block #5 (L1) idom=1
+    Instructions
+      v18.1 = literal | 1
+      v19.1 = binary v5.2 v18.1 | +
+      v5.5 = assign v19.1
+      v20.1 = call v1.1 v5.5 v3.1 | swap 3
+      drop v20.1
+      return v5.5
+    Predecessors 1
+== After optimisation ==
+Function partition
+  Block #0 (entry) idom=0
+    Instructions
+      v7.1 = array_get v1.1 v3.1
+      v4.1 = assign v7.1
+      v8.1 = literal | 1
+      v9.1 = binary v2.1 v8.1 | -
+      v5.1 = assign v9.1
+      v6.1 = assign v2.1
+    Successors 1
+    DomChildren 1
+  Block #1 (L0) idom=0
+    Phi
+      v6.2 = phi
+        from block 0 v6.1
+        from block 4 v6.3
+      v5.2 = phi
+        from block 0 v5.1
+        from block 4 v5.4
+    Instructions
+      v10.1 = binary v6.2 v3.1 | <
+      branch_if v10.1 | L1 0
+    Successors 5 2
+    Predecessors 0 4
+    DomChildren 2 5
+    DomFrontier 1
+  Block #2 (block2) idom=1
+    Instructions
+      v11.1 = array_get v1.1 v6.2
+      v12.1 = binary v11.1 v4.1 | <=
+      branch_if v12.1 | L2 0
+    Successors 4 3
+    Predecessors 1
+    DomChildren 3 4
+    DomFrontier 1
+  Block #3 (block3) idom=2
+    Instructions
+      v13.1 = literal | 1
+      v14.1 = binary v5.2 v13.1 | +
+      v5.3 = assign v14.1
+      v15.1 = call v1.1 v5.3 v6.2 | swap 3
+      drop v15.1
+    Successors 4
+    Predecessors 2
+    DomFrontier 4
+  Block #4 (L2) idom=2
+    Phi
+      v5.4 = phi
+        from block 2 v5.2
+        from block 3 v5.3
+    Instructions
+      v16.1 = literal | 1
+      v17.1 = binary v6.2 v16.1 | +
+      v6.3 = assign v17.1
+      branch | L0
+    Successors 1
+    Predecessors 2 3
+    DomFrontier 1
+  Block #5 (L1) idom=1
+    Instructions
+      v18.1 = literal | 1
+      v19.1 = binary v5.2 v18.1 | +
+      v5.5 = assign v19.1
+      v20.1 = call v1.1 v5.5 v3.1 | swap 3
+      drop v20.1
+      return v5.5
+    Predecessors 1
+
+Function quicksort
+== Before optimisation ==
+Function quicksort
+  Block #0 (entry) idom=0
+    Instructions
+      v5.1 = binary v2.1 v3.1 | <
+      branch_if v5.1 | L4 0
+    Successors 2 1
+    DomChildren 1 2
+  Block #1 (block1) idom=0
+    Instructions
+      v6.1 = call v1.1 v2.1 v3.1 | partition 3
+      v4.1 = assign v6.1
+      v7.1 = literal | 1
+      v8.1 = binary v4.1 v7.1 | -
+      v9.1 = call v1.1 v2.1 v8.1 | quicksort 3
+      drop v9.1
+      v10.1 = literal | 1
+      v11.1 = binary v4.1 v10.1 | +
+      v12.1 = call v1.1 v11.1 v3.1 | quicksort 3
+      drop v12.1
+    Successors 2
+    Predecessors 0
+    DomFrontier 2
+  Block #2 (L4) idom=0
+    Phi
+      v4.2 = phi
+        from block 0 <undefined>
+        from block 1 v4.1
+    Instructions
+      v13.1 = literal | 0
+      return v13.1
+    Predecessors 0 1
+== After optimisation ==
+Function quicksort
+  Block #0 (entry) idom=0
+    Instructions
+      v5.1 = binary v2.1 v3.1 | <
+      branch_if v5.1 | L4 0
+    Successors 2 1
+    DomChildren 1 2
+  Block #1 (block1) idom=0
+    Instructions
+      v6.1 = call v1.1 v2.1 v3.1 | partition 3
+      v4.1 = assign v6.1
+      v7.1 = literal | 1
+      v8.1 = binary v4.1 v7.1 | -
+      v9.1 = call v1.1 v2.1 v8.1 | quicksort 3
+      drop v9.1
+      v10.1 = literal | 1
+      v11.1 = binary v4.1 v10.1 | +
+      v12.1 = call v1.1 v11.1 v3.1 | quicksort 3
+      drop v12.1
+    Successors 2
+    Predecessors 0
+    DomFrontier 2
+  Block #2 (L4) idom=0
+    Phi
+      v4.2 = phi
+        from block 0 <undefined>
+        from block 1 v4.1
+    Instructions
+      v13.1 = literal | 0
+      return v13.1
+    Predecessors 0 1
+
+Function is_sorted
+== Before optimisation ==
+Function is_sorted
+  Block #0 (entry) idom=0
+    Instructions
+      v4.1 = array_length v1.1
+      v2.1 = assign v4.1
+      v5.1 = literal | 0
+      v3.1 = assign v5.1
+    Successors 1
+    DomChildren 1
+  Block #1 (L6) idom=0
+    Phi
+      v3.2 = phi
+        from block 0 v3.1
+        from block 4 v3.3
+    Instructions
+      v6.1 = literal | 1
+      v7.1 = binary v2.1 v6.1 | -
+      v8.1 = binary v3.2 v7.1 | <
+      branch_if v8.1 | L7 0
+    Successors 5 2
+    Predecessors 0 4
+    DomChildren 2 5
+    DomFrontier 1
+  Block #2 (block2) idom=1
+    Instructions
+      v9.1 = array_get v1.1 v3.2
+      v10.1 = literal | 1
+      v11.1 = binary v3.2 v10.1 | +
+      v12.1 = array_get v1.1 v11.1
+      v13.1 = binary v9.1 v12.1 | >
+      branch_if v13.1 | L8 0
+    Successors 4 3
+    Predecessors 1
+    DomChildren 3 4
+    DomFrontier 1
+  Block #3 (block3) idom=2
+    Instructions
+      v14.1 = literal | 0
+      return v14.1
+    Predecessors 2
+  Block #4 (L8) idom=2
+    Instructions
+      v15.1 = literal | 1
+      v16.1 = binary v3.2 v15.1 | +
+      v3.3 = assign v16.1
+      branch | L6
+    Successors 1
+    Predecessors 2
+    DomFrontier 1
+  Block #5 (L7) idom=1
+    Instructions
+      v17.1 = literal | 1
+      return v17.1
+    Predecessors 1
+== After optimisation ==
+Function is_sorted
+  Block #0 (entry) idom=0
+    Instructions
+      v4.1 = array_length v1.1
+      v2.1 = assign v4.1
+      v5.1 = literal | 0
+      v3.1 = assign v5.1
+    Successors 1
+    DomChildren 1
+  Block #1 (L6) idom=0
+    Phi
+      v3.2 = phi
+        from block 0 v3.1
+        from block 4 v3.3
+    Instructions
+      v6.1 = literal | 1
+      v7.1 = binary v2.1 v6.1 | -
+      v8.1 = binary v3.2 v7.1 | <
+      branch_if v8.1 | L7 0
+    Successors 5 2
+    Predecessors 0 4
+    DomChildren 2 5
+    DomFrontier 1
+  Block #2 (block2) idom=1
+    Instructions
+      v9.1 = array_get v1.1 v3.2
+      v10.1 = literal | 1
+      v11.1 = binary v3.2 v10.1 | +
+      v12.1 = array_get v1.1 v11.1
+      v13.1 = binary v9.1 v12.1 | >
+      branch_if v13.1 | L8 0
+    Successors 4 3
+    Predecessors 1
+    DomChildren 3 4
+    DomFrontier 1
+  Block #3 (block3) idom=2
+    Instructions
+      v14.1 = literal | 0
+      return v14.1
+    Predecessors 2
+  Block #4 (L8) idom=2
+    Instructions
+      v15.1 = literal | 1
+      v16.1 = binary v3.2 v15.1 | +
+      v3.3 = assign v16.1
+      branch | L6
+    Successors 1
+    Predecessors 2
+    DomFrontier 1
+  Block #5 (L7) idom=1
+    Instructions
+      v17.1 = literal | 1
+      return v17.1
+    Predecessors 1
+
+Function main
+== Before optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v4.1 = literal | 20
+      v5.1 = array_make v4.1
+      v1.1 = assign v5.1
+      v6.1 = literal | 0
+      v2.1 = assign v6.1
+    Successors 1
+    DomChildren 1
+  Block #1 (L10) idom=0
+    Phi
+      v2.2 = phi
+        from block 0 v2.1
+        from block 2 v2.3
+    Instructions
+      v7.1 = literal | 20
+      v8.1 = binary v2.2 v7.1 | <
+      branch_if v8.1 | L11 0
+    Successors 3 2
+    Predecessors 0 2
+    DomChildren 2 3
+    DomFrontier 1
+  Block #2 (block2) idom=1
+    Instructions
+      v9.1 = literal | 20
+      v10.1 = binary v9.1 v2.2 | -
+      v11.1 = array_set v1.1 v2.2 v10.1
+      drop v11.1
+      v12.1 = literal | 1
+      v13.1 = binary v2.2 v12.1 | +
+      v2.3 = assign v13.1
+      branch | L10
+    Successors 1
+    Predecessors 1
+    DomFrontier 1
+  Block #3 (L11) idom=1
+    Instructions
+      v14.1 = literal_string | Before sorting:
+      v15.1 = call v14.1 | println 1
+      drop v15.1
+      v16.1 = literal_string | , 
+      v17.1 = call v1.1 v16.1 | array_join 2
+      v18.1 = call v17.1 | println 1
+      drop v18.1
+      v19.1 = literal | 0
+      v20.1 = literal | 19
+      v21.1 = call v1.1 v19.1 v20.1 | quicksort 3
+      drop v21.1
+      v22.1 = literal_string | After sorting:
+      v23.1 = call v22.1 | println 1
+      drop v23.1
+      v24.1 = literal_string | , 
+      v25.1 = call v1.1 v24.1 | array_join 2
+      v26.1 = call v25.1 | println 1
+      drop v26.1
+      v27.1 = call v1.1 | is_sorted 1
+      v3.1 = assign v27.1
+      v28.1 = literal | 1
+      v29.1 = binary v3.1 v28.1 | ==
+      branch_if v29.1 | L12 0
+    Successors 5 4
+    Predecessors 1
+    DomChildren 4 5 6
+  Block #4 (block4) idom=3
+    Instructions
+      v30.1 = literal_string | Array is correctly sorted!
+      v31.1 = call v30.1 | println 1
+      drop v31.1
+      branch | L13
+    Successors 6
+    Predecessors 3
+    DomFrontier 6
+  Block #5 (L12) idom=3
+    Instructions
+      v32.1 = literal_string | ERROR: Array is not sorted!
+      v33.1 = call v32.1 | println 1
+      drop v33.1
+    Successors 6
+    Predecessors 3
+    DomFrontier 6
+  Block #6 (L13) idom=3
+    Instructions
+      return v3.1
+    Predecessors 4 5
+== After optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v4.1 = literal | 20
+      v5.1 = array_make v4.1
+      v1.1 = assign v5.1
+      v6.1 = literal | 0
+      v2.1 = assign v6.1
+    Successors 1
+    DomChildren 1
+  Block #1 (L10) idom=0
+    Phi
+      v2.2 = phi
+        from block 0 v2.1
+        from block 2 v2.3
+    Instructions
+      v7.1 = literal | 20
+      v8.1 = binary v2.2 v7.1 | <
+      branch_if v8.1 | L11 0
+    Successors 3 2
+    Predecessors 0 2
+    DomChildren 2 3
+    DomFrontier 1
+  Block #2 (block2) idom=1
+    Instructions
+      v9.1 = literal | 20
+      v10.1 = binary v9.1 v2.2 | -
+      v11.1 = array_set v1.1 v2.2 v10.1
+      drop v11.1
+      v12.1 = literal | 1
+      v13.1 = binary v2.2 v12.1 | +
+      v2.3 = assign v13.1
+      branch | L10
+    Successors 1
+    Predecessors 1
+    DomFrontier 1
+  Block #3 (L11) idom=1
+    Instructions
+      v14.1 = literal_string | Before sorting:
+      v15.1 = call v14.1 | println 1
+      drop v15.1
+      v16.1 = literal_string | , 
+      v17.1 = call v1.1 v16.1 | array_join 2
+      v18.1 = call v17.1 | println 1
+      drop v18.1
+      v19.1 = literal | 0
+      v20.1 = literal | 19
+      v21.1 = call v1.1 v19.1 v20.1 | quicksort 3
+      drop v21.1
+      v22.1 = literal_string | After sorting:
+      v23.1 = call v22.1 | println 1
+      drop v23.1
+      v24.1 = literal_string | , 
+      v25.1 = call v1.1 v24.1 | array_join 2
+      v26.1 = call v25.1 | println 1
+      drop v26.1
+      v27.1 = call v1.1 | is_sorted 1
+      v3.1 = assign v27.1
+      v28.1 = literal | 1
+      v29.1 = binary v3.1 v28.1 | ==
+      branch_if v29.1 | L12 0
+    Successors 5 4
+    Predecessors 1
+    DomChildren 4 5 6
+  Block #4 (block4) idom=3
+    Instructions
+      v30.1 = literal_string | Array is correctly sorted!
+      v31.1 = call v30.1 | println 1
+      drop v31.1
+      branch | L13
+    Successors 6
+    Predecessors 3
+    DomFrontier 6
+  Block #5 (L12) idom=3
+    Instructions
+      v32.1 = literal_string | ERROR: Array is not sorted!
+      v33.1 = call v32.1 | println 1
+      drop v33.1
+    Successors 6
+    Predecessors 3
+    DomFrontier 6
+  Block #6 (L13) idom=3
+    Instructions
+      return v3.1
+    Predecessors 4 5
+

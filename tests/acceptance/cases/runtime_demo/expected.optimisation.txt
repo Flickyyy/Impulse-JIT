@@ -1,0 +1,12 @@
+Function fibonacci
+  optimizations disabled - using JIT
+
+Function emit_value
+  optimizations disabled - using JIT
+
+Function build_banner
+  optimizations disabled - using JIT
+
+Function main
+  optimizations disabled - using JIT
+

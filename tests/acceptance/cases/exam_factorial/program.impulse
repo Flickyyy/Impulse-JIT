@@ -1,0 +1,22 @@
+module exam::factorial;
+
+// Task 1: Factorial Calculation (Recursive Function)
+// Objective: Implement a function that calculates the factorial of a given number using recursion.
+// Purpose: Test recursive function calls, stack management, and handling of large numbers.
+// Benchmark: Measure the execution time for calculating the factorial of numbers like 10! or 20!.
+
+func factorial(n: int) -> int {
+    if n <= 1 {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+func main() -> int {
+    // Test factorial of 12 (479001600 - fits in int32)
+    // Note: factorial(20) would be demonstrated during benchmark
+    let res: int = factorial(12);
+    println("factorial(12) = ");
+    println(res);
+    return res;
+}

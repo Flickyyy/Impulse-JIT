@@ -1,0 +1,90 @@
+module benchmark::sorting;
+
+// Benchmark: Sort array of 100 elements
+// Algorithm: Quicksort
+// Demonstrates: array handling, loops, recursion, element comparison
+// Note: Reduced from 10000 for interpreter performance. JIT would handle 10000+
+
+func swap(arr: array, i: int, j: int) -> int {
+    let temp: int = array_get(arr, i);
+    array_set(arr, i, array_get(arr, j));
+    array_set(arr, j, temp);
+    return 0;
+}
+
+func partition(arr: array, low: int, high: int) -> int {
+    let pivot: int = array_get(arr, high);
+    let i: int = low - 1;
+    let j: int = low;
+    
+    while j < high {
+        // Compare directly without temp variable
+        if array_get(arr, j) <= pivot {
+            i = i + 1;
+            swap(arr, i, j);
+        }
+        j = j + 1;
+    }
+    
+    i = i + 1;
+    swap(arr, i, high);
+    return i;
+}
+
+func quicksort(arr: array, low: int, high: int) -> int {
+    if low < high {
+        let pi: int = partition(arr, low, high);
+        quicksort(arr, low, pi - 1);
+        quicksort(arr, pi + 1, high);
+    }
+    return 0;
+}
+
+func is_sorted(arr: array) -> int {
+    let n: int = array_length(arr);
+    let i: int = 0;
+    while i < n - 1 {
+        if array_get(arr, i) > array_get(arr, i + 1) {
+            return 0;
+        }
+        i = i + 1;
+    }
+    return 1;
+}
+
+func fill_descending(arr: array, n: int) -> int {
+    let i: int = 0;
+    while i < n {
+        array_set(arr, i, n - i);
+        i = i + 1;
+    }
+    return 0;
+}
+
+func main() -> int {
+    println("=== Sorting Benchmark ===");
+    
+    // Create array of 100 elements
+    let size: int = 100;
+    let arr: array = array(size);
+    
+    // Fill with descending values (worst case)
+    fill_descending(arr, size);
+    
+    print("Sorting array of ");
+    print(size);
+    println(" elements...");
+    
+    // Sort the array
+    quicksort(arr, 0, size - 1);
+    
+    // Verify sorted
+    let sorted: int = is_sorted(arr);
+    if sorted == 1 {
+        println("SUCCESS: Array is correctly sorted!");
+    } else {
+        println("ERROR: Array is not sorted!");
+    }
+    
+    return sorted;
+}

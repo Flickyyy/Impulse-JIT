@@ -12,6 +12,34 @@ namespace {
 
 constexpr double kEpsilon = 1e-12;
 
+[[nodiscard]] auto escape_string(const std::string& value) -> std::string {
+    std::string escaped;
+    escaped.reserve(value.size() + 2);
+    for (char ch : value) {
+        switch (ch) {
+            case '\\':
+                escaped += "\\\\";
+                break;
+            case '"':
+                escaped += "\\\"";
+                break;
+            case '\n':
+                escaped += "\\n";
+                break;
+            case '\t':
+                escaped += "\\t";
+                break;
+            case '\r':
+                escaped += "\\r";
+                break;
+            default:
+                escaped.push_back(ch);
+                break;
+        }
+    }
+    return escaped;
+}
+
 [[nodiscard]] auto binary_operator_to_string(Expression::BinaryOperator op) -> std::string_view {
     switch (op) {
         case Expression::BinaryOperator::Add:
@@ -179,6 +207,9 @@ constexpr double kEpsilon = 1e-12;
 auto printExpression(const Expression& expr) -> std::string {
     switch (expr.kind) {
         case Expression::Kind::Literal:
+            if (expr.literal_kind == Expression::LiteralKind::String) {
+                return '"' + escape_string(expr.literal_value) + '"';
+            }
             return expr.literal_value;
         case Expression::Kind::Identifier:
             return expr.identifier.value;
@@ -229,6 +260,9 @@ auto printExpression(const Expression& expr) -> std::string {
 auto evaluateNumericExpression(const Expression& expr) -> ExpressionEvalResult {
     switch (expr.kind) {
         case Expression::Kind::Literal:
+            if (expr.literal_kind == Expression::LiteralKind::String) {
+                return ExpressionEvalResult{ExpressionEvalStatus::NonConstant, std::nullopt, std::nullopt};
+            }
             return parse_literal_value(expr.literal_value);
         case Expression::Kind::Identifier:
             return ExpressionEvalResult{

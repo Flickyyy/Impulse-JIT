@@ -1,0 +1,328 @@
+enter function main
+enter block 0 (entry)
+    v3.1 = call imm(counter, 0)
+enter function counter
+enter block 0 (entry)
+    v2.1 = literal imm(0)
+      -> v2.1 = 0
+    v1.1 = assign args(v2.1)
+      -> v1.1 = 0
+    v3.1 = literal imm(1)
+      -> v3.1 = 1
+    v4.1 = binary args(v1.1, v3.1) imm(+)
+      -> v4.1 = 1
+    v1.2 = assign args(v4.1)
+      -> v1.2 = 1
+    v5.1 = literal imm(1)
+      -> v5.1 = 1
+    v6.1 = binary args(v1.2, v5.1) imm(+)
+      -> v6.1 = 2
+    v1.3 = assign args(v6.1)
+      -> v1.3 = 2
+    v7.1 = literal imm(1)
+      -> v7.1 = 1
+    v8.1 = binary args(v1.3, v7.1) imm(+)
+      -> v8.1 = 3
+    v1.4 = assign args(v8.1)
+      -> v1.4 = 3
+    return args(v1.4)
+    return 3
+exit function counter = 3
+      -> v3.1 = 3
+    v1.1 = assign args(v3.1)
+      -> v1.1 = 3
+    v4.1 = literal_string imm(counter: )
+      -> v4.1 = "counter: "
+    v5.1 = call args(v4.1) imm(print, 1)
+    builtin print "counter: "
+      -> v5.1 = 0
+    drop args(v5.1)
+    v6.1 = call args(v1.1) imm(println, 1)
+    builtin println "3"
+      -> v6.1 = 0
+    drop args(v6.1)
+    v7.1 = literal imm(10)
+      -> v7.1 = 10
+    v8.1 = call args(v7.1) imm(accumulate, 1)
+enter function accumulate
+      -> v1.1 = 10
+enter block 0 (entry)
+    v4.1 = literal imm(0)
+      -> v4.1 = 0
+    v2.1 = assign args(v4.1)
+      -> v2.1 = 0
+    v5.1 = literal imm(1)
+      -> v5.1 = 1
+    v3.1 = assign args(v5.1)
+      -> v3.1 = 1
+enter block 1 (L0)
+      -> v3.2 = 1
+    phi v3.2 := 1 in block 1
+      -> v2.2 = 0
+    phi v2.2 := 0 in block 1
+    v6.1 = binary args(v3.2, v1.1) imm(<=)
+      -> v6.1 = 1
+    branch_if args(v6.1) imm(L1, 0)
+    -> branch 2 (block2) [skipped]
+enter block 2 (block2)
+    v7.1 = binary args(v2.2, v3.2) imm(+)
+      -> v7.1 = 1
+    v2.3 = assign args(v7.1)
+      -> v2.3 = 1
+    v8.1 = literal imm(1)
+      -> v8.1 = 1
+    v9.1 = binary args(v3.2, v8.1) imm(+)
+      -> v9.1 = 2
+    v3.3 = assign args(v9.1)
+      -> v3.3 = 2
+    branch imm(L0)
+    -> branch 1 (L0) [taken]
+enter block 1 (L0)
+      -> v3.2 = 2
+    phi v3.2 := 2 in block 1
+      -> v2.2 = 1
+    phi v2.2 := 1 in block 1
+    v6.1 = binary args(v3.2, v1.1) imm(<=)
+      -> v6.1 = 1
+    branch_if args(v6.1) imm(L1, 0)
+    -> branch 2 (block2) [skipped]
+enter block 2 (block2)
+    v7.1 = binary args(v2.2, v3.2) imm(+)
+      -> v7.1 = 3
+    v2.3 = assign args(v7.1)
+      -> v2.3 = 3
+    v8.1 = literal imm(1)
+      -> v8.1 = 1
+    v9.1 = binary args(v3.2, v8.1) imm(+)
+      -> v9.1 = 3
+    v3.3 = assign args(v9.1)
+      -> v3.3 = 3
+    branch imm(L0)
+    -> branch 1 (L0) [taken]
+enter block 1 (L0)
+      -> v3.2 = 3
+    phi v3.2 := 3 in block 1
+      -> v2.2 = 3
+    phi v2.2 := 3 in block 1
+    v6.1 = binary args(v3.2, v1.1) imm(<=)
+      -> v6.1 = 1
+    branch_if args(v6.1) imm(L1, 0)
+    -> branch 2 (block2) [skipped]
+enter block 2 (block2)
+    v7.1 = binary args(v2.2, v3.2) imm(+)
+      -> v7.1 = 6
+    v2.3 = assign args(v7.1)
+      -> v2.3 = 6
+    v8.1 = literal imm(1)
+      -> v8.1 = 1
+    v9.1 = binary args(v3.2, v8.1) imm(+)
+      -> v9.1 = 4
+    v3.3 = assign args(v9.1)
+      -> v3.3 = 4
+    branch imm(L0)
+    -> branch 1 (L0) [taken]
+enter block 1 (L0)
+      -> v3.2 = 4
+    phi v3.2 := 4 in block 1
+      -> v2.2 = 6
+    phi v2.2 := 6 in block 1
+    v6.1 = binary args(v3.2, v1.1) imm(<=)
+      -> v6.1 = 1
+    branch_if args(v6.1) imm(L1, 0)
+    -> branch 2 (block2) [skipped]
+enter block 2 (block2)
+    v7.1 = binary args(v2.2, v3.2) imm(+)
+      -> v7.1 = 10
+    v2.3 = assign args(v7.1)
+      -> v2.3 = 10
+    v8.1 = literal imm(1)
+      -> v8.1 = 1
+    v9.1 = binary args(v3.2, v8.1) imm(+)
+      -> v9.1 = 5
+    v3.3 = assign args(v9.1)
+      -> v3.3 = 5
+    branch imm(L0)
+    -> branch 1 (L0) [taken]
+enter block 1 (L0)
+      -> v3.2 = 5
+    phi v3.2 := 5 in block 1
+      -> v2.2 = 10
+    phi v2.2 := 10 in block 1
+    v6.1 = binary args(v3.2, v1.1) imm(<=)
+      -> v6.1 = 1
+    branch_if args(v6.1) imm(L1, 0)
+    -> branch 2 (block2) [skipped]
+enter block 2 (block2)
+    v7.1 = binary args(v2.2, v3.2) imm(+)
+      -> v7.1 = 15
+    v2.3 = assign args(v7.1)
+      -> v2.3 = 15
+    v8.1 = literal imm(1)
+      -> v8.1 = 1
+    v9.1 = binary args(v3.2, v8.1) imm(+)
+      -> v9.1 = 6
+    v3.3 = assign args(v9.1)
+      -> v3.3 = 6
+    branch imm(L0)
+    -> branch 1 (L0) [taken]
+enter block 1 (L0)
+      -> v3.2 = 6
+    phi v3.2 := 6 in block 1
+      -> v2.2 = 15
+    phi v2.2 := 15 in block 1
+    v6.1 = binary args(v3.2, v1.1) imm(<=)
+      -> v6.1 = 1
+    branch_if args(v6.1) imm(L1, 0)
+    -> branch 2 (block2) [skipped]
+enter block 2 (block2)
+    v7.1 = binary args(v2.2, v3.2) imm(+)
+      -> v7.1 = 21
+    v2.3 = assign args(v7.1)
+      -> v2.3 = 21
+    v8.1 = literal imm(1)
+      -> v8.1 = 1
+    v9.1 = binary args(v3.2, v8.1) imm(+)
+      -> v9.1 = 7
+    v3.3 = assign args(v9.1)
+      -> v3.3 = 7
+    branch imm(L0)
+    -> branch 1 (L0) [taken]
+enter block 1 (L0)
+      -> v3.2 = 7
+    phi v3.2 := 7 in block 1
+      -> v2.2 = 21
+    phi v2.2 := 21 in block 1
+    v6.1 = binary args(v3.2, v1.1) imm(<=)
+      -> v6.1 = 1
+    branch_if args(v6.1) imm(L1, 0)
+    -> branch 2 (block2) [skipped]
+enter block 2 (block2)
+    v7.1 = binary args(v2.2, v3.2) imm(+)
+      -> v7.1 = 28
+    v2.3 = assign args(v7.1)
+      -> v2.3 = 28
+    v8.1 = literal imm(1)
+      -> v8.1 = 1
+    v9.1 = binary args(v3.2, v8.1) imm(+)
+      -> v9.1 = 8
+    v3.3 = assign args(v9.1)
+      -> v3.3 = 8
+    branch imm(L0)
+    -> branch 1 (L0) [taken]
+enter block 1 (L0)
+      -> v3.2 = 8
+    phi v3.2 := 8 in block 1
+      -> v2.2 = 28
+    phi v2.2 := 28 in block 1
+    v6.1 = binary args(v3.2, v1.1) imm(<=)
+      -> v6.1 = 1
+    branch_if args(v6.1) imm(L1, 0)
+    -> branch 2 (block2) [skipped]
+enter block 2 (block2)
+    v7.1 = binary args(v2.2, v3.2) imm(+)
+      -> v7.1 = 36
+    v2.3 = assign args(v7.1)
+      -> v2.3 = 36
+    v8.1 = literal imm(1)
+      -> v8.1 = 1
+    v9.1 = binary args(v3.2, v8.1) imm(+)
+      -> v9.1 = 9
+    v3.3 = assign args(v9.1)
+      -> v3.3 = 9
+    branch imm(L0)
+    -> branch 1 (L0) [taken]
+enter block 1 (L0)
+      -> v3.2 = 9
+    phi v3.2 := 9 in block 1
+      -> v2.2 = 36
+    phi v2.2 := 36 in block 1
+    v6.1 = binary args(v3.2, v1.1) imm(<=)
+      -> v6.1 = 1
+    branch_if args(v6.1) imm(L1, 0)
+    -> branch 2 (block2) [skipped]
+enter block 2 (block2)
+    v7.1 = binary args(v2.2, v3.2) imm(+)
+      -> v7.1 = 45
+    v2.3 = assign args(v7.1)
+      -> v2.3 = 45
+    v8.1 = literal imm(1)
+      -> v8.1 = 1
+    v9.1 = binary args(v3.2, v8.1) imm(+)
+      -> v9.1 = 10
+    v3.3 = assign args(v9.1)
+      -> v3.3 = 10
+    branch imm(L0)
+    -> branch 1 (L0) [taken]
+enter block 1 (L0)
+      -> v3.2 = 10
+    phi v3.2 := 10 in block 1
+      -> v2.2 = 45
+    phi v2.2 := 45 in block 1
+    v6.1 = binary args(v3.2, v1.1) imm(<=)
+      -> v6.1 = 1
+    branch_if args(v6.1) imm(L1, 0)
+    -> branch 2 (block2) [skipped]
+enter block 2 (block2)
+    v7.1 = binary args(v2.2, v3.2) imm(+)
+      -> v7.1 = 55
+    v2.3 = assign args(v7.1)
+      -> v2.3 = 55
+    v8.1 = literal imm(1)
+      -> v8.1 = 1
+    v9.1 = binary args(v3.2, v8.1) imm(+)
+      -> v9.1 = 11
+    v3.3 = assign args(v9.1)
+      -> v3.3 = 11
+    branch imm(L0)
+    -> branch 1 (L0) [taken]
+enter block 1 (L0)
+      -> v3.2 = 11
+    phi v3.2 := 11 in block 1
+      -> v2.2 = 55
+    phi v2.2 := 55 in block 1
+    v6.1 = binary args(v3.2, v1.1) imm(<=)
+      -> v6.1 = 0
+    branch_if args(v6.1) imm(L1, 0)
+    -> branch 3 (L1) [taken]
+enter block 3 (L1)
+    return args(v2.2)
+    return 55
+exit function accumulate = 55
+      -> v8.1 = 55
+    v2.1 = assign args(v8.1)
+      -> v2.1 = 55
+    v9.1 = literal_string imm(sum 1..10: )
+      -> v9.1 = "sum 1..10: "
+    v10.1 = call args(v9.1) imm(print, 1)
+    builtin print "sum 1..10: "
+      -> v10.1 = 0
+    drop args(v10.1)
+    v11.1 = call args(v2.1) imm(println, 1)
+    builtin println "55"
+      -> v11.1 = 0
+    drop args(v11.1)
+    v12.1 = literal imm(3)
+      -> v12.1 = 3
+    v13.1 = binary args(v1.1, v12.1) imm(==)
+      -> v13.1 = 1
+    branch_if args(v13.1) imm(L2, 0)
+    -> branch 1 (block1) [skipped]
+enter block 1 (block1)
+    v14.1 = literal imm(55)
+      -> v14.1 = 55
+    v15.1 = binary args(v2.1, v14.1) imm(==)
+      -> v15.1 = 1
+    branch_if args(v15.1) imm(L4, 0)
+    -> branch 2 (block2) [skipped]
+enter block 2 (block2)
+    v16.1 = literal_string imm(SUCCESS: Assignment works correctly!)
+      -> v16.1 = "SUCCESS: Assignment works correctly!"
+    v17.1 = call args(v16.1) imm(println, 1)
+    builtin println "SUCCESS: Assignment works correctly!"
+      -> v17.1 = 0
+    drop args(v17.1)
+    v18.1 = literal imm(1)
+      -> v18.1 = 1
+    return args(v18.1)
+    return 1
+exit function main = 1

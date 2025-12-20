@@ -1,0 +1,88 @@
+module test::assignment
+
+func counter() -> int {
+  ^entry:
+    literal 0
+    store count
+    reference count
+    literal 1
+    binary +
+    store count
+    reference count
+    literal 1
+    binary +
+    store count
+    reference count
+    literal 1
+    binary +
+    store count
+    reference count
+    return
+}
+
+func accumulate(n: int) -> int {
+  ^entry:
+    literal 0
+    store sum
+    literal 1
+    store i
+  L0:
+    reference i
+    reference n
+    binary <=
+    branch_if L1 when 0
+    reference sum
+    reference i
+    binary +
+    store sum
+    reference i
+    literal 1
+    binary +
+    store i
+    branch L0
+  L1:
+    reference sum
+    return
+}
+
+func main() -> int {
+  ^entry:
+    call counter (0 args)
+    store c
+    literal_string "counter: "
+    call print (1 args)
+    drop
+    reference c
+    call println (1 args)
+    drop
+    literal 10
+    call accumulate (1 args)
+    store s
+    literal_string "sum 1..10: "
+    call print (1 args)
+    drop
+    reference s
+    call println (1 args)
+    drop
+    reference c
+    literal 3
+    binary ==
+    branch_if L2 when 0
+    reference s
+    literal 55
+    binary ==
+    branch_if L4 when 0
+    literal_string "SUCCESS: Assignment works correctly!"
+    call println (1 args)
+    drop
+    literal 1
+    return
+  L4:
+  L2:
+    literal_string "ERROR: Assignment failed!"
+    call println (1 args)
+    drop
+    literal 0
+    return
+}
+

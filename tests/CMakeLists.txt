@@ -8,8 +8,17 @@ add_executable(impulse-tests
 	test_control_flow.cpp
 	test_functions.cpp
 	test_runtime.cpp
+	test_acceptance.cpp
+	acceptance/harness.cpp
 )
 
-target_link_libraries(impulse-tests PRIVATE impulse-frontend impulse-ir impulse-runtime)
+target_link_libraries(impulse-tests PRIVATE 
+	impulse-frontend 
+	impulse-ir 
+	impulse-runtime
+	GTest::gtest
+	GTest::gtest_main
+)
 
-add_test(NAME impulse-tests COMMAND impulse-tests)
+include(GoogleTest)
+gtest_discover_tests(impulse-tests)

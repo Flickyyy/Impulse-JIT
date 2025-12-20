@@ -1,0 +1,6 @@
+Function accumulate
+  optimizations disabled - using JIT
+
+Function main
+  optimizations disabled - using JIT
+

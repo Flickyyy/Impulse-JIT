@@ -1,0 +1,41 @@
+Function main
+CFG
+  Block entry (#0..10)
+    Successors 2 1
+    Instructions
+      literal_string "enter value:"
+      call println (1 args)
+      drop
+      call read_line (0 args)
+      store input
+      reference input
+      call string_length (1 args)
+      literal 0
+      binary ==
+      branch_if L0 when 0
+  Block block1 (#10..14)
+    Successors 3
+    Predecessors 0
+    Instructions
+      literal_string "[no input]"
+      call println (1 args)
+      drop
+      branch L1
+  Block L0 (#14..20)
+    Successors 3
+    Predecessors 0
+    Instructions
+      L0:
+      literal_string "echo: "
+      reference input
+      call string_concat (2 args)
+      call println (1 args)
+      drop
+  Block L1 (#20..24)
+    Predecessors 1 2
+    Instructions
+      L1:
+      reference input
+      call string_length (1 args)
+      return
+

@@ -511,6 +511,31 @@ auto Parser::parseStatement() -> std::optional<Statement> {
         return stmt;
     }
 
+    // Check for assignment: identifier = expr;
+    if (check(TokenKind::Identifier)) {
+        const size_t savedPos = current_;
+        const Token identTok = advance();
+        if (check(TokenKind::Equal)) {
+            advance(); // consume '='
+            auto value = parseExpression();
+            if (!value) {
+                reportError(peek(), "Expected expression after '='");
+                return std::nullopt;
+            }
+            if (!consume(TokenKind::Semicolon, "Expected ';' after assignment")) {
+                return std::nullopt;
+            }
+            Statement stmt;
+            stmt.kind = Statement::Kind::Assign;
+            stmt.location = {identTok.line, identTok.column};
+            stmt.assign_target = makeIdentifier(identTok);
+            stmt.assign_value = std::move(value);
+            return stmt;
+        }
+        // Not an assignment, backtrack
+        current_ = savedPos;
+    }
+
     const size_t exprStart = current_;
     auto expression = parseExpression();
     if (!expression) {
@@ -811,10 +836,31 @@ auto Parser::parsePostfixExpression() -> std::unique_ptr<Expression> {
 }
 
 auto Parser::parsePrimaryExpression() -> std::unique_ptr<Expression> {
-    if (match(TokenKind::IntegerLiteral) || match(TokenKind::FloatLiteral) || match(TokenKind::BooleanLiteral)) {
+    if (match(TokenKind::StringLiteral)) {
         const Token literal = previous();
         auto expr = std::make_unique<Expression>();
         expr->kind = Expression::Kind::Literal;
+        expr->literal_kind = Expression::LiteralKind::String;
+        expr->location = SourceLocation{literal.line, literal.column};
+        expr->literal_value = literal.lexeme;
+        return expr;
+    }
+
+    if (match(TokenKind::IntegerLiteral) || match(TokenKind::FloatLiteral)) {
+        const Token literal = previous();
+        auto expr = std::make_unique<Expression>();
+        expr->kind = Expression::Kind::Literal;
+        expr->literal_kind = Expression::LiteralKind::Number;
+        expr->location = SourceLocation{literal.line, literal.column};
+        expr->literal_value = literal.lexeme;
+        return expr;
+    }
+
+    if (match(TokenKind::BooleanLiteral)) {
+        const Token literal = previous();
+        auto expr = std::make_unique<Expression>();
+        expr->kind = Expression::Kind::Literal;
+        expr->literal_kind = Expression::LiteralKind::Boolean;
         expr->location = SourceLocation{literal.line, literal.column};
         expr->literal_value = literal.lexeme;
         return expr;

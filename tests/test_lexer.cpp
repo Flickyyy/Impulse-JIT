@@ -1,5 +1,5 @@
+#include <gtest/gtest.h>
 #include <algorithm>
-#include <cassert>
 #include <string>
 #include <vector>
 
@@ -21,10 +21,12 @@ void expectKinds(const std::string& source, const std::vector<TokenKind>& expect
         actual.push_back(token.kind);
     }
 
-    assert(actual == expected && "Token kinds mismatch");
+    ASSERT_EQ(actual, expected) << "Token kinds mismatch";
 }
 
-void testModuleHeader() {
+}  // namespace
+
+TEST(LexerTest, ModuleHeader) {
     const std::string source = R"(module math::core;
 import std::io;
 )";
@@ -45,7 +47,7 @@ import std::io;
                 });
 }
 
-void testNumericLiterals() {
+TEST(LexerTest, NumericLiterals) {
     const std::string source = R"(let radius: float = 3.14;
 let tiny: float = 0.5e-2;
 let big: int = 1_000_000;
@@ -62,7 +64,7 @@ let big: int = 1_000_000;
                 });
 }
 
-void testStringsAndComments() {
+TEST(LexerTest, StringsAndComments) {
     const std::string source = R"(// single line ignored
 let message: string = "panic\n"; /* keep calm */
 panic(message);
@@ -83,20 +85,11 @@ panic(message);
     for (const auto& token : tokens) {
         actualKinds.push_back(token.kind);
     }
-    assert(actualKinds == expectedKinds && "Kinds mismatch with comments/strings");
+    ASSERT_EQ(actualKinds, expectedKinds) << "Kinds mismatch with comments/strings";
 
     const auto stringIt = std::find_if(tokens.begin(), tokens.end(), [](const Token& token) {
         return token.kind == TokenKind::StringLiteral;
     });
-    assert(stringIt != tokens.end());
-    assert(stringIt->lexeme == "panic\n");
-}
-
-}  // namespace
-
-auto runLexerTests() -> int {
-    testModuleHeader();
-    testNumericLiterals();
-    testStringsAndComments();
-    return 3;
+    ASSERT_NE(stringIt, tokens.end());
+    EXPECT_EQ(stringIt->lexeme, "panic\n");
 }

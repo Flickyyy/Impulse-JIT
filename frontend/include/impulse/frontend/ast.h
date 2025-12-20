@@ -52,7 +52,14 @@ struct Expression {
         Call,
     };
 
+    enum class LiteralKind : std::uint8_t {
+        Number,
+        Boolean,
+        String,
+    };
+
     Kind kind = Kind::Literal;
+    LiteralKind literal_kind = LiteralKind::Number;
     enum class BinaryOperator : std::uint8_t {
         Add,
         Subtract,
@@ -116,6 +123,7 @@ struct Statement {
         Break,
         Continue,
         ExprStmt,
+        Assign,  // x = expr;
     } kind = Kind::Return;
 
     SourceLocation location;
@@ -128,6 +136,10 @@ struct Statement {
     std::unique_ptr<Expression> expr;
     std::unique_ptr<Statement> for_initializer;
     std::unique_ptr<Statement> for_increment;
+    
+    // For Assign statement
+    Identifier assign_target;
+    std::unique_ptr<Expression> assign_value;
 };
 
 struct FunctionBody {

@@ -1,0 +1,244 @@
+Function fibonacci
+== Before optimisation ==
+Function fibonacci
+  Block #0 (entry) idom=0
+    Instructions
+      v2.1 = literal | 2
+      v3.1 = binary v1.1 v2.1 | <
+      branch_if v3.1 | L0 0
+    Successors 2 1
+    DomChildren 1 2
+  Block #1 (block1) idom=0
+    Instructions
+      return v1.1
+    Predecessors 0
+  Block #2 (L0) idom=0
+    Instructions
+      v4.1 = literal | 1
+      v5.1 = binary v1.1 v4.1 | -
+      v6.1 = call v5.1 | fibonacci 1
+      v7.1 = literal | 2
+      v8.1 = binary v1.1 v7.1 | -
+      v9.1 = call v8.1 | fibonacci 1
+      v10.1 = binary v6.1 v9.1 | +
+      return v10.1
+    Predecessors 0
+== After optimisation ==
+Function fibonacci
+  Block #0 (entry) idom=0
+    Instructions
+      v2.1 = literal | 2
+      v3.1 = binary v1.1 v2.1 | <
+      branch_if v3.1 | L0 0
+    Successors 2 1
+    DomChildren 1 2
+  Block #1 (block1) idom=0
+    Instructions
+      return v1.1
+    Predecessors 0
+  Block #2 (L0) idom=0
+    Instructions
+      v4.1 = literal | 1
+      v5.1 = binary v1.1 v4.1 | -
+      v6.1 = call v5.1 | fibonacci 1
+      v7.1 = literal | 2
+      v8.1 = binary v1.1 v7.1 | -
+      v9.1 = call v8.1 | fibonacci 1
+      v10.1 = binary v6.1 v9.1 | +
+      return v10.1
+    Predecessors 0
+
+Function emit_value
+== Before optimisation ==
+Function emit_value
+  Block #0 (entry) idom=0
+    Instructions
+      v3.1 = call v1.1 | print 1
+      drop v3.1
+      v4.1 = call v2.1 | println 1
+      drop v4.1
+      return v2.1
+== After optimisation ==
+Function emit_value
+  Block #0 (entry) idom=0
+    Instructions
+      v3.1 = call v1.1 | print 1
+      drop v3.1
+      v4.1 = call v2.1 | println 1
+      drop v4.1
+      return v2.1
+
+Function build_banner
+== Before optimisation ==
+Function build_banner
+  Block #0 (entry) idom=0
+    Instructions
+      v3.1 = literal_string | === 
+      v4.1 = literal_string | runtime
+      v5.1 = call v3.1 v4.1 | string_concat 2
+      v1.1 = assign v5.1
+      v6.1 = literal_string |  demo ===
+      v7.1 = call v1.1 v6.1 | string_concat 2
+      v2.1 = assign v7.1
+      v8.1 = call v2.1 | println 1
+      drop v8.1
+      v9.1 = literal_string | === runtime demo ===
+      v10.1 = call v2.1 v9.1 | string_equals 2
+      branch_if v10.1 | L2 0
+    Successors 2 1
+    DomChildren 1 2
+  Block #1 (block1) idom=0
+    Instructions
+      v11.1 = literal_string | banner matches reference
+      v12.1 = call v11.1 | println 1
+      drop v12.1
+    Successors 2
+    Predecessors 0
+    DomFrontier 2
+  Block #2 (L2) idom=0
+    Instructions
+      v13.1 = call v2.1 | string_length 1
+      return v13.1
+    Predecessors 0 1
+== After optimisation ==
+Function build_banner
+  Block #0 (entry) idom=0
+    Instructions
+      v3.1 = literal_string | === 
+      v4.1 = literal_string | runtime
+      v5.1 = call v3.1 v4.1 | string_concat 2
+      v1.1 = assign v5.1
+      v6.1 = literal_string |  demo ===
+      v7.1 = call v1.1 v6.1 | string_concat 2
+      v2.1 = assign v7.1
+      v8.1 = call v2.1 | println 1
+      drop v8.1
+      v9.1 = literal_string | === runtime demo ===
+      v10.1 = call v2.1 v9.1 | string_equals 2
+      branch_if v10.1 | L2 0
+    Successors 2 1
+    DomChildren 1 2
+  Block #1 (block1) idom=0
+    Instructions
+      v11.1 = literal_string | banner matches reference
+      v12.1 = call v11.1 | println 1
+      drop v12.1
+    Successors 2
+    Predecessors 0
+    DomFrontier 2
+  Block #2 (L2) idom=0
+    Instructions
+      v13.1 = call v2.1 | string_length 1
+      return v13.1
+    Predecessors 0 1
+
+Function main
+== Before optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v6.1 = call | build_banner 0
+      v1.1 = assign v6.1
+      v7.1 = literal | 6
+      v8.1 = call v7.1 | fibonacci 1
+      v2.1 = assign v8.1
+      v9.1 = literal_string | fib(6) = 
+      v10.1 = call v9.1 v2.1 | emit_value 2
+      drop v10.1
+      v11.1 = literal | 3
+      v12.1 = array_make v11.1
+      v3.1 = assign v12.1
+      v13.1 = literal | 0
+      v14.1 = literal_string | width: 
+      v15.1 = array_set v3.1 v13.1 v14.1
+      drop v15.1
+      v16.1 = literal | 1
+      v17.1 = array_set v3.1 v16.1 v1.1
+      drop v17.1
+      v18.1 = literal | 2
+      v19.1 = literal_string | , done
+
+      v20.1 = array_set v3.1 v18.1 v19.1
+      drop v20.1
+      v21.1 = literal | 0
+      v22.1 = array_get v3.1 v21.1
+      v23.1 = call v22.1 | print 1
+      drop v23.1
+      v24.1 = literal | 1
+      v25.1 = array_get v3.1 v24.1
+      v26.1 = call v25.1 | print 1
+      drop v26.1
+      v27.1 = literal | 2
+      v28.1 = array_get v3.1 v27.1
+      v29.1 = call v28.1 | print 1
+      drop v29.1
+      v30.1 = literal | 4
+      v31.1 = array_make v30.1
+      v4.1 = assign v31.1
+      v32.1 = call v4.1 v2.1 | array_fill 2
+      drop v32.1
+      v33.1 = literal | 3
+      v34.1 = array_set v4.1 v33.1 v1.1
+      drop v34.1
+      v35.1 = call v4.1 | array_sum 1
+      v5.1 = assign v35.1
+      v36.1 = literal_string | sum = 
+      v37.1 = call v36.1 v5.1 | emit_value 2
+      drop v37.1
+      v38.1 = literal | 0
+      return v38.1
+== After optimisation ==
+Function main
+  Block #0 (entry) idom=0
+    Instructions
+      v6.1 = call | build_banner 0
+      v1.1 = assign v6.1
+      v7.1 = literal | 6
+      v8.1 = call v7.1 | fibonacci 1
+      v2.1 = assign v8.1
+      v9.1 = literal_string | fib(6) = 
+      v10.1 = call v9.1 v2.1 | emit_value 2
+      drop v10.1
+      v11.1 = literal | 3
+      v12.1 = array_make v11.1
+      v3.1 = assign v12.1
+      v13.1 = literal | 0
+      v14.1 = literal_string | width: 
+      v15.1 = array_set v3.1 v13.1 v14.1
+      drop v15.1
+      v16.1 = literal | 1
+      v17.1 = array_set v3.1 v16.1 v1.1
+      drop v17.1
+      v18.1 = literal | 2
+      v19.1 = literal_string | , done
+
+      v20.1 = array_set v3.1 v18.1 v19.1
+      drop v20.1
+      v21.1 = literal | 0
+      v22.1 = array_get v3.1 v21.1
+      v23.1 = call v22.1 | print 1
+      drop v23.1
+      v24.1 = literal | 1
+      v25.1 = array_get v3.1 v24.1
+      v26.1 = call v25.1 | print 1
+      drop v26.1
+      v27.1 = literal | 2
+      v28.1 = array_get v3.1 v27.1
+      v29.1 = call v28.1 | print 1
+      drop v29.1
+      v30.1 = literal | 4
+      v31.1 = array_make v30.1
+      v4.1 = assign v31.1
+      v32.1 = call v4.1 v2.1 | array_fill 2
+      drop v32.1
+      v33.1 = literal | 3
+      v34.1 = array_set v4.1 v33.1 v1.1
+      drop v34.1
+      v35.1 = call v4.1 | array_sum 1
+      v5.1 = assign v35.1
+      v36.1 = literal_string | sum = 
+      v37.1 = call v36.1 v5.1 | emit_value 2
+      drop v37.1
+      v38.1 = literal | 0
+      return v38.1
+

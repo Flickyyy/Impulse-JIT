@@ -1,0 +1,628 @@
+Module
+  ModuleDecl
+    Identifier value="exam" loc=1:8
+    Identifier value="sorting" loc=1:14
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="swap" loc=8:6
+        Identifier value="int" loc=8:42
+        Parameters
+          Param[0]
+            Identifier value="arr" loc=8:11
+            Identifier value="array" loc=8:16
+          Param[1]
+            Identifier value="i" loc=8:23
+            Identifier value="int" loc=8:26
+          Param[2]
+            Identifier value="j" loc=8:31
+            Identifier value="int" loc=8:34
+        Body
+          Statement[0]
+            Kind Binding loc=9:5
+              Binding kind=let
+                Identifier value="temp" loc=9:9
+                Identifier value="int" loc=9:15
+                InitializerExpr
+                  Expression kind=Call loc=9:21
+                    Callee array_get
+                    Arguments
+                      Arg[0]
+                        Expression kind=Identifier loc=9:31
+                          Identifier value="arr" loc=9:31
+                      Arg[1]
+                        Expression kind=Identifier loc=9:36
+                          Identifier value="i" loc=9:36
+          Statement[1]
+            Kind ExprStmt loc=10:5
+              Expression
+                Expression kind=Call loc=10:5
+                  Callee array_set
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=10:15
+                        Identifier value="arr" loc=10:15
+                    Arg[1]
+                      Expression kind=Identifier loc=10:20
+                        Identifier value="i" loc=10:20
+                    Arg[2]
+                      Expression kind=Call loc=10:23
+                        Callee array_get
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=10:33
+                              Identifier value="arr" loc=10:33
+                          Arg[1]
+                            Expression kind=Identifier loc=10:38
+                              Identifier value="j" loc=10:38
+          Statement[2]
+            Kind ExprStmt loc=11:5
+              Expression
+                Expression kind=Call loc=11:5
+                  Callee array_set
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=11:15
+                        Identifier value="arr" loc=11:15
+                    Arg[1]
+                      Expression kind=Identifier loc=11:20
+                        Identifier value="j" loc=11:20
+                    Arg[2]
+                      Expression kind=Identifier loc=11:23
+                        Identifier value="temp" loc=11:23
+          Statement[3]
+            Kind Return loc=12:5
+              ReturnValue
+                Expression kind=Literal loc=12:12
+                  Literal kind=Number value="0"
+  Decl[1]
+    Declaration exported=false
+      Function
+        Identifier value="partition" loc=15:6
+        Identifier value="int" loc=15:52
+        Parameters
+          Param[0]
+            Identifier value="arr" loc=15:16
+            Identifier value="array" loc=15:21
+          Param[1]
+            Identifier value="low" loc=15:28
+            Identifier value="int" loc=15:33
+          Param[2]
+            Identifier value="high" loc=15:38
+            Identifier value="int" loc=15:44
+        Body
+          Statement[0]
+            Kind Binding loc=16:5
+              Binding kind=let
+                Identifier value="pivot" loc=16:9
+                Identifier value="int" loc=16:16
+                InitializerExpr
+                  Expression kind=Call loc=16:22
+                    Callee array_get
+                    Arguments
+                      Arg[0]
+                        Expression kind=Identifier loc=16:32
+                          Identifier value="arr" loc=16:32
+                      Arg[1]
+                        Expression kind=Identifier loc=16:37
+                          Identifier value="high" loc=16:37
+          Statement[1]
+            Kind Binding loc=17:5
+              Binding kind=let
+                Identifier value="i" loc=17:9
+                Identifier value="int" loc=17:12
+                InitializerExpr
+                  Expression kind=Binary loc=17:22
+                    Operator -
+                    Left
+                      Expression kind=Identifier loc=17:18
+                        Identifier value="low" loc=17:18
+                    Right
+                      Expression kind=Literal loc=17:24
+                        Literal kind=Number value="1"
+          Statement[2]
+            Kind Binding loc=18:5
+              Binding kind=let
+                Identifier value="j" loc=18:9
+                Identifier value="int" loc=18:12
+                InitializerExpr
+                  Expression kind=Identifier loc=18:18
+                    Identifier value="low" loc=18:18
+          Statement[3]
+            Kind While loc=20:5
+              Condition
+                Expression kind=Binary loc=20:13
+                  Operator <
+                  Left
+                    Expression kind=Identifier loc=20:11
+                      Identifier value="j" loc=20:11
+                  Right
+                    Expression kind=Identifier loc=20:15
+                      Identifier value="high" loc=20:15
+              Body
+                Statement[0]
+                  Kind If loc=21:9
+                    Condition
+                      Expression kind=Binary loc=21:30
+                        Operator <=
+                        Left
+                          Expression kind=Call loc=21:12
+                            Callee array_get
+                            Arguments
+                              Arg[0]
+                                Expression kind=Identifier loc=21:22
+                                  Identifier value="arr" loc=21:22
+                              Arg[1]
+                                Expression kind=Identifier loc=21:27
+                                  Identifier value="j" loc=21:27
+                        Right
+                          Expression kind=Identifier loc=21:33
+                            Identifier value="pivot" loc=21:33
+                    Then
+                      Statement[0]
+                        Kind Binding loc=22:13
+                          Binding kind=let
+                            Identifier value="i" loc=22:17
+                            Identifier value="int" loc=22:20
+                            InitializerExpr
+                              Expression kind=Binary loc=22:28
+                                Operator +
+                                Left
+                                  Expression kind=Identifier loc=22:26
+                                    Identifier value="i" loc=22:26
+                                Right
+                                  Expression kind=Literal loc=22:30
+                                    Literal kind=Number value="1"
+                      Statement[1]
+                        Kind ExprStmt loc=23:13
+                          Expression
+                            Expression kind=Call loc=23:13
+                              Callee swap
+                              Arguments
+                                Arg[0]
+                                  Expression kind=Identifier loc=23:18
+                                    Identifier value="arr" loc=23:18
+                                Arg[1]
+                                  Expression kind=Identifier loc=23:23
+                                    Identifier value="i" loc=23:23
+                                Arg[2]
+                                  Expression kind=Identifier loc=23:26
+                                    Identifier value="j" loc=23:26
+                    Else
+                Statement[1]
+                  Kind Binding loc=25:9
+                    Binding kind=let
+                      Identifier value="j" loc=25:13
+                      Identifier value="int" loc=25:16
+                      InitializerExpr
+                        Expression kind=Binary loc=25:24
+                          Operator +
+                          Left
+                            Expression kind=Identifier loc=25:22
+                              Identifier value="j" loc=25:22
+                          Right
+                            Expression kind=Literal loc=25:26
+                              Literal kind=Number value="1"
+          Statement[4]
+            Kind Binding loc=28:5
+              Binding kind=let
+                Identifier value="i" loc=28:9
+                Identifier value="int" loc=28:12
+                InitializerExpr
+                  Expression kind=Binary loc=28:20
+                    Operator +
+                    Left
+                      Expression kind=Identifier loc=28:18
+                        Identifier value="i" loc=28:18
+                    Right
+                      Expression kind=Literal loc=28:22
+                        Literal kind=Number value="1"
+          Statement[5]
+            Kind ExprStmt loc=29:5
+              Expression
+                Expression kind=Call loc=29:5
+                  Callee swap
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=29:10
+                        Identifier value="arr" loc=29:10
+                    Arg[1]
+                      Expression kind=Identifier loc=29:15
+                        Identifier value="i" loc=29:15
+                    Arg[2]
+                      Expression kind=Identifier loc=29:18
+                        Identifier value="high" loc=29:18
+          Statement[6]
+            Kind Return loc=30:5
+              ReturnValue
+                Expression kind=Identifier loc=30:12
+                  Identifier value="i" loc=30:12
+  Decl[2]
+    Declaration exported=false
+      Function
+        Identifier value="quicksort" loc=33:6
+        Identifier value="int" loc=33:52
+        Parameters
+          Param[0]
+            Identifier value="arr" loc=33:16
+            Identifier value="array" loc=33:21
+          Param[1]
+            Identifier value="low" loc=33:28
+            Identifier value="int" loc=33:33
+          Param[2]
+            Identifier value="high" loc=33:38
+            Identifier value="int" loc=33:44
+        Body
+          Statement[0]
+            Kind If loc=34:5
+              Condition
+                Expression kind=Binary loc=34:12
+                  Operator <
+                  Left
+                    Expression kind=Identifier loc=34:8
+                      Identifier value="low" loc=34:8
+                  Right
+                    Expression kind=Identifier loc=34:14
+                      Identifier value="high" loc=34:14
+              Then
+                Statement[0]
+                  Kind Binding loc=35:9
+                    Binding kind=let
+                      Identifier value="pi" loc=35:13
+                      Identifier value="int" loc=35:17
+                      InitializerExpr
+                        Expression kind=Call loc=35:23
+                          Callee partition
+                          Arguments
+                            Arg[0]
+                              Expression kind=Identifier loc=35:33
+                                Identifier value="arr" loc=35:33
+                            Arg[1]
+                              Expression kind=Identifier loc=35:38
+                                Identifier value="low" loc=35:38
+                            Arg[2]
+                              Expression kind=Identifier loc=35:43
+                                Identifier value="high" loc=35:43
+                Statement[1]
+                  Kind ExprStmt loc=36:9
+                    Expression
+                      Expression kind=Call loc=36:9
+                        Callee quicksort
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=36:19
+                              Identifier value="arr" loc=36:19
+                          Arg[1]
+                            Expression kind=Identifier loc=36:24
+                              Identifier value="low" loc=36:24
+                          Arg[2]
+                            Expression kind=Binary loc=36:32
+                              Operator -
+                              Left
+                                Expression kind=Identifier loc=36:29
+                                  Identifier value="pi" loc=36:29
+                              Right
+                                Expression kind=Literal loc=36:34
+                                  Literal kind=Number value="1"
+                Statement[2]
+                  Kind ExprStmt loc=37:9
+                    Expression
+                      Expression kind=Call loc=37:9
+                        Callee quicksort
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=37:19
+                              Identifier value="arr" loc=37:19
+                          Arg[1]
+                            Expression kind=Binary loc=37:27
+                              Operator +
+                              Left
+                                Expression kind=Identifier loc=37:24
+                                  Identifier value="pi" loc=37:24
+                              Right
+                                Expression kind=Literal loc=37:29
+                                  Literal kind=Number value="1"
+                          Arg[2]
+                            Expression kind=Identifier loc=37:32
+                              Identifier value="high" loc=37:32
+              Else
+          Statement[1]
+            Kind Return loc=39:5
+              ReturnValue
+                Expression kind=Literal loc=39:12
+                  Literal kind=Number value="0"
+  Decl[3]
+    Declaration exported=false
+      Function
+        Identifier value="is_sorted" loc=42:6
+        Identifier value="int" loc=42:31
+        Parameters
+          Param[0]
+            Identifier value="arr" loc=42:16
+            Identifier value="array" loc=42:21
+        Body
+          Statement[0]
+            Kind Binding loc=43:5
+              Binding kind=let
+                Identifier value="n" loc=43:9
+                Identifier value="int" loc=43:12
+                InitializerExpr
+                  Expression kind=Call loc=43:18
+                    Callee array_length
+                    Arguments
+                      Arg[0]
+                        Expression kind=Identifier loc=43:31
+                          Identifier value="arr" loc=43:31
+          Statement[1]
+            Kind Binding loc=44:5
+              Binding kind=let
+                Identifier value="i" loc=44:9
+                Identifier value="int" loc=44:12
+                InitializerExpr
+                  Expression kind=Literal loc=44:18
+                    Literal kind=Number value="0"
+          Statement[2]
+            Kind While loc=45:5
+              Condition
+                Expression kind=Binary loc=45:13
+                  Operator <
+                  Left
+                    Expression kind=Identifier loc=45:11
+                      Identifier value="i" loc=45:11
+                  Right
+                    Expression kind=Binary loc=45:17
+                      Operator -
+                      Left
+                        Expression kind=Identifier loc=45:15
+                          Identifier value="n" loc=45:15
+                      Right
+                        Expression kind=Literal loc=45:19
+                          Literal kind=Number value="1"
+              Body
+                Statement[0]
+                  Kind If loc=46:9
+                    Condition
+                      Expression kind=Binary loc=46:30
+                        Operator >
+                        Left
+                          Expression kind=Call loc=46:12
+                            Callee array_get
+                            Arguments
+                              Arg[0]
+                                Expression kind=Identifier loc=46:22
+                                  Identifier value="arr" loc=46:22
+                              Arg[1]
+                                Expression kind=Identifier loc=46:27
+                                  Identifier value="i" loc=46:27
+                        Right
+                          Expression kind=Call loc=46:32
+                            Callee array_get
+                            Arguments
+                              Arg[0]
+                                Expression kind=Identifier loc=46:42
+                                  Identifier value="arr" loc=46:42
+                              Arg[1]
+                                Expression kind=Binary loc=46:49
+                                  Operator +
+                                  Left
+                                    Expression kind=Identifier loc=46:47
+                                      Identifier value="i" loc=46:47
+                                  Right
+                                    Expression kind=Literal loc=46:51
+                                      Literal kind=Number value="1"
+                    Then
+                      Statement[0]
+                        Kind Return loc=47:13
+                          ReturnValue
+                            Expression kind=Literal loc=47:20
+                              Literal kind=Number value="0"
+                    Else
+                Statement[1]
+                  Kind Binding loc=49:9
+                    Binding kind=let
+                      Identifier value="i" loc=49:13
+                      Identifier value="int" loc=49:16
+                      InitializerExpr
+                        Expression kind=Binary loc=49:24
+                          Operator +
+                          Left
+                            Expression kind=Identifier loc=49:22
+                              Identifier value="i" loc=49:22
+                          Right
+                            Expression kind=Literal loc=49:26
+                              Literal kind=Number value="1"
+          Statement[3]
+            Kind Return loc=51:5
+              ReturnValue
+                Expression kind=Literal loc=51:12
+                  Literal kind=Number value="1"
+  Decl[4]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=54:6
+        Identifier value="int" loc=54:16
+        Parameters
+        Body
+          Statement[0]
+            Kind Binding loc=56:5
+              Binding kind=let
+                Identifier value="arr" loc=56:9
+                Identifier value="array" loc=56:14
+                InitializerExpr
+                  Expression kind=Call loc=56:22
+                    Callee array
+                    Arguments
+                      Arg[0]
+                        Expression kind=Literal loc=56:28
+                          Literal kind=Number value="20"
+          Statement[1]
+            Kind Binding loc=59:5
+              Binding kind=let
+                Identifier value="i" loc=59:9
+                Identifier value="int" loc=59:12
+                InitializerExpr
+                  Expression kind=Literal loc=59:18
+                    Literal kind=Number value="0"
+          Statement[2]
+            Kind While loc=60:5
+              Condition
+                Expression kind=Binary loc=60:13
+                  Operator <
+                  Left
+                    Expression kind=Identifier loc=60:11
+                      Identifier value="i" loc=60:11
+                  Right
+                    Expression kind=Literal loc=60:15
+                      Literal kind=Number value="20"
+              Body
+                Statement[0]
+                  Kind ExprStmt loc=61:9
+                    Expression
+                      Expression kind=Call loc=61:9
+                        Callee array_set
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=61:19
+                              Identifier value="arr" loc=61:19
+                          Arg[1]
+                            Expression kind=Identifier loc=61:24
+                              Identifier value="i" loc=61:24
+                          Arg[2]
+                            Expression kind=Binary loc=61:30
+                              Operator -
+                              Left
+                                Expression kind=Literal loc=61:27
+                                  Literal kind=Number value="20"
+                              Right
+                                Expression kind=Identifier loc=61:32
+                                  Identifier value="i" loc=61:32
+                Statement[1]
+                  Kind Binding loc=62:9
+                    Binding kind=let
+                      Identifier value="i" loc=62:13
+                      Identifier value="int" loc=62:16
+                      InitializerExpr
+                        Expression kind=Binary loc=62:24
+                          Operator +
+                          Left
+                            Expression kind=Identifier loc=62:22
+                              Identifier value="i" loc=62:22
+                          Right
+                            Expression kind=Literal loc=62:26
+                              Literal kind=Number value="1"
+          Statement[3]
+            Kind ExprStmt loc=65:5
+              Expression
+                Expression kind=Call loc=65:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=65:13
+                        Literal kind=String value="Before sorting:"
+          Statement[4]
+            Kind ExprStmt loc=66:5
+              Expression
+                Expression kind=Call loc=66:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Call loc=66:13
+                        Callee array_join
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=66:24
+                              Identifier value="arr" loc=66:24
+                          Arg[1]
+                            Expression kind=Literal loc=66:29
+                              Literal kind=String value=", "
+          Statement[5]
+            Kind ExprStmt loc=69:5
+              Expression
+                Expression kind=Call loc=69:5
+                  Callee quicksort
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=69:15
+                        Identifier value="arr" loc=69:15
+                    Arg[1]
+                      Expression kind=Literal loc=69:20
+                        Literal kind=Number value="0"
+                    Arg[2]
+                      Expression kind=Literal loc=69:23
+                        Literal kind=Number value="19"
+          Statement[6]
+            Kind ExprStmt loc=71:5
+              Expression
+                Expression kind=Call loc=71:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=71:13
+                        Literal kind=String value="After sorting:"
+          Statement[7]
+            Kind ExprStmt loc=72:5
+              Expression
+                Expression kind=Call loc=72:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Call loc=72:13
+                        Callee array_join
+                        Arguments
+                          Arg[0]
+                            Expression kind=Identifier loc=72:24
+                              Identifier value="arr" loc=72:24
+                          Arg[1]
+                            Expression kind=Literal loc=72:29
+                              Literal kind=String value=", "
+          Statement[8]
+            Kind Binding loc=75:5
+              Binding kind=let
+                Identifier value="sorted" loc=75:9
+                Identifier value="int" loc=75:17
+                InitializerExpr
+                  Expression kind=Call loc=75:23
+                    Callee is_sorted
+                    Arguments
+                      Arg[0]
+                        Expression kind=Identifier loc=75:33
+                          Identifier value="arr" loc=75:33
+          Statement[9]
+            Kind If loc=76:5
+              Condition
+                Expression kind=Binary loc=76:15
+                  Operator ==
+                  Left
+                    Expression kind=Identifier loc=76:8
+                      Identifier value="sorted" loc=76:8
+                  Right
+                    Expression kind=Literal loc=76:18
+                      Literal kind=Number value="1"
+              Then
+                Statement[0]
+                  Kind ExprStmt loc=77:9
+                    Expression
+                      Expression kind=Call loc=77:9
+                        Callee println
+                        Arguments
+                          Arg[0]
+                            Expression kind=Literal loc=77:17
+                              Literal kind=String value="Array is correctly sorted!"
+              Else
+                Statement[0]
+                  Kind ExprStmt loc=79:9
+                    Expression
+                      Expression kind=Call loc=79:9
+                        Callee println
+                        Arguments
+                          Arg[0]
+                            Expression kind=Literal loc=79:17
+                              Literal kind=String value="ERROR: Array is not sorted!"
+          Statement[10]
+            Kind Return loc=82:5
+              ReturnValue
+                Expression kind=Identifier loc=82:12
+                  Identifier value="sorted" loc=82:12

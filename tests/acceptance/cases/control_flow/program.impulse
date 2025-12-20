@@ -1,0 +1,19 @@
+module tests::control_flow;
+
+func accumulate(limit: int) -> int {
+    let total: int = 0;
+    let i: int = 0;
+    while i < limit {
+        if i % 2 == 0 {
+            let total: int = total + i;
+        } else {
+            let total: int = total - i;
+        }
+        let i: int = i + 1;
+    }
+    return total;
+}
+
+func main() -> int {
+    return accumulate(7);
+}

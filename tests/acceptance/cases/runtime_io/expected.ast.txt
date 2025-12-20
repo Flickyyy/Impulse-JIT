@@ -1,0 +1,82 @@
+Module
+  ModuleDecl
+    Identifier value="tests" loc=1:8
+    Identifier value="runtime_io" loc=1:15
+Imports
+  <none>
+Declarations
+  Decl[0]
+    Declaration exported=false
+      Function
+        Identifier value="main" loc=3:6
+        Identifier value="int" loc=3:16
+        Parameters
+        Body
+          Statement[0]
+            Kind ExprStmt loc=4:5
+              Expression
+                Expression kind=Call loc=4:5
+                  Callee println
+                  Arguments
+                    Arg[0]
+                      Expression kind=Literal loc=4:13
+                        Literal kind=String value="enter value:"
+          Statement[1]
+            Kind Binding loc=5:5
+              Binding kind=let
+                Identifier value="input" loc=5:9
+                Identifier value="string" loc=5:16
+                InitializerExpr
+                  Expression kind=Call loc=5:25
+                    Callee read_line
+          Statement[2]
+            Kind If loc=6:5
+              Condition
+                Expression kind=Binary loc=6:29
+                  Operator ==
+                  Left
+                    Expression kind=Call loc=6:8
+                      Callee string_length
+                      Arguments
+                        Arg[0]
+                          Expression kind=Identifier loc=6:22
+                            Identifier value="input" loc=6:22
+                  Right
+                    Expression kind=Literal loc=6:32
+                      Literal kind=Number value="0"
+              Then
+                Statement[0]
+                  Kind ExprStmt loc=7:9
+                    Expression
+                      Expression kind=Call loc=7:9
+                        Callee println
+                        Arguments
+                          Arg[0]
+                            Expression kind=Literal loc=7:17
+                              Literal kind=String value="[no input]"
+              Else
+                Statement[0]
+                  Kind ExprStmt loc=9:9
+                    Expression
+                      Expression kind=Call loc=9:9
+                        Callee println
+                        Arguments
+                          Arg[0]
+                            Expression kind=Call loc=9:17
+                              Callee string_concat
+                              Arguments
+                                Arg[0]
+                                  Expression kind=Literal loc=9:31
+                                    Literal kind=String value="echo: "
+                                Arg[1]
+                                  Expression kind=Identifier loc=9:41
+                                    Identifier value="input" loc=9:41
+          Statement[3]
+            Kind Return loc=11:5
+              ReturnValue
+                Expression kind=Call loc=11:12
+                  Callee string_length
+                  Arguments
+                    Arg[0]
+                      Expression kind=Identifier loc=11:26
+                        Identifier value="input" loc=11:26

@@ -1,0 +1,7 @@
+semantic diagnostics (6)
+  [4:26] Cannot assign expression of type 'int' to binding 'source' of type 'string'
+  [5:39] string_trim expects a string but got 'int'
+  [6:25] Builtin 'string_slice' expects 3 arguments but received 2
+  [7:16] array_push expects an array but got 'int'
+  [8:16] array_join expects an array but got 'string'
+  [9:5] Builtin 'read_line' expects 0 arguments but received 1

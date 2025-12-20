@@ -1,0 +1,60 @@
+Function join_words
+CFG
+  Block entry (#0..48)
+    Instructions
+      literal 0
+      make_array
+      store words
+      reference words
+      literal_string "Impulse"
+      call array_push (2 args)
+      drop
+      reference words
+      literal_string "JIT"
+      call array_push (2 args)
+      drop
+      reference words
+      literal_string "rocks"
+      call array_push (2 args)
+      drop
+      reference words
+      literal_string " "
+      call array_join (2 args)
+      store sentence
+      reference sentence
+      call println (1 args)
+      drop
+      reference words
+      call array_pop (1 args)
+      store popped
+      literal_string "popped: "
+      reference popped
+      call string_concat (2 args)
+      call println (1 args)
+      drop
+      reference words
+      literal_string "-"
+      call array_join (2 args)
+      call println (1 args)
+      drop
+      reference words
+      reference popped
+      call string_upper (1 args)
+      call array_push (2 args)
+      drop
+      reference words
+      literal_string "+"
+      call array_join (2 args)
+      call println (1 args)
+      drop
+      reference sentence
+      call string_length (1 args)
+      return
+
+Function main
+CFG
+  Block entry (#0..2)
+    Instructions
+      call join_words (0 args)
+      return
+

@@ -1,0 +1,11 @@
+module tests::diagnostics_builtins;
+
+func main() -> int {
+    let source: string = 42;
+    let trimmed: string = string_trim(123);
+    let slice: string = string_slice("abc", 0);
+    array_push(7, "value");
+    array_join("not array", ",");
+    read_line(1);
+    return 0;
+}

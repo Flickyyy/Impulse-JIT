@@ -1,20 +1,30 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <optional>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <utility>
 
+#include "impulse/frontend/dump.h"
 #include "impulse/frontend/lowering.h"
 #include "impulse/frontend/parser.h"
 #include "impulse/frontend/semantic.h"
+#include "impulse/ir/analysis.h"
+#include "impulse/ir/dump.h"
 #include "impulse/ir/interpreter.h"
 #include "impulse/runtime/runtime.h"
 
 namespace {
+
+struct DumpOption {
+    bool enabled = false;
+    std::optional<std::string> path;
+};
 
 struct Options {
     std::string filePath;
@@ -24,10 +34,71 @@ struct Options {
     bool run = false;
     std::optional<std::string> evalBinding;
     std::optional<std::string> entryBinding;
+    DumpOption dumpTokens;
+    DumpOption dumpAst;
+    DumpOption dumpIr;
+    DumpOption dumpCfg;
+    DumpOption dumpSsa;
+    DumpOption dumpOptimisationLog;
+    DumpOption traceRuntime;
+    bool useProcessStdin = false;
+    std::optional<std::string> stdinFile;
+    std::optional<std::string> stdinText;
 };
 
 void printUsage() {
-    std::cout << "Usage: impulse-cpp --file <path> [--emit-ir] [--check] [--evaluate] [--eval-binding <name>] [--run] [--entry-binding <name>]\n";
+    std::cout << "Usage: impulse-cpp --file <path> [options]\n"
+                 "\n"
+                 "General options:\n"
+                 "  --emit-ir                         Emit textual IR and exit\n"
+                 "  --check                           Run semantic checks only\n"
+                 "  --evaluate [--eval-binding <name>] Evaluate constant bindings\n"
+                 "  --run [--entry-binding <name>]    Execute the program\n"
+                 "\n"
+                 "Introspection options (optional path argument writes to file):\n"
+                 "  --dump-tokens [path]              Dump lexer tokens\n"
+                 "  --dump-ast [path]                 Dump parsed AST\n"
+                 "  --dump-ir [path]                  Dump lowered IR\n"
+                 "  --dump-cfg [path]                 Dump CFG per function\n"
+                 "  --dump-ssa [path]                 Dump SSA before/after optimisation\n"
+                 "  --dump-optimisation-log [path]    Dump optimiser pass summary\n"
+                 "  --trace-runtime [path]            Dump SSA execution trace during run\n"
+                 "\n"
+                 "Runtime input options:\n"
+                 "  --stdin                           Read program input from process stdin\n"
+                 "  --stdin-file <path>               Read program input from a file\n"
+                 "  --stdin-text <value>              Provide inline program input\n";
+}
+
+auto parseOptionalOutputPath(int argc, char** argv, int& index) -> std::optional<std::string> {
+    if (index + 1 >= argc) {
+        return std::nullopt;
+    }
+    const std::string next_value{argv[index + 1]};
+    if (!next_value.empty() && next_value.front() != '-') {
+        ++index;
+        return std::optional<std::string>{next_value};
+    }
+    return std::nullopt;
+}
+
+auto write_dump(const DumpOption& option, const std::string& label,
+                const std::function<void(std::ostream&)>& writer) -> bool {
+    if (!option.enabled) {
+        return true;
+    }
+
+    if (option.path.has_value()) {
+        std::ofstream file(*option.path);
+        if (!file) {
+            std::cerr << "Failed to open '" << *option.path << "' for " << label << " output\n";
+            return false;
+        }
+        writer(file);
+    } else {
+        writer(std::cout);
+    }
+    return true;
 }
 
 auto parseArgs(int argc, char** argv) -> std::optional<Options> {
@@ -44,6 +115,42 @@ auto parseArgs(int argc, char** argv) -> std::optional<Options> {
         }
         if (arg == "--emit-ir") {
             opts.emitIR = true;
+            continue;
+        }
+        if (arg == "--dump-tokens") {
+            opts.dumpTokens.enabled = true;
+            opts.dumpTokens.path = parseOptionalOutputPath(argc, argv, i);
+            continue;
+        }
+        if (arg == "--dump-ast") {
+            opts.dumpAst.enabled = true;
+            opts.dumpAst.path = parseOptionalOutputPath(argc, argv, i);
+            continue;
+        }
+        if (arg == "--dump-ir") {
+            opts.dumpIr.enabled = true;
+            opts.dumpIr.path = parseOptionalOutputPath(argc, argv, i);
+            continue;
+        }
+        if (arg == "--dump-cfg") {
+            opts.dumpCfg.enabled = true;
+            opts.dumpCfg.path = parseOptionalOutputPath(argc, argv, i);
+            continue;
+        }
+        if (arg == "--dump-ssa") {
+            opts.dumpSsa.enabled = true;
+            opts.dumpSsa.path = parseOptionalOutputPath(argc, argv, i);
+            continue;
+        }
+        if (arg == "--dump-optimisation-log") {
+            opts.dumpOptimisationLog.enabled = true;
+            opts.dumpOptimisationLog.path = parseOptionalOutputPath(argc, argv, i);
+            continue;
+        }
+        if (arg == "--trace-runtime") {
+            opts.traceRuntime.enabled = true;
+            opts.traceRuntime.path = parseOptionalOutputPath(argc, argv, i);
+            opts.run = true;
             continue;
         }
         if (arg == "--check") {
@@ -76,6 +183,26 @@ auto parseArgs(int argc, char** argv) -> std::optional<Options> {
             opts.run = true;
             continue;
         }
+        if (arg == "--stdin") {
+            opts.useProcessStdin = true;
+            continue;
+        }
+        if (arg == "--stdin-file") {
+            if (i + 1 >= argc) {
+                std::cerr << "Missing value for --stdin-file\n";
+                return std::nullopt;
+            }
+            opts.stdinFile = argv[++i];
+            continue;
+        }
+        if (arg == "--stdin-text") {
+            if (i + 1 >= argc) {
+                std::cerr << "Missing value for --stdin-text\n";
+                return std::nullopt;
+            }
+            opts.stdinText = argv[++i];
+            continue;
+        }
         if (arg == "--help" || arg == "-h") {
             printUsage();
             return std::nullopt;
@@ -86,6 +213,13 @@ auto parseArgs(int argc, char** argv) -> std::optional<Options> {
 
     if (opts.filePath.empty()) {
         std::cerr << "--file is required\n";
+        return std::nullopt;
+    }
+
+    const int stdinSources = static_cast<int>(opts.useProcessStdin) + (opts.stdinFile.has_value() ? 1 : 0) +
+                             (opts.stdinText.has_value() ? 1 : 0);
+    if (stdinSources > 1) {
+        std::cerr << "Specify at most one of --stdin, --stdin-file, or --stdin-text\n";
         return std::nullopt;
     }
 
@@ -150,12 +284,27 @@ auto main(int argc, char** argv) -> int {
         return 1;
     }
 
+    impulse::frontend::Lexer dumpLexer(*source);
+    const auto tokens = dumpLexer.tokenize();
+
+    if (!write_dump(options->dumpTokens, "token", [&](std::ostream& out) {
+            impulse::frontend::dump_tokens(tokens, out);
+        })) {
+        return 1;
+    }
+
     impulse::frontend::Parser parser(*source);
     auto parseResult = parser.parseModule();
     if (!parseResult.success) {
         std::cerr << "Parse failed with " << parseResult.diagnostics.size() << " diagnostics:\n";
         printDiagnostics(parseResult.diagnostics);
         return 2;
+    }
+
+    if (!write_dump(options->dumpAst, "AST", [&](std::ostream& out) {
+            impulse::frontend::dump_ast(parseResult.module, out);
+        })) {
+        return 1;
     }
 
     if (options->emitIR) {
@@ -181,6 +330,57 @@ auto main(int argc, char** argv) -> int {
         }
         return *loweredModule;
     };
+
+    std::optional<std::vector<impulse::ir::FunctionAnalysis>> analysedFunctions;
+    auto ensureAnalysedFunctions = [&]() -> const std::vector<impulse::ir::FunctionAnalysis>& {
+        if (!analysedFunctions.has_value()) {
+            analysedFunctions = impulse::ir::analyse_module(ensureLoweredModule());
+        }
+        return *analysedFunctions;
+    };
+
+    if (!write_dump(options->dumpIr, "IR", [&](std::ostream& out) {
+            impulse::ir::dump_ir(ensureLoweredModule(), out);
+        })) {
+        return 1;
+    }
+
+    if (!write_dump(options->dumpCfg, "CFG", [&](std::ostream& out) {
+            const auto& analyses = ensureAnalysedFunctions();
+            for (const auto& entry : analyses) {
+                out << "Function " << entry.name << '\n';
+                impulse::ir::dump_cfg(entry.cfg, out);
+                out << '\n';
+            }
+        })) {
+        return 1;
+    }
+
+    if (!write_dump(options->dumpSsa, "SSA", [&](std::ostream& out) {
+            const auto& analyses = ensureAnalysedFunctions();
+            for (const auto& entry : analyses) {
+                out << "Function " << entry.name << "\n== Before optimisation ==\n";
+                impulse::ir::dump_ssa(entry.ssa_before, out, true);
+                out << "== After optimisation ==\n";
+                impulse::ir::dump_ssa(entry.ssa_after, out, true);
+                out << '\n';
+            }
+        })) {
+        return 1;
+    }
+
+    if (!write_dump(options->dumpOptimisationLog, "optimisation log", [&](std::ostream& out) {
+            const auto& analyses = ensureAnalysedFunctions();
+            for (const auto& entry : analyses) {
+                out << "Function " << entry.name << '\n';
+                for (const auto& line : entry.optimisation_log) {
+                    out << "  " << line << '\n';
+                }
+                out << '\n';
+            }
+        })) {
+        return 1;
+    }
 
     std::unordered_map<std::string, double> environment;
     std::vector<std::pair<std::string, impulse::ir::BindingEvalResult>> evaluations;
@@ -224,6 +424,43 @@ auto main(int argc, char** argv) -> int {
         bool triedRuntime = false;
         if (loweredModule.has_value()) {
             impulse::runtime::Vm vm;
+
+            std::ifstream stdinFileStream;
+            std::istringstream stdinTextStream;
+            if (options->stdinText.has_value()) {
+                stdinTextStream.str(*options->stdinText);
+                stdinTextStream.clear();
+                vm.set_input_stream(&stdinTextStream);
+            } else if (options->stdinFile.has_value()) {
+                stdinFileStream.open(options->stdinFile->c_str(), std::ios::in);
+                if (!stdinFileStream.is_open()) {
+                    std::cerr << "Failed to open stdin file '" << *options->stdinFile << "'\n";
+                    return 2;
+                }
+                vm.set_input_stream(&stdinFileStream);
+            } else if (options->useProcessStdin) {
+                vm.set_input_stream(&std::cin);
+            }
+
+            std::ofstream traceFile;
+            std::ostringstream traceBuffer;
+            std::ostream* traceStream = nullptr;
+            bool traceToBuffer = false;
+
+            if (options->traceRuntime.enabled) {
+                if (options->traceRuntime.path.has_value()) {
+                    traceFile.open(options->traceRuntime.path->c_str(), std::ios::out | std::ios::trunc);
+                    if (!traceFile.is_open()) {
+                        std::cerr << "Failed to open runtime trace output '" << *options->traceRuntime.path << "'\n";
+                        return 2;
+                    }
+                    traceStream = &traceFile;
+                } else {
+                    traceStream = &traceBuffer;
+                    traceToBuffer = true;
+                }
+            }
+
             const auto loadResult = vm.load(*loweredModule);
             if (!loadResult.success) {
                 for (const auto& diag : loadResult.diagnostics) {
@@ -231,9 +468,33 @@ auto main(int argc, char** argv) -> int {
                 }
             } else {
                 triedRuntime = true;
+                if (traceStream != nullptr) {
+                    vm.set_trace_stream(traceStream);
+                }
                 const auto moduleName = joinModulePath(loweredModule->path);
                 const auto vmResult = vm.run(moduleName, entry);
+                if (traceStream != nullptr) {
+                    vm.set_trace_stream(nullptr);
+                    if (traceToBuffer) {
+                        const std::string output = traceBuffer.str();
+                        if (!output.empty()) {
+                            std::cout << output;
+                            if (output.back() != '\n') {
+                                std::cout << '\n';
+                            }
+                        }
+                    } else {
+                        traceFile.flush();
+                    }
+                }
                 if (vmResult.status == impulse::runtime::VmStatus::Success && vmResult.has_value) {
+                    // Print program output (from println/print calls)
+                    if (!vmResult.message.empty()) {
+                        std::cout << vmResult.message;
+                        if (vmResult.message.back() != '\n') {
+                            std::cout << '\n';
+                        }
+                    }
                     const int exitCode = static_cast<int>(std::llround(vmResult.value));
                     std::cout << "Program exited with " << exitCode << '\n';
                     return evalSuccess ? 0 : 2;
@@ -244,9 +505,11 @@ auto main(int argc, char** argv) -> int {
                         reason = "runtime execution failed";
                     }
                     std::cerr << "Entry function '" << entry << "' failed: " << reason << '\n';
+                    vm.set_input_stream(nullptr);
                     return 2;
                 }
             }
+            vm.set_input_stream(nullptr);
         }
 
         const auto it = std::find_if(evaluations.begin(), evaluations.end(), [&](const auto& pair) {

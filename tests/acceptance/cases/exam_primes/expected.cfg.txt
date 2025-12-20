@@ -1,0 +1,176 @@
+Function is_prime
+CFG
+  Block entry (#0..4)
+    Successors 2 1
+    Instructions
+      reference n
+      literal 2
+      binary <
+      branch_if L0 when 0
+  Block block1 (#4..6)
+    Predecessors 0
+    Instructions
+      literal 0
+      return
+  Block L0 (#6..11)
+    Successors 4 3
+    Predecessors 0
+    Instructions
+      L0:
+      reference n
+      literal 2
+      binary ==
+      branch_if L2 when 0
+  Block block3 (#11..13)
+    Predecessors 2
+    Instructions
+      literal 1
+      return
+  Block L2 (#13..22)
+    Successors 6 5
+    Predecessors 2
+    Instructions
+      L2:
+      reference n
+      literal 2
+      binary %
+      store remainder
+      reference remainder
+      literal 0
+      binary ==
+      branch_if L4 when 0
+  Block block5 (#22..24)
+    Predecessors 4
+    Instructions
+      literal 0
+      return
+  Block L4 (#24..27)
+    Successors 7
+    Predecessors 4
+    Instructions
+      L4:
+      literal 3
+      store i
+  Block L6 (#27..34)
+    Successors 11 8
+    Predecessors 6 10
+    Instructions
+      L6:
+      reference i
+      reference i
+      binary *
+      reference n
+      binary <=
+      branch_if L7 when 0
+  Block block8 (#34..42)
+    Successors 10 9
+    Predecessors 7
+    Instructions
+      reference n
+      reference i
+      binary %
+      store remainder
+      reference remainder
+      literal 0
+      binary ==
+      branch_if L8 when 0
+  Block block9 (#42..44)
+    Predecessors 8
+    Instructions
+      literal 0
+      return
+  Block L8 (#44..50)
+    Successors 7
+    Predecessors 8
+    Instructions
+      L8:
+      reference i
+      literal 2
+      binary +
+      store i
+      branch L6
+  Block L7 (#50..53)
+    Predecessors 7
+    Instructions
+      L7:
+      literal 1
+      return
+
+Function count_primes
+CFG
+  Block entry (#0..4)
+    Successors 1
+    Instructions
+      literal 0
+      store count
+      literal 2
+      store n
+  Block L10 (#4..9)
+    Successors 5 2
+    Predecessors 0 4
+    Instructions
+      L10:
+      reference n
+      reference limit
+      binary <=
+      branch_if L11 when 0
+  Block block2 (#9..16)
+    Successors 4 3
+    Predecessors 1
+    Instructions
+      reference n
+      call is_prime (1 args)
+      store prime
+      reference prime
+      literal 1
+      binary ==
+      branch_if L12 when 0
+  Block block3 (#16..20)
+    Successors 4
+    Predecessors 2
+    Instructions
+      reference count
+      literal 1
+      binary +
+      store count
+  Block L12 (#20..26)
+    Successors 1
+    Predecessors 2 3
+    Instructions
+      L12:
+      reference n
+      literal 1
+      binary +
+      store n
+      branch L10
+  Block L11 (#26..29)
+    Predecessors 1
+    Instructions
+      L11:
+      reference count
+      return
+
+Function main
+CFG
+  Block entry (#0..19)
+    Instructions
+      literal 100
+      store limit
+      reference limit
+      call count_primes (1 args)
+      store count
+      literal_string "Number of primes up to "
+      call print (1 args)
+      drop
+      reference limit
+      call print (1 args)
+      drop
+      literal_string ": "
+      call print (1 args)
+      drop
+      reference count
+      call println (1 args)
+      drop
+      reference count
+      return
+

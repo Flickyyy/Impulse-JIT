@@ -1,0 +1,209 @@
+module exam::sorting
+
+func swap(arr: array, i: int, j: int) -> int {
+  ^entry:
+    reference arr
+    reference i
+    array_get
+    store temp
+    reference arr
+    reference i
+    reference arr
+    reference j
+    array_get
+    array_set
+    drop
+    reference arr
+    reference j
+    reference temp
+    array_set
+    drop
+    literal 0
+    return
+}
+
+func partition(arr: array, low: int, high: int) -> int {
+  ^entry:
+    reference arr
+    reference high
+    array_get
+    store pivot
+    reference low
+    literal 1
+    binary -
+    store i
+    reference low
+    store j
+  L0:
+    reference j
+    reference high
+    binary <
+    branch_if L1 when 0
+    reference arr
+    reference j
+    array_get
+    reference pivot
+    binary <=
+    branch_if L2 when 0
+    reference i
+    literal 1
+    binary +
+    store i
+    reference arr
+    reference i
+    reference j
+    call swap (3 args)
+    drop
+  L2:
+    reference j
+    literal 1
+    binary +
+    store j
+    branch L0
+  L1:
+    reference i
+    literal 1
+    binary +
+    store i
+    reference arr
+    reference i
+    reference high
+    call swap (3 args)
+    drop
+    reference i
+    return
+}
+
+func quicksort(arr: array, low: int, high: int) -> int {
+  ^entry:
+    reference low
+    reference high
+    binary <
+    branch_if L4 when 0
+    reference arr
+    reference low
+    reference high
+    call partition (3 args)
+    store pi
+    reference arr
+    reference low
+    reference pi
+    literal 1
+    binary -
+    call quicksort (3 args)
+    drop
+    reference arr
+    reference pi
+    literal 1
+    binary +
+    reference high
+    call quicksort (3 args)
+    drop
+  L4:
+    literal 0
+    return
+}
+
+func is_sorted(arr: array) -> int {
+  ^entry:
+    reference arr
+    array_length
+    store n
+    literal 0
+    store i
+  L6:
+    reference i
+    reference n
+    literal 1
+    binary -
+    binary <
+    branch_if L7 when 0
+    reference arr
+    reference i
+    array_get
+    reference arr
+    reference i
+    literal 1
+    binary +
+    array_get
+    binary >
+    branch_if L8 when 0
+    literal 0
+    return
+  L8:
+    reference i
+    literal 1
+    binary +
+    store i
+    branch L6
+  L7:
+    literal 1
+    return
+}
+
+func main() -> int {
+  ^entry:
+    literal 20
+    make_array
+    store arr
+    literal 0
+    store i
+  L10:
+    reference i
+    literal 20
+    binary <
+    branch_if L11 when 0
+    reference arr
+    reference i
+    literal 20
+    reference i
+    binary -
+    array_set
+    drop
+    reference i
+    literal 1
+    binary +
+    store i
+    branch L10
+  L11:
+    literal_string "Before sorting:"
+    call println (1 args)
+    drop
+    reference arr
+    literal_string ", "
+    call array_join (2 args)
+    call println (1 args)
+    drop
+    reference arr
+    literal 0
+    literal 19
+    call quicksort (3 args)
+    drop
+    literal_string "After sorting:"
+    call println (1 args)
+    drop
+    reference arr
+    literal_string ", "
+    call array_join (2 args)
+    call println (1 args)
+    drop
+    reference arr
+    call is_sorted (1 args)
+    store sorted
+    reference sorted
+    literal 1
+    binary ==
+    branch_if L12 when 0
+    literal_string "Array is correctly sorted!"
+    call println (1 args)
+    drop
+    branch L13
+  L12:
+    literal_string "ERROR: Array is not sorted!"
+    call println (1 args)
+    drop
+  L13:
+    reference sorted
+    return
+}
+

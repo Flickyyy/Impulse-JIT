@@ -1,0 +1,37 @@
+enter function main
+enter block 0 (entry)
+    v2.1 = literal_string imm(enter value:)
+      -> v2.1 = "enter value:"
+    v3.1 = call args(v2.1) imm(println, 1)
+    builtin println "enter value:"
+      -> v3.1 = 0
+    drop args(v3.1)
+    v4.1 = call imm(read_line, 0)
+    builtin read_line "Impulse!"
+      -> v4.1 = "Impulse!"
+    v1.1 = assign args(v4.1)
+      -> v1.1 = "Impulse!"
+    v5.1 = call args(v1.1) imm(string_length, 1)
+      -> v5.1 = 8
+    v6.1 = literal imm(0)
+      -> v6.1 = 0
+    v7.1 = binary args(v5.1, v6.1) imm(==)
+      -> v7.1 = 0
+    branch_if args(v7.1) imm(L0, 0)
+    -> branch 2 (L0) [taken]
+enter block 2 (L0)
+    v10.1 = literal_string imm(echo: )
+      -> v10.1 = "echo: "
+    v11.1 = call args(v10.1, v1.1) imm(string_concat, 2)
+    builtin string_concat "echo: Impulse!"
+      -> v11.1 = "echo: Impulse!"
+    v12.1 = call args(v11.1) imm(println, 1)
+    builtin println "echo: Impulse!"
+      -> v12.1 = 0
+    drop args(v12.1)
+enter block 3 (L1)
+    v13.1 = call args(v1.1) imm(string_length, 1)
+      -> v13.1 = 8
+    return args(v13.1)
+    return 8
+exit function main = 8

@@ -447,7 +447,13 @@ auto JitCompiler::get_value_offset(const ir::SsaValue& value) -> int32_t {
 
 void JitCompiler::allocate_value(const ir::SsaValue& value) {
     uint64_t key = (static_cast<uint64_t>(value.symbol) << 32) | value.version;
-    int32_t offset = -static_cast<int32_t>((value_offsets_.size() + 1) * 8);
+    if (value_offsets_.find(key) != value_offsets_.end()) {
+        return;  // Already allocated
+    }
+    // Allocate stack slot: negative offset from RBP (growing downward)
+    // Each slot is 8 bytes (double)
+    int32_t slot_index = static_cast<int32_t>(value_offsets_.size());
+    int32_t offset = -static_cast<int32_t>((slot_index + 1) * 8);
     value_offsets_[key] = offset;
 }
 
@@ -463,7 +469,7 @@ void JitCompiler::store_xmm_to_value(const ir::SsaValue& value, int xmm) {
 
 void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
     if (inst.opcode == "literal") {
-        // Load immediate double value
+        // Load immediate double value directly into XMM0, then store to stack
         double val = 0.0;
         if (!inst.immediates.empty()) {
             try {
@@ -473,19 +479,29 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
             }
         }
         
-        // Move immediate to memory via register
-        int64_t bits;
-        std::memcpy(&bits, &val, sizeof(bits));
-        buffer_.emit_mov_reg_imm64(static_cast<int>(Register::RAX), bits);
-        
-        // mov [rbp + offset], rax
         if (inst.result.has_value()) {
+            // Load double constant into XMM0 using movsd from memory
+            // We'll store the constant in the code and load it
+            // First, allocate space for the constant
             int32_t offset = get_value_offset(*inst.result);
+            
+            // Move the double bits to RAX, then to memory, then load to XMM
+            int64_t bits;
+            std::memcpy(&bits, &val, sizeof(bits));
+            
+            // mov rax, imm64 (the double bits)
+            buffer_.emit_mov_reg_imm64(static_cast<int>(Register::RAX), bits);
+            
+            // mov [rbp + offset], rax (store the double bits to stack)
             buffer_.emit({0x48, 0x89, 0x85});  // mov [rbp + disp32], rax
             buffer_.emit(static_cast<uint8_t>(offset & 0xFF));
             buffer_.emit(static_cast<uint8_t>((offset >> 8) & 0xFF));
             buffer_.emit(static_cast<uint8_t>((offset >> 16) & 0xFF));
             buffer_.emit(static_cast<uint8_t>((offset >> 24) & 0xFF));
+            
+            // Now load it into XMM0 for consistency (though we could skip this)
+            // movsd xmm0, [rbp + offset]
+            buffer_.emit_movsd_xmm_mem(0, static_cast<int>(Register::RBP), offset);
         }
     }
     else if (inst.opcode == "binary") {
@@ -508,9 +524,11 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
             buffer_.emit_divsd(0, 1);
         } else if (op == "<" || op == "<=" || op == ">" || op == ">=" ||
                    op == "==" || op == "!=") {
-            buffer_.emit_ucomisd(0, 1);
+            // Zero RAX first (before ucomisd, so flags aren't affected)
             buffer_.emit_xor_reg_reg(static_cast<int>(Register::RAX),
                                      static_cast<int>(Register::RAX));
+            // Compare xmm0 and xmm1, setting flags
+            buffer_.emit_ucomisd(0, 1);
             
             if (op == "<") {
                 buffer_.emit_setb(0);  // al = (xmm0 < xmm1)
@@ -544,6 +562,10 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
     else if (inst.opcode == "return") {
         if (!inst.arguments.empty()) {
             load_value_to_xmm(0, inst.arguments[0]);
+        } else {
+            // No return value - set XMM0 to 0.0
+            // xorps xmm0, xmm0 (faster than loading from memory)
+            buffer_.emit({0x0F, 0x57, 0xC0});  // xorps xmm0, xmm0
         }
         emit_epilogue();
     }
@@ -566,9 +588,14 @@ void JitCompiler::compile_block(const ir::SsaBlock& block) {
     }
 }
 
-auto JitCompiler::compile(const ir::SsaFunction& function) -> JitFunction {
+auto JitCompiler::compile(const ir::SsaFunction& function, const std::vector<std::string>& parameter_names) -> JitFunction {
+    auto [func, _] = compile_with_buffer(function, parameter_names);
+    return func;
+}
+
+auto JitCompiler::compile_with_buffer(const ir::SsaFunction& function, const std::vector<std::string>& parameter_names) -> std::pair<JitFunction, CodeBuffer> {
     if (!is_supported()) {
-        return nullptr;
+        return {nullptr, CodeBuffer{}};
     }
     
     // Reset state
@@ -577,17 +604,68 @@ auto JitCompiler::compile(const ir::SsaFunction& function) -> JitFunction {
     pending_jumps_.clear();
     buffer_ = CodeBuffer{};
     
-    // Count locals (rough estimate)
-    int num_locals = 0;
-    for (const auto& block : function.blocks) {
-        num_locals += static_cast<int>(block.phi_nodes.size());
-        num_locals += static_cast<int>(block.instructions.size());
+    // Pre-allocate all values to determine stack size
+    // First, allocate parameters
+    std::unordered_map<std::string, int> param_index_map;
+    for (size_t i = 0; i < parameter_names.size(); ++i) {
+        param_index_map[parameter_names[i]] = static_cast<int>(i);
     }
     
-    emit_prologue(num_locals);
+    // Allocate parameter slots
+    for (const auto& symbol : function.symbols) {
+        auto it = param_index_map.find(symbol.name);
+        if (it != param_index_map.end()) {
+            ir::SsaValue param_value{symbol.id, 1};
+            allocate_value(param_value);
+        }
+    }
     
-    // Store function parameters (RDI contains pointer to args array)
-    // For now, just compile the blocks
+    // Pre-allocate all result values from instructions
+    for (const auto& block : function.blocks) {
+        for (const auto& phi : block.phi_nodes) {
+            allocate_value(phi.result);
+        }
+        for (const auto& inst : block.instructions) {
+            if (inst.result.has_value()) {
+                allocate_value(*inst.result);
+            }
+        }
+    }
+    
+    // Calculate total stack size needed (16-byte aligned)
+    int num_slots = static_cast<int>(value_offsets_.size());
+    emit_prologue(num_slots);
+    
+    // Load function parameters from args array
+    // On Windows x64: first parameter is in RCX
+    // On Linux x64: first parameter is in RDI
+    // Parameters are passed as doubles in args[0], args[1], etc.
+    if (!parameter_names.empty()) {
+#ifdef _WIN32
+        int args_reg = static_cast<int>(Register::RCX);  // Windows x64 calling convention
+#else
+        int args_reg = static_cast<int>(Register::RDI);  // Linux x64 calling convention
+#endif
+        for (const auto& symbol : function.symbols) {
+            auto it = param_index_map.find(symbol.name);
+            if (it != param_index_map.end()) {
+                // This is a parameter - load it from args array
+                ir::SsaValue param_value{symbol.id, 1};
+                
+                // Load from args[i] into XMM0, then store to stack slot
+                int param_index = it->second;
+                int32_t args_offset = static_cast<int32_t>(param_index * 8);
+                
+                // movsd xmm0, [args_reg + args_offset]
+                buffer_.emit_movsd_xmm_mem(0, args_reg, args_offset);
+                
+                // Store to stack slot
+                store_xmm_to_value(param_value, 0);
+            }
+        }
+    }
+    
+    // Compile the blocks
     for (const auto& block : function.blocks) {
         compile_block(block);
     }
@@ -601,7 +679,11 @@ auto JitCompiler::compile(const ir::SsaFunction& function) -> JitFunction {
         }
     }
     
-    return buffer_.finalize();
+    JitFunction func = buffer_.finalize();
+    // Move the buffer out so it stays alive
+    CodeBuffer moved_buffer = std::move(buffer_);
+    return {func, std::move(moved_buffer)};
 }
+
 
 }  // namespace impulse::jit

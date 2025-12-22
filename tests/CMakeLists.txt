@@ -10,6 +10,7 @@ add_executable(impulse-tests
 	test_runtime.cpp
 	test_acceptance.cpp
 	test_benchmarks.cpp
+	test_jit.cpp
 	acceptance/harness.cpp
 )
 

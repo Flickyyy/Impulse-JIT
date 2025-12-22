@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "impulse/ir/ir.h"
+#include "impulse/jit/jit.h"
 #include "impulse/runtime/gc_heap.h"
 #include "impulse/runtime/value.h"
 
@@ -44,8 +45,17 @@ public:
     void set_trace_stream(std::ostream* stream) const;
     void set_input_stream(std::istream* stream) const;
     void set_read_line_provider(std::function<std::optional<std::string>()> provider) const;
+    void set_jit_enabled(bool enabled) const;
 
     void collect_garbage() const;
+
+    // JIT cache inspection API (for testing)
+    // Check if a function is cached
+    [[nodiscard]] auto is_function_cached(const std::string& module_name, const std::string& function_name) const -> bool;
+    // Check if a function was JIT compiled (returns true only if cached AND has compiled function)
+    [[nodiscard]] auto is_function_jit_compiled(const std::string& module_name, const std::string& function_name) const -> bool;
+    // Get cache entry count (for testing)
+    [[nodiscard]] auto get_jit_cache_size() const -> size_t;
 
 private:
     friend class FrameGuard;
@@ -59,6 +69,18 @@ private:
     struct ExecutionFrame {
         std::unordered_map<std::string, Value>* locals = nullptr;
         std::vector<Value>* stack = nullptr;
+    };
+
+    struct JitCacheEntry {
+        jit::JitFunction function = nullptr;
+        jit::CodeBuffer code_buffer;  // Keep executable memory alive
+        bool can_jit = false;
+        
+        JitCacheEntry() = default;
+        JitCacheEntry(JitCacheEntry&&) = default;
+        auto operator=(JitCacheEntry&&) -> JitCacheEntry& = default;
+        JitCacheEntry(const JitCacheEntry&) = delete;
+        auto operator=(const JitCacheEntry&) -> JitCacheEntry& = delete;
     };
 
     [[nodiscard]] auto execute_function(const LoadedModule& module, const ir::Function& function,
@@ -79,7 +101,10 @@ private:
     mutable std::ostream* trace_stream_ = nullptr;
     mutable std::istream* input_stream_ = nullptr;
     mutable std::function<std::optional<std::string>()> read_line_provider_;
+    mutable bool jit_enabled_ = true;
     mutable std::string output_buffer_;
+    // JIT cache: maps (module_name, function_name) -> JitCacheEntry
+    mutable std::unordered_map<std::string, JitCacheEntry> jit_cache_;
 };
 
 }  // namespace impulse::runtime

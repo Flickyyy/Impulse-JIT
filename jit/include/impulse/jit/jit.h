@@ -104,7 +104,12 @@ public:
     JitCompiler();
     
     // Compile an SSA function to native code
-    [[nodiscard]] auto compile(const ir::SsaFunction& function) -> JitFunction;
+    // parameter_names: names of parameters in order (to map to args array indices)
+    [[nodiscard]] auto compile(const ir::SsaFunction& function, const std::vector<std::string>& parameter_names) -> JitFunction;
+    
+    // Compile and return both the function and the code buffer (for caching)
+    // parameter_names: names of parameters in order (to map to args array indices)
+    [[nodiscard]] auto compile_with_buffer(const ir::SsaFunction& function, const std::vector<std::string>& parameter_names) -> std::pair<JitFunction, CodeBuffer>;
     
     // Check if JIT is supported on this platform
     [[nodiscard]] static auto is_supported() -> bool;

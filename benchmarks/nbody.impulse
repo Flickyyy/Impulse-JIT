@@ -1,0 +1,251 @@
+module benchmark::nbody;
+
+// Benchmark: N-body simulation from Computer Language Shootout
+// Simulates the solar system with Sun, Jupiter, Saturn, Uranus, Neptune
+// Expected result: -1.3524862408537381 (accumulated energy)
+// Demonstrates: floating-point arithmetic, nested loops, array manipulation
+
+// Constants
+let PI: float = 3.141592653589793;
+let SOLAR_MASS: float = 4.0 * PI * PI;
+let DAYS_PER_YEAR: float = 365.24;
+
+// Number of bodies
+let NUM_BODIES: int = 5;
+
+// Body field indices (each body takes 7 consecutive slots)
+// body_index * 7 + FIELD_* gives the index in the flat array
+let FIELD_X: int = 0;
+let FIELD_Y: int = 1;
+let FIELD_Z: int = 2;
+let FIELD_VX: int = 3;
+let FIELD_VY: int = 4;
+let FIELD_VZ: int = 5;
+let FIELD_MASS: int = 6;
+
+// Square root using Newton's method
+func sqrt(x: float) -> float {
+    if x == 0.0 {
+        return 0.0;
+    }
+    if x < 0.0 {
+        return 0.0; // Return 0 for negative (shouldn't happen in this benchmark)
+    }
+    // Initial guess - use a better starting point
+    let guess: float = x;
+    if guess > 1.0 {
+        guess = x / 2.0;
+    }
+    let prev: float = 0.0;
+    let max_iter: int = 100;
+    let iter: int = 0;
+    // Iterate until convergence or max iterations
+    while iter < max_iter {
+        let diff: float = guess - prev;
+        let diff_sq: float = diff * diff;
+        if diff_sq <= 1e-20 {
+            break;
+        }
+        prev = guess;
+        guess = (guess + x / guess) / 2.0;
+        iter = iter + 1;
+    }
+    return guess;
+}
+
+// Get index for a body field in the flat array
+func body_index(body_idx: int, field: int) -> int {
+    return body_idx * 7 + field;
+}
+
+// Initialize a body in the flat array
+func init_body(bodies: array, body_idx: int, x: float, y: float, z: float, vx: float, vy: float, vz: float, mass: float) -> int {
+    array_set(bodies, body_index(body_idx, FIELD_X), x);
+    array_set(bodies, body_index(body_idx, FIELD_Y), y);
+    array_set(bodies, body_index(body_idx, FIELD_Z), z);
+    array_set(bodies, body_index(body_idx, FIELD_VX), vx);
+    array_set(bodies, body_index(body_idx, FIELD_VY), vy);
+    array_set(bodies, body_index(body_idx, FIELD_VZ), vz);
+    array_set(bodies, body_index(body_idx, FIELD_MASS), mass);
+    return 0;
+}
+
+func init_jupiter(bodies: array, body_idx: int) -> int {
+    return init_body(bodies, body_idx,
+        4.84143144246472090e+00,
+        -1.16032004402742839e+00,
+        -1.03622044471123109e-01,
+        1.66007664274403694e-03 * DAYS_PER_YEAR,
+        7.69901118419740425e-03 * DAYS_PER_YEAR,
+        -6.90460016972063023e-05 * DAYS_PER_YEAR,
+        9.54791938424326609e-04 * SOLAR_MASS
+    );
+}
+
+func init_saturn(bodies: array, body_idx: int) -> int {
+    return init_body(bodies, body_idx,
+        8.34336671824457987e+00,
+        4.12479856412430479e+00,
+        -4.03523417114321381e-01,
+        -2.76742510726862411e-03 * DAYS_PER_YEAR,
+        4.99852801234917238e-03 * DAYS_PER_YEAR,
+        2.30417297573763929e-05 * DAYS_PER_YEAR,
+        2.85885980666130812e-04 * SOLAR_MASS
+    );
+}
+
+func init_uranus(bodies: array, body_idx: int) -> int {
+    return init_body(bodies, body_idx,
+        1.28943695621391310e+01,
+        -1.51111514016986312e+01,
+        -2.23307578892655734e-01,
+        2.96460137564761618e-03 * DAYS_PER_YEAR,
+        2.37847173959480950e-03 * DAYS_PER_YEAR,
+        -2.96589568540237556e-05 * DAYS_PER_YEAR,
+        4.36624404335156298e-05 * SOLAR_MASS
+    );
+}
+
+func init_neptune(bodies: array, body_idx: int) -> int {
+    return init_body(bodies, body_idx,
+        1.53796971148509165e+01,
+        -2.59193146099879641e+01,
+        1.79258772950371181e-01,
+        2.68067772490389322e-03 * DAYS_PER_YEAR,
+        1.62824170038242295e-03 * DAYS_PER_YEAR,
+        -9.51592254519715870e-05 * DAYS_PER_YEAR,
+        5.15138902046611451e-05 * SOLAR_MASS
+    );
+}
+
+func init_sun(bodies: array, body_idx: int) -> int {
+    return init_body(bodies, body_idx, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, SOLAR_MASS);
+}
+
+// Offset momentum to center the system
+func offset_momentum(bodies: array) -> int {
+    let px: float = 0.0;
+    let py: float = 0.0;
+    let pz: float = 0.0;
+    let i: int = 0;
+    while i < NUM_BODIES {
+        let m: float = array_get(bodies, body_index(i, FIELD_MASS));
+        px = px + array_get(bodies, body_index(i, FIELD_VX)) * m;
+        py = py + array_get(bodies, body_index(i, FIELD_VY)) * m;
+        pz = pz + array_get(bodies, body_index(i, FIELD_VZ)) * m;
+        i = i + 1;
+    }
+    // Offset the first body's momentum
+    array_set(bodies, body_index(0, FIELD_VX), -px / SOLAR_MASS);
+    array_set(bodies, body_index(0, FIELD_VY), -py / SOLAR_MASS);
+    array_set(bodies, body_index(0, FIELD_VZ), -pz / SOLAR_MASS);
+    return 0;
+}
+
+// Advance the simulation by dt
+func advance(bodies: array, dt: float) -> int {
+    let i: int = 0;
+    while i < NUM_BODIES {
+        let j: int = i + 1;
+        while j < NUM_BODIES {
+            let dx: float = array_get(bodies, body_index(i, FIELD_X)) - array_get(bodies, body_index(j, FIELD_X));
+            let dy: float = array_get(bodies, body_index(i, FIELD_Y)) - array_get(bodies, body_index(j, FIELD_Y));
+            let dz: float = array_get(bodies, body_index(i, FIELD_Z)) - array_get(bodies, body_index(j, FIELD_Z));
+            
+            let distance: float = sqrt(dx * dx + dy * dy + dz * dz);
+            let mag: float = dt / (distance * distance * distance);
+            
+            let massj: float = array_get(bodies, body_index(j, FIELD_MASS));
+            let vxi: float = array_get(bodies, body_index(i, FIELD_VX));
+            let vyi: float = array_get(bodies, body_index(i, FIELD_VY));
+            let vzi: float = array_get(bodies, body_index(i, FIELD_VZ));
+            array_set(bodies, body_index(i, FIELD_VX), vxi - dx * massj * mag);
+            array_set(bodies, body_index(i, FIELD_VY), vyi - dy * massj * mag);
+            array_set(bodies, body_index(i, FIELD_VZ), vzi - dz * massj * mag);
+            
+            let massi: float = array_get(bodies, body_index(i, FIELD_MASS));
+            let vxj: float = array_get(bodies, body_index(j, FIELD_VX));
+            let vyj: float = array_get(bodies, body_index(j, FIELD_VY));
+            let vzj: float = array_get(bodies, body_index(j, FIELD_VZ));
+            array_set(bodies, body_index(j, FIELD_VX), vxj + dx * massi * mag);
+            array_set(bodies, body_index(j, FIELD_VY), vyj + dy * massi * mag);
+            array_set(bodies, body_index(j, FIELD_VZ), vzj + dz * massi * mag);
+            
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    
+    i = 0;
+    while i < NUM_BODIES {
+        let vx: float = array_get(bodies, body_index(i, FIELD_VX));
+        let vy: float = array_get(bodies, body_index(i, FIELD_VY));
+        let vz: float = array_get(bodies, body_index(i, FIELD_VZ));
+        array_set(bodies, body_index(i, FIELD_X), array_get(bodies, body_index(i, FIELD_X)) + dt * vx);
+        array_set(bodies, body_index(i, FIELD_Y), array_get(bodies, body_index(i, FIELD_Y)) + dt * vy);
+        array_set(bodies, body_index(i, FIELD_Z), array_get(bodies, body_index(i, FIELD_Z)) + dt * vz);
+        i = i + 1;
+    }
+    return 0;
+}
+
+// Calculate the total energy of the system
+func energy(bodies: array) -> float {
+    let e: float = 0.0;
+    let i: int = 0;
+    while i < NUM_BODIES {
+        let massi: float = array_get(bodies, body_index(i, FIELD_MASS));
+        let vx: float = array_get(bodies, body_index(i, FIELD_VX));
+        let vy: float = array_get(bodies, body_index(i, FIELD_VY));
+        let vz: float = array_get(bodies, body_index(i, FIELD_VZ));
+        
+        e = e + 0.5 * massi * (vx * vx + vy * vy + vz * vz);
+        
+        let j: int = i + 1;
+        while j < NUM_BODIES {
+            let dx: float = array_get(bodies, body_index(i, FIELD_X)) - array_get(bodies, body_index(j, FIELD_X));
+            let dy: float = array_get(bodies, body_index(i, FIELD_Y)) - array_get(bodies, body_index(j, FIELD_Y));
+            let dz: float = array_get(bodies, body_index(i, FIELD_Z)) - array_get(bodies, body_index(j, FIELD_Z));
+            
+            let distance: float = sqrt(dx * dx + dy * dy + dz * dz);
+            let massj: float = array_get(bodies, body_index(j, FIELD_MASS));
+            e = e - (massi * massj) / distance;
+            
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    return e;
+}
+
+func main() -> float {
+    let ret: float = 0.0;
+    let n: int = 3;
+    while n <= 24 {
+        // Create flat array for all bodies (5 bodies * 7 fields = 35 elements)
+        let bodies: array = array(NUM_BODIES * 7);
+        
+        // Initialize bodies
+        init_sun(bodies, 0);
+        init_jupiter(bodies, 1);
+        init_saturn(bodies, 2);
+        init_uranus(bodies, 3);
+        init_neptune(bodies, 4);
+        
+        // Offset momentum
+        offset_momentum(bodies);
+        
+        let max: int = n * 100;
+        ret = ret + energy(bodies);
+        
+        let i: int = 0;
+        while i < max {
+            advance(bodies, 0.01);
+            i = i + 1;
+        }
+        
+        ret = ret + energy(bodies);
+        n = n * 2;
+    }
+    return ret;
+}

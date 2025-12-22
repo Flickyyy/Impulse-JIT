@@ -161,6 +161,37 @@ TEST(BenchmarkTest, Sorting) {
               << duration.count() << " ms" << std::endl;
 }
 
+TEST(BenchmarkTest, NBody) {
+    const auto benchmarks_dir = get_benchmarks_dir();
+    const auto nbody_path = benchmarks_dir / "nbody.impulse";
+    
+    const auto source = read_file(nbody_path);
+    ASSERT_TRUE(source.has_value()) << "Failed to read nbody.impulse";
+    
+    // Measure execution time
+    const auto start_time = std::chrono::high_resolution_clock::now();
+    
+    const auto result = run_benchmark(*source);
+    
+    const auto end_time = std::chrono::high_resolution_clock::now();
+    const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::Success)
+        << "Runtime error: " << result.message;
+    EXPECT_TRUE(result.has_value);
+    
+    // Expected: -1.3524862408537381 (accumulated energy from multiple simulation runs)
+    const double expected = -1.3524862408537381;
+    const double tolerance = 1e-10;  // Allow for floating point precision
+    EXPECT_NEAR(result.value, expected, tolerance)
+        << "Expected n-body energy ≈ " << expected 
+        << ", got " << result.value;
+    
+    // Log execution time
+    std::cout << "N-body benchmark (Solar system simulation, multiple iterations): " 
+              << duration.count() << " ms" << std::endl;
+}
+
 TEST(BenchmarkTest, FactorialParseAndSemantic) {
     const auto benchmarks_dir = get_benchmarks_dir();
     const auto factorial_path = benchmarks_dir / "factorial.impulse";
@@ -210,4 +241,21 @@ TEST(BenchmarkTest, SortingParseAndSemantic) {
     EXPECT_TRUE(semantic.success) << "Semantic analysis failed for sorting.impulse";
     EXPECT_TRUE(semantic.diagnostics.empty()) 
         << "Unexpected diagnostics in sorting.impulse";
+}
+
+TEST(BenchmarkTest, NBodyParseAndSemantic) {
+    const auto benchmarks_dir = get_benchmarks_dir();
+    const auto nbody_path = benchmarks_dir / "nbody.impulse";
+    
+    const auto source = read_file(nbody_path);
+    ASSERT_TRUE(source.has_value()) << "Failed to read nbody.impulse";
+    
+    impulse::frontend::Parser parser(*source);
+    auto parse_result = parser.parseModule();
+    ASSERT_TRUE(parse_result.success) << "Failed to parse nbody.impulse";
+    
+    const auto semantic = impulse::frontend::analyzeModule(parse_result.module);
+    EXPECT_TRUE(semantic.success) << "Semantic analysis failed for nbody.impulse";
+    EXPECT_TRUE(semantic.diagnostics.empty()) 
+        << "Unexpected diagnostics in nbody.impulse";
 }

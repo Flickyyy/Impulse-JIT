@@ -54,5 +54,8 @@ func main() -> int {
     // Generate primes up to 100,000 using Sieve of Eratosthenes
     // Expected result: 9,592 primes
     let limit: int = 100000;
-    return sieve_of_eratosthenes(limit);
+    let count: int = sieve_of_eratosthenes(limit);
+    print("Primes count: ");
+    println(count);
+    return count;
 }

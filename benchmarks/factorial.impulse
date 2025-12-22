@@ -14,5 +14,8 @@ func factorial(n: int) -> int {
 func main() -> int {
     // Calculate and return factorial of 20
     // 20! = 2432902008176640000
-    return factorial(20);
+    let fact: int = factorial(20);
+    print("factorial(20) = ");
+    println(fact);
+    return fact;
 }

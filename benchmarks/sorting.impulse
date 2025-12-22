@@ -96,5 +96,8 @@ func main() -> int {
     fill_descending(arr, size);
     quicksort(arr, 0, size - 1);
     
-    return is_sorted(arr);
+    let s: bool = is_sorted(arr);
+    print("Is sorted: ");
+    println(s);
+    return s;
 }

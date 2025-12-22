@@ -247,5 +247,7 @@ func main() -> float {
         ret = ret + energy(bodies);
         n = n * 2;
     }
+    print("System energy = ");
+    println(ret);
     return ret;
 }

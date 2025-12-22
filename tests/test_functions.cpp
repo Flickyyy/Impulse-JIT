@@ -1,4 +1,4 @@
-#include <cassert>
+#include <gtest/gtest.h>
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -7,9 +7,7 @@
 #include "../frontend/include/impulse/frontend/parser.h"
 #include "../runtime/include/impulse/runtime/runtime.h"
 
-namespace {
-
-void testFunctionCalls() {
+TEST(FunctionCallTest, FunctionCalls) {
     const std::string source = R"(module demo;
 
 func identity(x: int) -> int {
@@ -43,51 +41,51 @@ func test_nested() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result_identity = vm.run("demo", "test_identity");
     if (result_identity.status != impulse::runtime::VmStatus::Success) {
         std::cout << "test_identity status=" << static_cast<int>(result_identity.status)
                   << " message='" << result_identity.message << "'\n";
     }
-    assert(result_identity.status == impulse::runtime::VmStatus::Success);
-    assert(result_identity.has_value);
-    assert(std::abs(result_identity.value - 42.0) < 1e-9);
+    EXPECT_EQ(result_identity.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result_identity.has_value);
+    EXPECT_LT(std::abs(result_identity.value - 42.0), 1e-9);
 
     const auto result_add = vm.run("demo", "test_add");
     if (result_add.status != impulse::runtime::VmStatus::Success) {
         std::cout << "test_add status=" << static_cast<int>(result_add.status)
                   << " message='" << result_add.message << "'\n";
     }
-    assert(result_add.status == impulse::runtime::VmStatus::Success);
-    assert(result_add.has_value);
-    assert(std::abs(result_add.value - 30.0) < 1e-9);
+    EXPECT_EQ(result_add.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result_add.has_value);
+    EXPECT_LT(std::abs(result_add.value - 30.0), 1e-9);
 
     const auto result_multiply = vm.run("demo", "test_multiply");
     if (result_multiply.status != impulse::runtime::VmStatus::Success) {
         std::cout << "test_multiply status=" << static_cast<int>(result_multiply.status)
                   << " message='" << result_multiply.message << "'\n";
     }
-    assert(result_multiply.status == impulse::runtime::VmStatus::Success);
-    assert(result_multiply.has_value);
-    assert(std::abs(result_multiply.value - 35.0) < 1e-9);
+    EXPECT_EQ(result_multiply.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result_multiply.has_value);
+    EXPECT_LT(std::abs(result_multiply.value - 35.0), 1e-9);
 
     const auto result_nested = vm.run("demo", "test_nested");
     if (result_nested.status != impulse::runtime::VmStatus::Success) {
         std::cout << "test_nested status=" << static_cast<int>(result_nested.status)
                   << " message='" << result_nested.message << "'\n";
     }
-    assert(result_nested.status == impulse::runtime::VmStatus::Success);
-    assert(result_nested.has_value);
-    assert(std::abs(result_nested.value - 10.0) < 1e-9);
+    EXPECT_EQ(result_nested.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result_nested.has_value);
+    EXPECT_LT(std::abs(result_nested.value - 10.0), 1e-9);
 }
 
-void testRecursion() {
+TEST(FunctionCallTest, Recursion) {
     const std::string source = R"(module demo;
 
 func fact(n: int) -> int {
@@ -105,23 +103,15 @@ func main() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result = vm.run("demo", "main");
-    assert(result.status == impulse::runtime::VmStatus::Success);
-    assert(result.has_value);
-    assert(std::abs(result.value - 120.0) < 1e-9);
-}
-
-}  // namespace
-
-auto runFunctionCallTests() -> int {
-    testFunctionCalls();
-    testRecursion();
-    return 2;
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_LT(std::abs(result.value - 120.0), 1e-9);
 }

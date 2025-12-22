@@ -1,9 +1,9 @@
 module benchmark::sorting;
 
-// Benchmark: Sort array of 100 elements
-// Algorithm: Quicksort
-// Demonstrates: array handling, loops, recursion, element comparison
-// Note: Reduced from 10000 for interpreter performance. JIT would handle 10000+
+// Benchmark: Sort array of 1000 elements
+// Algorithm: Iterative Quicksort (using explicit stack to avoid deep recursion)
+// Demonstrates: array handling, loops, stack-based iteration, element comparison
+// Expected result: 1 (array is correctly sorted)
 
 func swap(arr: array, i: int, j: int) -> int {
     let temp: int = array_get(arr, i);
@@ -18,7 +18,6 @@ func partition(arr: array, low: int, high: int) -> int {
     let j: int = low;
     
     while j < high {
-        // Compare directly without temp variable
         if array_get(arr, j) <= pivot {
             i = i + 1;
             swap(arr, i, j);
@@ -32,11 +31,40 @@ func partition(arr: array, low: int, high: int) -> int {
 }
 
 func quicksort(arr: array, low: int, high: int) -> int {
-    if low < high {
-        let pi: int = partition(arr, low, high);
-        quicksort(arr, low, pi - 1);
-        quicksort(arr, pi + 1, high);
+    // Use an array as a stack to store (low, high) pairs
+    // Push low first, then high, so we pop high then low
+    let stack: array = array(0);
+    array_push(stack, low);
+    array_push(stack, high);
+    
+    while array_length(stack) > 0 {
+        // Pop high, then low (we need at least 2 elements)
+        if array_length(stack) < 2 {
+            break;
+        }
+        let h: int = array_pop(stack);
+        let l: int = array_pop(stack);
+        
+        if l < h {
+            let pi: int = partition(arr, l, h);
+            
+            // Only push valid (non-empty) partitions
+            // Left partition: [l, pi-1] is valid if l < pi
+            // Right partition: [pi+1, h] is valid if pi < h
+            
+            if pi < h {
+                // Right partition is valid, push it
+                array_push(stack, pi + 1);
+                array_push(stack, h);
+            }
+            if l < pi {
+                // Left partition is valid, push it
+                array_push(stack, l);
+                array_push(stack, pi - 1);
+            }
+        }
     }
+    
     return 0;
 }
 
@@ -62,29 +90,11 @@ func fill_descending(arr: array, n: int) -> int {
 }
 
 func main() -> int {
-    println("=== Sorting Benchmark ===");
-    
-    // Create array of 100 elements
-    let size: int = 100;
+    let size: int = 1000;
     let arr: array = array(size);
     
-    // Fill with descending values (worst case)
     fill_descending(arr, size);
-    
-    print("Sorting array of ");
-    print(size);
-    println(" elements...");
-    
-    // Sort the array
     quicksort(arr, 0, size - 1);
     
-    // Verify sorted
-    let sorted: int = is_sorted(arr);
-    if sorted == 1 {
-        println("SUCCESS: Array is correctly sorted!");
-    } else {
-        println("ERROR: Array is not sorted!");
-    }
-    
-    return sorted;
+    return is_sorted(arr);
 }

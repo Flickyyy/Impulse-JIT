@@ -1,65 +1,58 @@
 module benchmark::primes;
 
-// Benchmark: Generate primes up to 100000
-// Algorithm: Trial division (for VM-based evaluation)
-// Demonstrates: loops, arithmetic operations, function calls
+// Benchmark: Generate primes up to 100,000 using Sieve of Eratosthenes
+// Algorithm: Sieve of Eratosthenes
+// Demonstrates: array manipulation, loops, arithmetic operations
+// Expected: 9,592 primes
 
-func is_prime(n: int) -> int {
-    if n < 2 {
-        return 0;
+func sieve_of_eratosthenes(limit: int) -> int {
+    // Create sieve array: 1 = prime, 0 = composite
+    let sieve: array = array(limit + 1);
+    
+    // Initialize: mark 0 and 1 as composite
+    array_set(sieve, 0, 0);
+    array_set(sieve, 1, 0);
+    
+    // Mark all numbers >= 2 as prime initially
+    let i: int = 2;
+    while i <= limit {
+        array_set(sieve, i, 1);
+        i = i + 1;
     }
-    if n == 2 {
-        return 1;
-    }
-    let remainder: int = n % 2;
-    if remainder == 0 {
-        return 0;
-    }
-    let i: int = 3;
-    while i * i <= n {
-        let r: int = n % i;
-        if r == 0 {
-            return 0;
+    
+    // Sieve: mark multiples of primes as composite
+    i = 2;
+    while i * i <= limit {
+        if array_get(sieve, i) == 1 {
+            // i is prime, mark all multiples as composite
+            let j: int = i * i;
+            while j <= limit {
+                array_set(sieve, j, 0);
+                j = j + i;
+            }
         }
-        i = i + 2;
+        i = i + 1;
     }
-    return 1;
-}
-
-func count_primes(limit: int) -> int {
+    
+    // Count primes and collect them into an array
+    let primes: array = array(0);
     let count: int = 0;
-    let n: int = 2;
-    while n <= limit {
-        let prime: int = is_prime(n);
-        if prime == 1 {
+    i = 2;
+    while i <= limit {
+        if array_get(sieve, i) == 1 {
+            array_push(primes, i);
             count = count + 1;
         }
-        n = n + 1;
+        i = i + 1;
     }
+    
+    // Return the count (length of primes array)
     return count;
 }
 
 func main() -> int {
-    println("=== Prime Numbers Benchmark ===");
-    
-    // Count primes up to 1000
-    let limit: int = 1000;
-    
-    print("Counting primes up to ");
-    print(limit);
-    println("...");
-    
-    let count: int = count_primes(limit);
-    
-    print("Number of primes: ");
-    println(count);
-    
-    // There are 168 primes up to 1000
-    if count == 168 {
-        println("SUCCESS: Correct prime count!");
-    } else {
-        println("ERROR: Incorrect prime count!");
-    }
-    
-    return count;
+    // Generate primes up to 100,000 using Sieve of Eratosthenes
+    // Expected result: 9,592 primes
+    let limit: int = 100000;
+    return sieve_of_eratosthenes(limit);
 }

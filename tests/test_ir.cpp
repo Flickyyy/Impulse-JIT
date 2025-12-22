@@ -1,4 +1,4 @@
-#include <cassert>
+#include <gtest/gtest.h>
 #include <cmath>
 #include <limits>
 #include <string>
@@ -11,9 +11,7 @@
 #include "../ir/include/impulse/ir/interpreter.h"
 #include "../ir/include/impulse/ir/ssa.h"
 
-namespace {
-
-void testEmitIrText() {
+TEST(IRTest, EmitIrText) {
     const std::string source = R"(module demo;
 func main() -> int {
     return 0;
@@ -22,14 +20,14 @@ func main() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult result = parser.parseModule();
-    assert(result.success);
+    ASSERT_TRUE(result.success);
 
     const auto irText = impulse::frontend::emit_ir_text(result.module);
-    assert(irText.find("^entry") != std::string::npos);
-    assert(irText.find("return") != std::string::npos || irText.find('#') != std::string::npos);
+    EXPECT_NE(irText.find("^entry"), std::string::npos);
+    EXPECT_TRUE(irText.find("return") != std::string::npos || irText.find('#') != std::string::npos);
 }
 
-void testInterfaceIrEmission() {
+TEST(IRTest, InterfaceIrEmission) {
     const std::string source = R"(module demo;
 interface Display {
     func show(self: Display) -> string;
@@ -38,33 +36,33 @@ interface Display {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult result = parser.parseModule();
-    assert(result.success);
+    ASSERT_TRUE(result.success);
 
     const auto irText = impulse::frontend::emit_ir_text(result.module);
-    assert(irText.find("interface Display") != std::string::npos);
-    assert(irText.find("func show") != std::string::npos);
+    EXPECT_NE(irText.find("interface Display"), std::string::npos);
+    EXPECT_NE(irText.find("func show"), std::string::npos);
 }
 
-void testBindingExpressionLowering() {
+TEST(IRTest, BindingExpressionLowering) {
     const std::string source = R"(module demo;
 let value: int = 1 + 2 * 3;
 )";
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult result = parser.parseModule();
-    assert(result.success);
+    ASSERT_TRUE(result.success);
 
     const auto irText = impulse::frontend::emit_ir_text(result.module);
-    assert(irText.find("let value: int = (1 + (2 * 3));  # = 7") != std::string::npos);
-    assert(irText.find("literal 1") != std::string::npos);
-    assert(irText.find("literal 2") != std::string::npos);
-    assert(irText.find("literal 3") != std::string::npos);
-    assert(irText.find("binary +") != std::string::npos);
-    assert(irText.find("binary *") != std::string::npos);
-    assert(irText.find("store value") != std::string::npos);
+    EXPECT_NE(irText.find("let value: int = (1 + (2 * 3));  # = 7"), std::string::npos);
+    EXPECT_NE(irText.find("literal 1"), std::string::npos);
+    EXPECT_NE(irText.find("literal 2"), std::string::npos);
+    EXPECT_NE(irText.find("literal 3"), std::string::npos);
+    EXPECT_NE(irText.find("binary +"), std::string::npos);
+    EXPECT_NE(irText.find("binary *"), std::string::npos);
+    EXPECT_NE(irText.find("store value"), std::string::npos);
 }
 
-void testExportedDeclarations() {
+TEST(IRTest, ExportedDeclarations) {
     const std::string source = R"(module demo;
 export let value: int = 1;
 export func main() -> int {
@@ -80,20 +78,20 @@ export interface Display {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult result = parser.parseModule();
-    assert(result.success);
-    assert(result.module.declarations.size() == 4);
+    ASSERT_TRUE(result.success);
+    ASSERT_EQ(result.module.declarations.size(), 4);
     for (const auto& decl : result.module.declarations) {
-        assert(decl.exported);
+        EXPECT_TRUE(decl.exported);
     }
 
     const auto irText = impulse::frontend::emit_ir_text(result.module);
-    assert(irText.find("export let value") != std::string::npos);
-    assert(irText.find("export func main") != std::string::npos);
-    assert(irText.find("export struct Point") != std::string::npos);
-    assert(irText.find("export interface Display") != std::string::npos);
+    EXPECT_NE(irText.find("export let value"), std::string::npos);
+    EXPECT_NE(irText.find("export func main"), std::string::npos);
+    EXPECT_NE(irText.find("export struct Point"), std::string::npos);
+    EXPECT_NE(irText.find("export interface Display"), std::string::npos);
 }
 
-void testIrBindingInterpreter() {
+TEST(IRTest, IrBindingInterpreter) {
     const std::string source = R"(module demo;
 let a: int = 2;
 let b: int = a * 5 + 3;
@@ -101,7 +99,7 @@ let b: int = a * 5 + 3;
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
     std::unordered_map<std::string, double> environment;
@@ -113,17 +111,17 @@ let b: int = a * 5 + 3;
             environment.emplace(binding.name, *eval.value);
         }
         if (binding.name == "b") {
-            assert(eval.status == impulse::ir::EvalStatus::Success);
-            assert(eval.value.has_value());
-            assert(std::abs(*eval.value - 13.0) < 1e-9);
+            EXPECT_EQ(eval.status, impulse::ir::EvalStatus::Success);
+            ASSERT_TRUE(eval.value.has_value());
+            EXPECT_LT(std::abs(*eval.value - 13.0), 1e-9);
             foundB = true;
         }
     }
 
-    assert(foundB && "Interpreter did not evaluate binding 'b'");
+    EXPECT_TRUE(foundB) << "Interpreter did not evaluate binding 'b'";
 }
 
-void testCfgLinearFunction() {
+TEST(IRTest, CfgLinearFunction) {
     impulse::ir::Function function;
     function.name = "linear";
     impulse::ir::BasicBlock block;
@@ -133,15 +131,15 @@ void testCfgLinearFunction() {
     function.blocks.push_back(std::move(block));
 
     const auto cfg = impulse::ir::build_control_flow_graph(function);
-    assert(cfg.blocks.size() == 1);
+    ASSERT_EQ(cfg.blocks.size(), 1);
     const auto& entry = cfg.blocks.front();
-    assert(entry.name == "entry");
-    assert(entry.successors.empty());
-    assert(entry.predecessors.empty());
-    assert(entry.end_index - entry.start_index == 2);
+    EXPECT_EQ(entry.name, "entry");
+    EXPECT_TRUE(entry.successors.empty());
+    EXPECT_TRUE(entry.predecessors.empty());
+    EXPECT_EQ(entry.end_index - entry.start_index, 2);
 }
 
-void testCfgBranchIfFunction() {
+TEST(IRTest, CfgBranchIfFunction) {
     impulse::ir::Function function;
     function.name = "branch_if";
     impulse::ir::BasicBlock block;
@@ -156,9 +154,9 @@ void testCfgBranchIfFunction() {
     function.blocks.push_back(std::move(block));
 
     const auto cfg = impulse::ir::build_control_flow_graph(function);
-    assert(cfg.blocks.size() == 3);
+    ASSERT_EQ(cfg.blocks.size(), 3);
     const auto& entry = cfg.blocks[0];
-    assert(entry.successors.size() == 2);
+    EXPECT_EQ(entry.successors.size(), 2);
 
     bool hasFallthrough = false;
     bool hasTarget = false;
@@ -170,13 +168,15 @@ void testCfgBranchIfFunction() {
             hasTarget = true;
         }
     }
-    assert(hasFallthrough && hasTarget);
+    EXPECT_TRUE(hasFallthrough);
+    EXPECT_TRUE(hasTarget);
     const auto& target = cfg.blocks[2];
-    assert(target.name == "target");
-    assert(target.predecessors.size() == 1 && target.predecessors.front() == 0);
+    EXPECT_EQ(target.name, "target");
+    EXPECT_EQ(target.predecessors.size(), 1);
+    EXPECT_EQ(target.predecessors.front(), 0);
 }
 
-void testCfgBranchFunction() {
+TEST(IRTest, CfgBranchFunction) {
     impulse::ir::Function function;
     function.name = "branch";
     impulse::ir::BasicBlock block;
@@ -187,17 +187,18 @@ void testCfgBranchFunction() {
     function.blocks.push_back(std::move(block));
 
     const auto cfg = impulse::ir::build_control_flow_graph(function);
-    assert(cfg.blocks.size() == 2);
+    ASSERT_EQ(cfg.blocks.size(), 2);
     const auto& entry = cfg.blocks[0];
-    assert(entry.successors.size() == 1);
+    EXPECT_EQ(entry.successors.size(), 1);
     const auto exitIndex = entry.successors.front();
-    assert(exitIndex == 1);
+    EXPECT_EQ(exitIndex, 1);
     const auto& exitBlock = cfg.blocks[exitIndex];
-    assert(exitBlock.name == "exit");
-    assert(exitBlock.predecessors.size() == 1 && exitBlock.predecessors.front() == 0);
+    EXPECT_EQ(exitBlock.name, "exit");
+    EXPECT_EQ(exitBlock.predecessors.size(), 1);
+    EXPECT_EQ(exitBlock.predecessors.front(), 0);
 }
 
-void testSsaPreservesCfgLayout() {
+TEST(IRTest, SsaPreservesCfgLayout) {
     impulse::ir::Function function;
     function.name = "ssa_layout";
 
@@ -220,44 +221,44 @@ void testSsaPreservesCfgLayout() {
     const auto cfg = impulse::ir::build_control_flow_graph(function);
     const auto ssa = impulse::ir::build_ssa(function, cfg);
 
-    assert(ssa.name == function.name);
+    EXPECT_EQ(ssa.name, function.name);
     for (const auto& parameter : function.parameters) {
         const auto* symbol = ssa.find_symbol(parameter.name);
-        assert(symbol != nullptr);
+        EXPECT_NE(symbol, nullptr);
     }
-    assert(ssa.blocks.size() == cfg.blocks.size());
+    EXPECT_EQ(ssa.blocks.size(), cfg.blocks.size());
 
     for (std::size_t index = 0; index < cfg.blocks.size(); ++index) {
         const auto& cfgBlock = cfg.blocks[index];
         const auto& ssaBlock = ssa.blocks[index];
-        assert(ssaBlock.id == index);
-        assert(ssaBlock.name == cfgBlock.name);
-        assert(ssaBlock.successors == cfgBlock.successors);
-        assert(ssaBlock.predecessors == cfgBlock.predecessors);
+        EXPECT_EQ(ssaBlock.id, index);
+        EXPECT_EQ(ssaBlock.name, cfgBlock.name);
+        EXPECT_EQ(ssaBlock.successors, cfgBlock.successors);
+        EXPECT_EQ(ssaBlock.predecessors, cfgBlock.predecessors);
         if (index == 0) {
-            assert(ssaBlock.immediate_dominator == 0);
+            EXPECT_EQ(ssaBlock.immediate_dominator, 0);
         } else {
-            assert(ssaBlock.immediate_dominator < ssa.blocks.size());
+            EXPECT_LT(ssaBlock.immediate_dominator, ssa.blocks.size());
         }
         if (!ssaBlock.dominator_children.empty()) {
             for (const auto child : ssaBlock.dominator_children) {
-                assert(child < ssa.blocks.size());
-                assert(ssa.blocks[child].immediate_dominator == index);
+                EXPECT_LT(child, ssa.blocks.size());
+                EXPECT_EQ(ssa.blocks[child].immediate_dominator, index);
             }
         }
     }
 
     const auto* exitBlock = ssa.find_block("exit");
-    assert(exitBlock != nullptr);
-    assert(exitBlock->immediate_dominator != std::numeric_limits<std::size_t>::max());
-    assert(exitBlock->dominance_frontier.empty());
+    ASSERT_NE(exitBlock, nullptr);
+    EXPECT_NE(exitBlock->immediate_dominator, std::numeric_limits<std::size_t>::max());
+    EXPECT_TRUE(exitBlock->dominance_frontier.empty());
 
     const auto* entryBlock = ssa.find_block("entry");
-    assert(entryBlock != nullptr);
-    assert(entryBlock->dominance_frontier.empty());
+    ASSERT_NE(entryBlock, nullptr);
+    EXPECT_TRUE(entryBlock->dominance_frontier.empty());
 }
 
-void testSsaInsertsPhiNodes() {
+TEST(IRTest, SsaInsertsPhiNodes) {
     impulse::ir::Function function;
     function.name = "ssa_phi";
 
@@ -291,15 +292,15 @@ void testSsaInsertsPhiNodes() {
     const auto ssa = impulse::ir::build_ssa(function, cfg);
 
     const auto* mergeBlock = ssa.find_block("merge");
-    assert(mergeBlock != nullptr);
-    assert(!mergeBlock->phi_nodes.empty());
+    ASSERT_NE(mergeBlock, nullptr);
+    EXPECT_FALSE(mergeBlock->phi_nodes.empty());
     const auto& phi = mergeBlock->phi_nodes.front();
     const auto* symbol = ssa.find_symbol(phi.symbol);
-    assert(symbol != nullptr);
-    assert(symbol->name == "x");
+    ASSERT_NE(symbol, nullptr);
+    EXPECT_EQ(symbol->name, "x");
 }
 
-void testSsaPopulatesPhiInputs() {
+TEST(IRTest, SsaPopulatesPhiInputs) {
     impulse::ir::Function function;
     function.name = "ssa_phi_inputs";
 
@@ -333,22 +334,22 @@ void testSsaPopulatesPhiInputs() {
     const auto ssa = impulse::ir::build_ssa(function, cfg);
 
     const auto* mergeBlock = ssa.find_block("merge");
-    assert(mergeBlock != nullptr);
-    assert(mergeBlock->phi_nodes.size() == 1);
+    ASSERT_NE(mergeBlock, nullptr);
+    EXPECT_EQ(mergeBlock->phi_nodes.size(), 1);
     const auto& phi = mergeBlock->phi_nodes.front();
-    assert(phi.result.is_valid());
-    assert(phi.inputs.size() == mergeBlock->predecessors.size());
+    EXPECT_TRUE(phi.result.is_valid());
+    EXPECT_EQ(phi.inputs.size(), mergeBlock->predecessors.size());
 
     std::unordered_set<std::size_t> predecessors;
     for (const auto& input : phi.inputs) {
-        assert(predecessors.insert(input.predecessor).second);
-        assert(input.value.has_value());
-        assert(input.value->symbol == phi.result.symbol);
-        assert(input.value->version > 0);
+        EXPECT_TRUE(predecessors.insert(input.predecessor).second);
+        EXPECT_TRUE(input.value.has_value());
+        EXPECT_EQ(input.value->symbol, phi.result.symbol);
+        EXPECT_GT(input.value->version, 0);
     }
 }
 
-void testSsaMaterializesInstructions() {
+TEST(IRTest, SsaMaterializesInstructions) {
     impulse::ir::Function function;
     function.name = "ssa_materialize";
 
@@ -363,41 +364,23 @@ void testSsaMaterializesInstructions() {
     const auto cfg = impulse::ir::build_control_flow_graph(function);
     const auto ssa = impulse::ir::build_ssa(function, cfg);
 
-    assert(ssa.blocks.size() == 1);
+    EXPECT_EQ(ssa.blocks.size(), 1);
     const auto& block = ssa.blocks.front();
-    assert(block.instructions.size() == 3);
+    EXPECT_EQ(block.instructions.size(), 3);
     const auto& literal = block.instructions[0];
-    assert(literal.opcode == "literal");
-    assert(literal.result.has_value());
+    EXPECT_EQ(literal.opcode, "literal");
+    EXPECT_TRUE(literal.result.has_value());
 
     const auto& assign = block.instructions[1];
-    assert(assign.opcode == "assign");
-    assert(assign.result.has_value());
+    EXPECT_EQ(assign.opcode, "assign");
+    EXPECT_TRUE(assign.result.has_value());
     const auto* symbol = ssa.find_symbol(assign.result->symbol);
-    assert(symbol != nullptr);
-    assert(symbol->name == "value");
-    assert(assign.arguments.size() == 1);
+    ASSERT_NE(symbol, nullptr);
+    EXPECT_EQ(symbol->name, "value");
+    EXPECT_EQ(assign.arguments.size(), 1);
 
     const auto& ret = block.instructions[2];
-    assert(ret.opcode == "return");
-    assert(ret.arguments.size() == 1);
-    assert(ret.arguments.front().symbol == assign.result->symbol);
-}
-
-}  // namespace
-
-auto runIRTests() -> int {
-    testEmitIrText();
-    testInterfaceIrEmission();
-    testBindingExpressionLowering();
-    testExportedDeclarations();
-    testIrBindingInterpreter();
-    testCfgLinearFunction();
-    testCfgBranchIfFunction();
-    testCfgBranchFunction();
-    testSsaPreservesCfgLayout();
-    testSsaInsertsPhiNodes();
-    testSsaPopulatesPhiInputs();
-    testSsaMaterializesInstructions();
-    return 12;
+    EXPECT_EQ(ret.opcode, "return");
+    EXPECT_EQ(ret.arguments.size(), 1);
+    EXPECT_EQ(ret.arguments.front().symbol, assign.result->symbol);
 }

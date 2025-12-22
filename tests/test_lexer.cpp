@@ -9,7 +9,6 @@ using impulse::frontend::Lexer;
 using impulse::frontend::Token;
 using impulse::frontend::TokenKind;
 
-namespace {
 
 void expectKinds(const std::string& source, const std::vector<TokenKind>& expected) {
     Lexer lexer(source);
@@ -23,8 +22,6 @@ void expectKinds(const std::string& source, const std::vector<TokenKind>& expect
 
     ASSERT_EQ(actual, expected) << "Token kinds mismatch";
 }
-
-}  // namespace
 
 TEST(LexerTest, ModuleHeader) {
     const std::string source = R"(module math::core;

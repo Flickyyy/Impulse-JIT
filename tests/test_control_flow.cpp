@@ -1,4 +1,4 @@
-#include <cassert>
+#include <gtest/gtest.h>
 #include <cmath>
 #include <string>
 
@@ -6,9 +6,7 @@
 #include "../frontend/include/impulse/frontend/parser.h"
 #include "../runtime/include/impulse/runtime/runtime.h"
 
-namespace {
-
-void testControlFlow() {
+TEST(ControlFlowTest, ControlFlow) {
     const std::string source = R"(module demo;
 
 func test_if() -> int {
@@ -39,32 +37,32 @@ func test_while() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result_if = vm.run("demo", "test_if");
-    assert(result_if.status == impulse::runtime::VmStatus::Success);
-    assert(result_if.has_value);
-    assert(std::abs(result_if.value - 10.0) < 1e-9);
+    EXPECT_EQ(result_if.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result_if.has_value);
+    EXPECT_LT(std::abs(result_if.value - 10.0), 1e-9);
 
     const auto result_else = vm.run("demo", "test_else");
-    assert(result_else.status == impulse::runtime::VmStatus::Success);
-    assert(result_else.has_value);
-    assert(std::abs(result_else.value - 20.0) < 1e-9);
+    EXPECT_EQ(result_else.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result_else.has_value);
+    EXPECT_LT(std::abs(result_else.value - 20.0), 1e-9);
 
     impulse::runtime::Vm vm2;
-    assert(vm2.load(lowered).success);
+    ASSERT_TRUE(vm2.load(lowered).success);
     const auto result_while = vm2.run("demo", "test_while");
-    assert(result_while.status == impulse::runtime::VmStatus::Success);
-    assert(result_while.has_value);
-    assert(std::abs(result_while.value - 5.0) < 1e-9);
+    EXPECT_EQ(result_while.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result_while.has_value);
+    EXPECT_LT(std::abs(result_while.value - 5.0), 1e-9);
 }
 
-void testForLoop() {
+TEST(ControlFlowTest, ForLoop) {
     const std::string source = R"(module demo;
 
 func main() -> int {
@@ -82,20 +80,20 @@ func main() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result = vm.run("demo", "main");
-    assert(result.status == impulse::runtime::VmStatus::Success);
-    assert(result.has_value);
-    assert(std::abs(result.value - 20.0) < 1e-9);
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_LT(std::abs(result.value - 20.0), 1e-9);
 }
 
-void testBreakContinueWhile() {
+TEST(ControlFlowTest, BreakContinueWhile) {
     const std::string source = R"(module demo;
 
 func main() -> int {
@@ -117,20 +115,20 @@ func main() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result = vm.run("demo", "main");
-    assert(result.status == impulse::runtime::VmStatus::Success);
-    assert(result.has_value);
-    assert(std::abs(result.value - 12.0) < 1e-9);
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_LT(std::abs(result.value - 12.0), 1e-9);
 }
 
-void testBreakContinueFor() {
+TEST(ControlFlowTest, BreakContinueFor) {
     const std::string source = R"(module demo;
 
 func main() -> int {
@@ -150,25 +148,15 @@ func main() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result = vm.run("demo", "main");
-    assert(result.status == impulse::runtime::VmStatus::Success);
-    assert(result.has_value);
-    assert(std::abs(result.value - 1.0) < 1e-9);
-}
-
-}  // namespace
-
-auto runControlFlowTests() -> int {
-    testControlFlow();
-    testForLoop();
-    testBreakContinueWhile();
-    testBreakContinueFor();
-    return 4;
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_LT(std::abs(result.value - 1.0), 1e-9);
 }

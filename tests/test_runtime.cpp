@@ -1,4 +1,4 @@
-#include <cassert>
+#include <gtest/gtest.h>
 #include <cmath>
 #include <cstdio>
 #include <sstream>
@@ -12,13 +12,11 @@
 #include "../runtime/include/impulse/runtime/runtime.h"
 #include "../runtime/include/impulse/runtime/value.h"
 
-namespace {
-
 using impulse::runtime::GcHeap;
 using impulse::runtime::GcObject;
 using impulse::runtime::Value;
 
-void testCollectsUnreachableObjects() {
+TEST(RuntimeTest, CollectsUnreachableObjects) {
     GcHeap heap;
 
     GcObject* object = heap.allocate_array(4);
@@ -28,18 +26,18 @@ void testCollectsUnreachableObjects() {
     std::vector<Value*> roots = {&root};
     heap.collect(roots);
 
-    assert(heap.live_object_count() == 1);
-    assert(heap.bytes_allocated() > 0);
+    EXPECT_EQ(heap.live_object_count(), 1);
+    EXPECT_GT(heap.bytes_allocated(), 0);
 
     root = Value::make_nil();
     roots.clear();
     heap.collect(roots);
 
-    assert(heap.live_object_count() == 0);
-    assert(heap.bytes_allocated() == 0);
+    EXPECT_EQ(heap.live_object_count(), 0);
+    EXPECT_EQ(heap.bytes_allocated(), 0);
 }
 
-void testMarksTransitiveReferences() {
+TEST(RuntimeTest, MarksTransitiveReferences) {
     GcHeap heap;
 
     GcObject* parent = heap.allocate_array(1);
@@ -51,23 +49,23 @@ void testMarksTransitiveReferences() {
     std::vector<Value*> roots = {&root};
     heap.collect(roots);
 
-    assert(heap.live_object_count() == 2);
+    EXPECT_EQ(heap.live_object_count(), 2);
 
     root = Value::make_nil();
     roots.clear();
     heap.collect(roots);
 
-    assert(heap.live_object_count() == 0);
+    EXPECT_EQ(heap.live_object_count(), 0);
 }
 
-void testCollectHandlesEmptyRoots() {
+TEST(RuntimeTest, CollectHandlesEmptyRoots) {
     GcHeap heap;
     std::vector<Value*> roots;
     heap.collect(roots);
-    assert(heap.live_object_count() == 0);
+    EXPECT_EQ(heap.live_object_count(), 0);
 }
 
-void testArrayBuiltinsExecution() {
+TEST(RuntimeTest, ArrayBuiltinsExecution) {
     const std::string source = R"(module demo;
 
 func main() -> float {
@@ -82,7 +80,7 @@ func main() -> float {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
     if (!semantic.success) {
@@ -90,21 +88,21 @@ func main() -> float {
             std::fprintf(stderr, "semantic error: %s\n", diagnostic.message.c_str());
         }
     }
-    assert(semantic.success && "semantic analysis failed");
+    ASSERT_TRUE(semantic.success) << "semantic analysis failed";
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
 
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result = vm.run("demo", "main");
-    assert(result.status == impulse::runtime::VmStatus::Success);
-    assert(result.has_value);
-    assert(std::abs(result.value - 34.0) < 1e-9);
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_LT(std::abs(result.value - 34.0), 1e-9);
 }
 
-void testArrayRuntimeErrors() {
+TEST(RuntimeTest, ArrayRuntimeErrors) {
     const std::string source = R"(module demo;
 
 func main() -> float {
@@ -115,24 +113,24 @@ func main() -> float {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(semantic.success);
+    EXPECT_TRUE(semantic.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
 
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result = vm.run("demo", "main");
-    assert(result.status == impulse::runtime::VmStatus::RuntimeError);
-    assert(!result.has_value);
-    assert(result.message.find("array_get index out of bounds") != std::string::npos);
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::RuntimeError);
+    EXPECT_FALSE(result.has_value);
+    EXPECT_NE(result.message.find("array_get index out of bounds"), std::string::npos);
 }
 
-void testStringBuiltinsExecution() {
+TEST(RuntimeTest, StringBuiltinsExecution) {
     const std::string source = R"(module demo;
 
 func main() -> int {
@@ -148,7 +146,7 @@ func main() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
     if (!semantic.success) {
@@ -156,21 +154,21 @@ func main() -> int {
             std::fprintf(stderr, "semantic error: %s\n", diagnostic.message.c_str());
         }
     }
-    assert(semantic.success && "semantic analysis failed");
+    ASSERT_TRUE(semantic.success) << "semantic analysis failed";
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
 
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result = vm.run("demo", "main");
-    assert(result.status == impulse::runtime::VmStatus::Success);
-    assert(result.has_value);
-    assert(std::abs(result.value - 8.0) < 1e-9);
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_LT(std::abs(result.value - 8.0), 1e-9);
 }
 
-void testStringSliceAndTransforms() {
+TEST(RuntimeTest, StringSliceAndTransforms) {
     const std::string source = R"(module demo;
 
 func main() -> int {
@@ -194,24 +192,24 @@ func main() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(semantic.success);
+    EXPECT_TRUE(semantic.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
 
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result = vm.run("demo", "main");
-    assert(result.status == impulse::runtime::VmStatus::Success);
-    assert(result.has_value);
-    assert(std::abs(result.value - 10.0) < 1e-9);
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_LT(std::abs(result.value - 10.0), 1e-9);
 }
 
-void testArrayStackBuiltins() {
+TEST(RuntimeTest, ArrayStackBuiltins) {
     const std::string source = R"(module demo;
 
 func main() -> int {
@@ -239,24 +237,24 @@ func main() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(semantic.success);
+    EXPECT_TRUE(semantic.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
 
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result = vm.run("demo", "main");
-    assert(result.status == impulse::runtime::VmStatus::Success);
-    assert(result.has_value);
-    assert(std::abs(result.value - 5.0) < 1e-9);
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_LT(std::abs(result.value - 5.0), 1e-9);
 }
 
-void testReadLineBuiltin() {
+TEST(RuntimeTest, ReadLineBuiltin) {
     const std::string source = R"(module demo;
 
 func main() -> int {
@@ -267,24 +265,24 @@ func main() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(semantic.success);
+    EXPECT_TRUE(semantic.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
 
     impulse::runtime::Vm vm;
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result = vm.run("demo", "main");
-    assert(result.status == impulse::runtime::VmStatus::Success);
-    assert(result.has_value);
-    assert(std::abs(result.value) < 1e-9);
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_LT(std::abs(result.value), 1e-9);
 }
 
-void testReadLineFromStream() {
+TEST(RuntimeTest, ReadLineFromStream) {
     const std::string source = R"(module demo;
 
 func main() -> int {
@@ -295,10 +293,10 @@ func main() -> int {
 
     impulse::frontend::Parser parser(source);
     impulse::frontend::ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(semantic.success);
+    EXPECT_TRUE(semantic.success);
 
     const auto lowered = impulse::frontend::lower_to_ir(parseResult.module);
 
@@ -306,15 +304,15 @@ func main() -> int {
     std::istringstream input("Impulse!\n");
     vm.set_input_stream(&input);
     const auto loadResult = vm.load(lowered);
-    assert(loadResult.success);
+    ASSERT_TRUE(loadResult.success);
 
     const auto result = vm.run("demo", "main");
-    assert(result.status == impulse::runtime::VmStatus::Success);
-    assert(result.has_value);
-    assert(std::abs(result.value - 8.0) < 1e-9);
+    EXPECT_EQ(result.status, impulse::runtime::VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_LT(std::abs(result.value - 8.0), 1e-9);
 }
 
-void testGcPreservesRoots() {
+TEST(RuntimeTest, GcPreservesRoots) {
     GcHeap heap;
     heap.set_next_gc_threshold(1);
 
@@ -324,11 +322,11 @@ void testGcPreservesRoots() {
 
     heap.collect(roots);
 
-    assert(heap.live_object_count() == 1);
-    assert(heap.bytes_allocated() >= sizeof(GcObject));
+    EXPECT_EQ(heap.live_object_count(), 1);
+    EXPECT_GE(heap.bytes_allocated(), sizeof(GcObject));
 }
 
-void testGcCollectsWhenThresholdExceeded() {
+TEST(RuntimeTest, GcCollectsWhenThresholdExceeded) {
     GcHeap heap;
     heap.set_next_gc_threshold(64);
 
@@ -336,29 +334,11 @@ void testGcCollectsWhenThresholdExceeded() {
         [[maybe_unused]] GcObject* object = heap.allocate_array(8);
     }
 
-    assert(heap.should_collect());
+    EXPECT_TRUE(heap.should_collect());
 
     std::vector<Value*> roots;
     heap.collect(roots);
 
-    assert(heap.live_object_count() == 0);
-    assert(heap.bytes_allocated() == 0);
-}
-
-}  // namespace
-
-auto runRuntimeTests() -> int {
-    testCollectsUnreachableObjects();
-    testMarksTransitiveReferences();
-    testCollectHandlesEmptyRoots();
-    testArrayBuiltinsExecution();
-    testArrayRuntimeErrors();
-    testStringBuiltinsExecution();
-    testStringSliceAndTransforms();
-    testArrayStackBuiltins();
-    testReadLineBuiltin();
-    testReadLineFromStream();
-    testGcPreservesRoots();
-    testGcCollectsWhenThresholdExceeded();
-    return 12;
+    EXPECT_EQ(heap.live_object_count(), 0);
+    EXPECT_EQ(heap.bytes_allocated(), 0);
 }

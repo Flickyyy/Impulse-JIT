@@ -1,4 +1,4 @@
-#include <cassert>
+#include <gtest/gtest.h>
 #include <string>
 
 #include "../frontend/include/impulse/frontend/parser.h"
@@ -9,9 +9,7 @@ using impulse::frontend::Declaration;
 using impulse::frontend::ParseResult;
 using impulse::frontend::Parser;
 
-namespace {
-
-void testConstAndVarBindings() {
+TEST(SemanticTest, ConstAndVarBindings) {
     const std::string source = R"(module demo;
 const PI: float = 3.14;
 var counter: int = 0;
@@ -19,21 +17,21 @@ var counter: int = 0;
 
     Parser parser(source);
     ParseResult result = parser.parseModule();
-    assert(result.success);
-    assert(result.module.declarations.size() == 2);
+    ASSERT_TRUE(result.success);
+    ASSERT_EQ(result.module.declarations.size(), 2);
 
     const auto& constDecl = result.module.declarations[0].binding;
-    assert(constDecl.kind == BindingKind::Const);
-    assert(constDecl.name.value == "PI");
-    assert(constDecl.type_name.value == "float");
+    EXPECT_EQ(constDecl.kind, BindingKind::Const);
+    EXPECT_EQ(constDecl.name.value, "PI");
+    EXPECT_EQ(constDecl.type_name.value, "float");
 
     const auto& varDecl = result.module.declarations[1].binding;
-    assert(varDecl.kind == BindingKind::Var);
-    assert(varDecl.name.value == "counter");
-    assert(varDecl.type_name.value == "int");
+    EXPECT_EQ(varDecl.kind, BindingKind::Var);
+    EXPECT_EQ(varDecl.name.value, "counter");
+    EXPECT_EQ(varDecl.type_name.value, "int");
 }
 
-void testFunctionDeclaration() {
+TEST(SemanticTest, FunctionDeclaration) {
     const std::string source = R"(module demo;
 func add(a: int, b: int) -> int {
     return a + b;
@@ -42,22 +40,22 @@ func add(a: int, b: int) -> int {
 
     Parser parser(source);
     ParseResult result = parser.parseModule();
-    assert(result.success);
-    assert(result.module.declarations.size() == 1);
+    ASSERT_TRUE(result.success);
+    ASSERT_EQ(result.module.declarations.size(), 1);
 
     const auto& decl = result.module.declarations.front();
-    assert(decl.kind == Declaration::Kind::Function);
+    EXPECT_EQ(decl.kind, Declaration::Kind::Function);
     const auto& func = decl.function;
-    assert(func.name.value == "add");
-    assert(func.parameters.size() == 2);
-    assert(func.parameters[0].name.value == "a");
-    assert(func.parameters[0].type_name.value == "int");
-    assert(func.return_type.has_value());
-    assert(func.return_type->value == "int");
-    assert(func.body.text.find("return") != std::string::npos);
+    EXPECT_EQ(func.name.value, "add");
+    EXPECT_EQ(func.parameters.size(), 2);
+    EXPECT_EQ(func.parameters[0].name.value, "a");
+    EXPECT_EQ(func.parameters[0].type_name.value, "int");
+    ASSERT_TRUE(func.return_type.has_value());
+    EXPECT_EQ(func.return_type->value, "int");
+    EXPECT_NE(func.body.text.find("return"), std::string::npos);
 }
 
-void testStructDeclaration() {
+TEST(SemanticTest, StructDeclaration) {
     const std::string source = R"(module demo;
 struct Vec2 {
     x: float;
@@ -67,21 +65,21 @@ struct Vec2 {
 
     Parser parser(source);
     ParseResult result = parser.parseModule();
-    assert(result.success);
-    assert(result.module.declarations.size() == 1);
+    ASSERT_TRUE(result.success);
+    ASSERT_EQ(result.module.declarations.size(), 1);
 
     const auto& decl = result.module.declarations.front();
-    assert(decl.kind == Declaration::Kind::Struct);
+    EXPECT_EQ(decl.kind, Declaration::Kind::Struct);
     const auto& structure = decl.structure;
-    assert(structure.name.value == "Vec2");
-    assert(structure.fields.size() == 2);
-    assert(structure.fields[0].name.value == "x");
-    assert(structure.fields[0].type_name.value == "float");
-    assert(structure.fields[1].name.value == "y");
-    assert(structure.fields[1].type_name.value == "float");
+    EXPECT_EQ(structure.name.value, "Vec2");
+    EXPECT_EQ(structure.fields.size(), 2);
+    EXPECT_EQ(structure.fields[0].name.value, "x");
+    EXPECT_EQ(structure.fields[0].type_name.value, "float");
+    EXPECT_EQ(structure.fields[1].name.value, "y");
+    EXPECT_EQ(structure.fields[1].type_name.value, "float");
 }
 
-void testInterfaceDeclaration() {
+TEST(SemanticTest, InterfaceDeclaration) {
     const std::string source = R"(module demo;
 interface Display {
     func toString(self: string) -> string;
@@ -91,23 +89,23 @@ interface Display {
 
     Parser parser(source);
     ParseResult result = parser.parseModule();
-    assert(result.success);
-    assert(result.module.declarations.size() == 1);
+    ASSERT_TRUE(result.success);
+    ASSERT_EQ(result.module.declarations.size(), 1);
 
     const auto& decl = result.module.declarations.front();
-    assert(decl.kind == Declaration::Kind::Interface);
+    EXPECT_EQ(decl.kind, Declaration::Kind::Interface);
     const auto& interfaceDecl = decl.interface_decl;
-    assert(interfaceDecl.name.value == "Display");
-    assert(interfaceDecl.methods.size() == 2);
-    assert(interfaceDecl.methods[0].name.value == "toString");
-    assert(interfaceDecl.methods[0].parameters.size() == 1);
-    assert(interfaceDecl.methods[0].parameters[0].type_name.value == "string");
-    assert(interfaceDecl.methods[0].return_type.has_value());
-    assert(interfaceDecl.methods[0].return_type->value == "string");
-    assert(!interfaceDecl.methods[1].return_type.has_value());
+    EXPECT_EQ(interfaceDecl.name.value, "Display");
+    EXPECT_EQ(interfaceDecl.methods.size(), 2);
+    EXPECT_EQ(interfaceDecl.methods[0].name.value, "toString");
+    EXPECT_EQ(interfaceDecl.methods[0].parameters.size(), 1);
+    EXPECT_EQ(interfaceDecl.methods[0].parameters[0].type_name.value, "string");
+    ASSERT_TRUE(interfaceDecl.methods[0].return_type.has_value());
+    EXPECT_EQ(interfaceDecl.methods[0].return_type->value, "string");
+    EXPECT_FALSE(interfaceDecl.methods[1].return_type.has_value());
 }
 
-void testStructDiagnostics() {
+TEST(SemanticTest, StructDiagnostics) {
     const std::string source = R"(module demo;
 struct Broken {
     x: int
@@ -116,11 +114,11 @@ struct Broken {
 
     Parser parser(source);
     ParseResult result = parser.parseModule();
-    assert(!result.success);
-    assert(!result.diagnostics.empty());
+    EXPECT_FALSE(result.success);
+    EXPECT_FALSE(result.diagnostics.empty());
 }
 
-void testStructFieldUnknownTypeDiagnostic() {
+TEST(SemanticTest, StructFieldUnknownTypeDiagnostic) {
     const std::string source = R"(module demo;
 struct Node {
     next: Missing;
@@ -129,10 +127,10 @@ struct Node {
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
 
     bool foundUnknownType = false;
     for (const auto& diag : semantic.diagnostics) {
@@ -141,10 +139,10 @@ struct Node {
             break;
         }
     }
-    assert(foundUnknownType && "Expected diagnostic for unknown struct field type");
+    EXPECT_TRUE(foundUnknownType) << "Expected diagnostic for unknown struct field type";
 }
 
-void testStructFieldVoidTypeDiagnostic() {
+TEST(SemanticTest, StructFieldVoidTypeDiagnostic) {
     const std::string source = R"(module demo;
 struct Holder {
     value: void;
@@ -153,10 +151,10 @@ struct Holder {
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
 
     bool foundVoidField = false;
     for (const auto& diag : semantic.diagnostics) {
@@ -165,10 +163,10 @@ struct Holder {
             break;
         }
     }
-    assert(foundVoidField && "Expected diagnostic for struct field declared void");
+    EXPECT_TRUE(foundVoidField) << "Expected diagnostic for struct field declared void";
 }
 
-void testStructTypeNameConflictWithPrimitive() {
+TEST(SemanticTest, StructTypeNameConflictWithPrimitive) {
     const std::string source = R"(module demo;
 struct int {
     value: int;
@@ -177,10 +175,10 @@ struct int {
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
 
     bool foundConflict = false;
     for (const auto& diag : semantic.diagnostics) {
@@ -190,10 +188,10 @@ struct int {
             break;
         }
     }
-    assert(foundConflict && "Expected diagnostic for struct name clashing with primitive type");
+    EXPECT_TRUE(foundConflict) << "Expected diagnostic for struct name clashing with primitive type";
 }
 
-void testInterfaceTypeConflicts() {
+TEST(SemanticTest, InterfaceTypeConflicts) {
     const std::string source = R"(module demo;
 struct Display {
     value: int;
@@ -205,10 +203,10 @@ interface Display {
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
 
     bool foundTypeConflict = false;
     for (const auto& diag : semantic.diagnostics) {
@@ -218,10 +216,10 @@ interface Display {
             break;
         }
     }
-    assert(foundTypeConflict && "Expected diagnostic for struct/interface name collision");
+    EXPECT_TRUE(foundTypeConflict) << "Expected diagnostic for struct/interface name collision";
 }
 
-void testInterfaceTypeResolutionDiagnostics() {
+TEST(SemanticTest, InterfaceTypeResolutionDiagnostics) {
     const std::string source = R"(module demo;
 interface Renderer {
     func draw(self: Missing);
@@ -231,10 +229,10 @@ interface Renderer {
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
 
     bool foundParamError = false;
     bool foundVoidReturn = false;
@@ -247,11 +245,11 @@ interface Renderer {
             foundVoidReturn = true;
         }
     }
-    assert(foundParamError && "Expected diagnostic for unknown interface parameter type");
-    assert(foundVoidReturn && "Expected diagnostic for explicit void interface return type");
+    EXPECT_TRUE(foundParamError) << "Expected diagnostic for unknown interface parameter type";
+    EXPECT_TRUE(foundVoidReturn) << "Expected diagnostic for explicit void interface return type";
 }
 
-void testSemanticDuplicates() {
+TEST(SemanticTest, SemanticDuplicates) {
     const std::string source = R"(module demo;
 let value: int = 1;
 let value: int = 2;
@@ -267,14 +265,14 @@ interface Display {
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
-    assert(!semantic.diagnostics.empty());
+    EXPECT_FALSE(semantic.success);
+    EXPECT_FALSE(semantic.diagnostics.empty());
 }
 
-void testImportSemanticDiagnostics() {
+TEST(SemanticTest, ImportSemanticDiagnostics) {
     const std::string source = R"(module demo;
 import std::io;
 import std::io;
@@ -284,14 +282,14 @@ import std::net as fs;
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
-    assert(semantic.diagnostics.size() >= 2);
+    EXPECT_FALSE(semantic.success);
+    EXPECT_GE(semantic.diagnostics.size(), 2);
 }
 
-void testConstRequiresConstantInitializer() {
+TEST(SemanticTest, ConstRequiresConstantInitializer) {
     const std::string source = R"(module demo;
 let value: int = 1;
 const answer: int = value;
@@ -299,10 +297,10 @@ const answer: int = value;
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
     bool found = false;
     for (const auto& diag : semantic.diagnostics) {
         if (diag.message.find("const binding 'answer'") != std::string::npos) {
@@ -310,20 +308,20 @@ const answer: int = value;
             break;
         }
     }
-    assert(found && "Expected diagnostic for non-constant const initializer");
+    EXPECT_TRUE(found) << "Expected diagnostic for non-constant const initializer";
 }
 
-void testConstDivisionByZeroDiagnostic() {
+TEST(SemanticTest, ConstDivisionByZeroDiagnostic) {
     const std::string source = R"(module demo;
 const broken: int = 1 / 0;
 )";
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
     bool found = false;
     for (const auto& diag : semantic.diagnostics) {
         if (diag.message.find("Division by zero") != std::string::npos) {
@@ -331,20 +329,20 @@ const broken: int = 1 / 0;
             break;
         }
     }
-    assert(found && "Expected division-by-zero diagnostic");
+    EXPECT_TRUE(found) << "Expected division-by-zero diagnostic";
 }
 
-void testBindingTypeMismatchDiagnostic() {
+TEST(SemanticTest, BindingTypeMismatchDiagnostic) {
     const std::string source = R"(module demo;
 var text: string = 42;
 )";
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
     bool found = false;
     for (const auto& diag : semantic.diagnostics) {
         if (diag.message.find("Cannot assign expression of type") != std::string::npos) {
@@ -352,10 +350,10 @@ var text: string = 42;
             break;
         }
     }
-    assert(found && "Expected diagnostic for mismatched binding initializer");
+    EXPECT_TRUE(found) << "Expected diagnostic for mismatched binding initializer";
 }
 
-void testFunctionReturnTypeMismatch() {
+TEST(SemanticTest, FunctionReturnTypeMismatch) {
     const std::string source = R"(module demo;
 func needsBool() -> bool {
     return 1.5;
@@ -364,10 +362,10 @@ func needsBool() -> bool {
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
     bool found = false;
     for (const auto& diag : semantic.diagnostics) {
         if (diag.message.find("Cannot return expression of type") != std::string::npos) {
@@ -375,10 +373,10 @@ func needsBool() -> bool {
             break;
         }
     }
-    assert(found && "Expected diagnostic for return type mismatch");
+    EXPECT_TRUE(found) << "Expected diagnostic for return type mismatch";
 }
 
-void testUnknownIdentifierDiagnostic() {
+TEST(SemanticTest, UnknownIdentifierDiagnostic) {
     const std::string source = R"(module demo;
 func mystery() -> int {
     return missing;
@@ -387,10 +385,10 @@ func mystery() -> int {
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
     bool found = false;
     for (const auto& diag : semantic.diagnostics) {
         if (diag.message.find("Unknown identifier 'missing'") != std::string::npos) {
@@ -398,10 +396,10 @@ func mystery() -> int {
             break;
         }
     }
-    assert(found && "Expected diagnostic for unknown identifier usage");
+    EXPECT_TRUE(found) << "Expected diagnostic for unknown identifier usage";
 }
 
-void testLocalBindingResolvesWithinBlock() {
+TEST(SemanticTest, LocalBindingResolvesWithinBlock) {
     const std::string source = R"(module demo;
 func builder() -> int {
     let base: int = 2;
@@ -422,7 +420,7 @@ func builder() -> int {
     assert(semantic.diagnostics.empty());
 }
 
-void testBreakOutsideLoopDiagnostic() {
+TEST(SemanticTest, BreakOutsideLoopDiagnostic) {
     const std::string source = R"(module demo;
 func main() -> int {
     break;
@@ -432,10 +430,10 @@ func main() -> int {
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
     bool found = false;
     for (const auto& diag : semantic.diagnostics) {
         if (diag.message.find("'break' statement") != std::string::npos) {
@@ -443,10 +441,10 @@ func main() -> int {
             break;
         }
     }
-    assert(found && "Expected diagnostic for 'break' outside loop");
+    EXPECT_TRUE(found) << "Expected diagnostic for 'break' outside loop";
 }
 
-void testContinueOutsideLoopDiagnostic() {
+TEST(SemanticTest, ContinueOutsideLoopDiagnostic) {
     const std::string source = R"(module demo;
 func main() -> int {
     continue;
@@ -456,10 +454,10 @@ func main() -> int {
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
     bool found = false;
     for (const auto& diag : semantic.diagnostics) {
         if (diag.message.find("'continue' statement") != std::string::npos) {
@@ -467,10 +465,10 @@ func main() -> int {
             break;
         }
     }
-    assert(found && "Expected diagnostic for 'continue' outside loop");
+    EXPECT_TRUE(found) << "Expected diagnostic for 'continue' outside loop";
 }
 
-void testLoopControlValid() {
+TEST(SemanticTest, LoopControlValid) {
     const std::string source = R"(module demo;
 func main() -> int {
     while (true) {
@@ -495,7 +493,7 @@ func main() -> int {
     assert(semantic.diagnostics.empty());
 }
 
-void testFunctionMissingReturn() {
+TEST(SemanticTest, FunctionMissingReturn) {
     const std::string source = R"(module demo;
 func main() -> int {
     let value: int = 42;
@@ -504,10 +502,10 @@ func main() -> int {
 
     Parser parser(source);
     ParseResult parseResult = parser.parseModule();
-    assert(parseResult.success);
+    ASSERT_TRUE(parseResult.success);
 
     const auto semantic = impulse::frontend::analyzeModule(parseResult.module);
-    assert(!semantic.success);
+    EXPECT_FALSE(semantic.success);
 
     bool foundDiagnostic = false;
     for (const auto& diag : semantic.diagnostics) {
@@ -516,33 +514,5 @@ func main() -> int {
             break;
         }
     }
-    assert(foundDiagnostic && "Expected diagnostic for missing return statement");
-}
-
-}  // namespace
-
-auto runSemanticTests() -> int {
-    testConstAndVarBindings();
-    testFunctionDeclaration();
-    testStructDeclaration();
-    testInterfaceDeclaration();
-    testStructDiagnostics();
-    testStructFieldUnknownTypeDiagnostic();
-    testStructFieldVoidTypeDiagnostic();
-    testStructTypeNameConflictWithPrimitive();
-    testInterfaceTypeConflicts();
-    testInterfaceTypeResolutionDiagnostics();
-    testSemanticDuplicates();
-    testImportSemanticDiagnostics();
-    testConstRequiresConstantInitializer();
-    testConstDivisionByZeroDiagnostic();
-    testBindingTypeMismatchDiagnostic();
-    testFunctionReturnTypeMismatch();
-    testUnknownIdentifierDiagnostic();
-    testLocalBindingResolvesWithinBlock();
-    testBreakOutsideLoopDiagnostic();
-    testContinueOutsideLoopDiagnostic();
-    testLoopControlValid();
-    testFunctionMissingReturn();
-    return 22;
+    EXPECT_TRUE(foundDiagnostic) << "Expected diagnostic for missing return statement";
 }

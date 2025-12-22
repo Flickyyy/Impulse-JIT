@@ -1,23 +1,20 @@
-#include <cstdlib>
-#include <iostream>
+#include <gtest/gtest.h>
+#include <sstream>
 
 #include "acceptance/harness.h"
 
 using impulse::tests::acceptance::CaseReport;
 
-auto runAcceptanceTests() -> int {
+TEST(AcceptanceTest, AllCases) {
     const auto reports = impulse::tests::acceptance::run_suite();
-    int passed = 0;
     for (const CaseReport& report : reports) {
-        if (report.success) {
-            ++passed;
-            continue;
+        if (!report.success) {
+            std::ostringstream error_msg;
+            error_msg << "Acceptance case '" << report.name << "' failed:\n";
+            for (const auto& message : report.messages) {
+                error_msg << "  - " << message << '\n';
+            }
+            FAIL() << error_msg.str();
         }
-        std::cerr << "Acceptance case '" << report.name << "' failed:\n";
-        for (const auto& message : report.messages) {
-            std::cerr << "  - " << message << '\n';
-        }
-        std::abort();
     }
-    return passed;
 }

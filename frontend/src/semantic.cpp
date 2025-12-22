@@ -1205,6 +1205,65 @@ private:
             return makePrimitive(TypeKind::String);
         }
 
+        // Math functions from std::math module
+        if (expr.callee == "sqrt" || expr.callee == "std::math::sqrt") {
+            if (expr.arguments.size() != 1) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'sqrt' expects 1 argument but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            if (!expr.arguments.empty() && expr.arguments[0]) {
+                const TypeInfo valueType = evaluateArgument(0);
+                if (!isError(valueType) && !isNumeric(valueType) && valueType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[0]->location,
+                                  "sqrt expects a numeric argument but got '" + typeToString(valueType) + "'");
+                }
+            }
+            return makePrimitive(TypeKind::Float);
+        }
+
+        if (expr.callee == "sin" || expr.callee == "cos" || expr.callee == "tan" ||
+            expr.callee == "abs" || expr.callee == "floor" || expr.callee == "ceil" ||
+            expr.callee == "round" || expr.callee == "exp" || expr.callee == "log" ||
+            expr.callee == "log10" || expr.callee == "std::math::sin" || expr.callee == "std::math::cos" ||
+            expr.callee == "std::math::tan" || expr.callee == "std::math::abs" ||
+            expr.callee == "std::math::floor" || expr.callee == "std::math::ceil" ||
+            expr.callee == "std::math::round" || expr.callee == "std::math::exp" ||
+            expr.callee == "std::math::log" || expr.callee == "std::math::log10") {
+            if (expr.arguments.size() != 1) {
+                addDiagnostic(result, expr.location,
+                              "Builtin '" + expr.callee + "' expects 1 argument but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            if (!expr.arguments.empty() && expr.arguments[0]) {
+                const TypeInfo valueType = evaluateArgument(0);
+                if (!isError(valueType) && !isNumeric(valueType) && valueType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[0]->location,
+                                  expr.callee + " expects a numeric argument but got '" + typeToString(valueType) + "'");
+                }
+            }
+            return makePrimitive(TypeKind::Float);
+        }
+
+        if (expr.callee == "pow" || expr.callee == "std::math::pow") {
+            if (expr.arguments.size() != 2) {
+                addDiagnostic(result, expr.location,
+                              "Builtin 'pow' expects 2 arguments but received " +
+                                  std::to_string(expr.arguments.size()));
+            }
+            for (std::size_t i = 0; i < expr.arguments.size(); ++i) {
+                if (!expr.arguments[i]) {
+                    continue;
+                }
+                const TypeInfo valueType = evaluateArgument(i);
+                if (!isError(valueType) && !isNumeric(valueType) && valueType.kind != TypeKind::Unknown) {
+                    addDiagnostic(result, expr.arguments[i]->location,
+                                  "pow expects numeric arguments but got '" + typeToString(valueType) + "'");
+                }
+            }
+            return makePrimitive(TypeKind::Float);
+        }
+
         return std::nullopt;
     }
 };

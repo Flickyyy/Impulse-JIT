@@ -19,7 +19,3 @@ jobs:
         run: cmake --build build
       - name: Run tests
         run: ctest --test-dir build || true
-      - name: Go fmt
-        run: |
-          cd cli
-          gofmt -w ./

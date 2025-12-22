@@ -1,0 +1,66 @@
+module std::math;
+
+// Standard math library functions
+// These functions are bound directly to C++ standard library functions
+// The runtime handles these as built-in functions
+
+export func sqrt(x: float) -> float {
+    // Bound to C++ std::sqrt - runtime handles this as built-in
+    return 0.0;
+}
+
+export func sin(x: float) -> float {
+    // Bound to C++ std::sin - runtime handles this as built-in
+    return 0.0;
+}
+
+export func cos(x: float) -> float {
+    // Bound to C++ std::cos - runtime handles this as built-in
+    return 0.0;
+}
+
+export func tan(x: float) -> float {
+    // Bound to C++ std::tan - runtime handles this as built-in
+    return 0.0;
+}
+
+export func abs(x: float) -> float {
+    // Bound to C++ std::abs - runtime handles this as built-in
+    return 0.0;
+}
+
+export func floor(x: float) -> float {
+    // Bound to C++ std::floor - runtime handles this as built-in
+    return 0.0;
+}
+
+export func ceil(x: float) -> float {
+    // Bound to C++ std::ceil - runtime handles this as built-in
+    return 0.0;
+}
+
+export func round(x: float) -> float {
+    // Bound to C++ std::round - runtime handles this as built-in
+    return 0.0;
+}
+
+export func pow(base: float, exponent: float) -> float {
+    // Bound to C++ std::pow - runtime handles this as built-in
+    return 0.0;
+}
+
+export func exp(x: float) -> float {
+    // Bound to C++ std::exp - runtime handles this as built-in
+    return 0.0;
+}
+
+export func log(x: float) -> float {
+    // Bound to C++ std::log - runtime handles this as built-in
+    return 0.0;
+}
+
+export func log10(x: float) -> float {
+    // Bound to C++ std::log10 - runtime handles this as built-in
+    return 0.0;
+}
+

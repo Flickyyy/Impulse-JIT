@@ -1,5 +1,7 @@
 module benchmark::nbody;
 
+import std::math;
+
 // Benchmark: N-body simulation from Computer Language Shootout
 // Simulates the solar system with Sun, Jupiter, Saturn, Uranus, Neptune
 // Expected result: -1.3524862408537381 (accumulated energy)
@@ -22,36 +24,6 @@ let FIELD_VX: int = 3;
 let FIELD_VY: int = 4;
 let FIELD_VZ: int = 5;
 let FIELD_MASS: int = 6;
-
-// Square root using Newton's method
-func sqrt(x: float) -> float {
-    if x == 0.0 {
-        return 0.0;
-    }
-    if x < 0.0 {
-        return 0.0; // Return 0 for negative (shouldn't happen in this benchmark)
-    }
-    // Initial guess - use a better starting point
-    let guess: float = x;
-    if guess > 1.0 {
-        guess = x / 2.0;
-    }
-    let prev: float = 0.0;
-    let max_iter: int = 100;
-    let iter: int = 0;
-    // Iterate until convergence or max iterations
-    while iter < max_iter {
-        let diff: float = guess - prev;
-        let diff_sq: float = diff * diff;
-        if diff_sq <= 1e-20 {
-            break;
-        }
-        prev = guess;
-        guess = (guess + x / guess) / 2.0;
-        iter = iter + 1;
-    }
-    return guess;
-}
 
 // Get index for a body field in the flat array
 func body_index(body_idx: int, field: int) -> int {

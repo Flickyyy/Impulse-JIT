@@ -1,5 +1,7 @@
 add_library(impulse-runtime STATIC
 	src/runtime.cpp
+	src/runtime_utils.cpp
+	src/ssa_interpreter.cpp
 	src/gc_heap.cpp
 )
 

@@ -11,6 +11,8 @@ add_executable(impulse-tests
 	test_acceptance.cpp
 	test_benchmarks.cpp
 	test_jit.cpp
+	test_profiling.cpp
+	test_sorting_profile.cpp
 	acceptance/harness.cpp
 )
 

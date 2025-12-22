@@ -13,6 +13,8 @@
 
 #include "impulse/runtime/runtime_utils.h"
 
+using impulse::runtime::kEpsilon;
+
 namespace impulse::runtime {
 
 SsaInterpreter::SsaInterpreter(const ir::SsaFunction& ssa, const std::unordered_map<std::string, Value>& parameters,
@@ -34,6 +36,11 @@ SsaInterpreter::SsaInterpreter(const ir::SsaFunction& ssa, const std::unordered_
     for (const auto& block : ssa_.blocks) {
         block_lookup_.emplace(block.name, block.id);
     }
+    
+    // Build function lookup map for O(1) function lookup (performance optimization)
+    for (const auto& func : functions_) {
+        function_lookup_[func.name] = &func;
+    }
 
     for (const auto& [name, value] : parameters_) {
         if (const auto* symbol = ssa_.find_symbol(name); symbol != nullptr) {
@@ -43,12 +50,6 @@ SsaInterpreter::SsaInterpreter(const ir::SsaFunction& ssa, const std::unordered_
     
     // Initialize built-in function table
     init_builtin_table();
-    
-    // Initialize opcode handler table
-    init_opcode_handlers();
-    
-    // Initialize binary operator handler table
-    init_binary_op_handlers();
 }
 
 auto SsaInterpreter::run() -> VmResult {
@@ -147,10 +148,52 @@ auto SsaInterpreter::execute_instruction(const ir::SsaBlock& block, const ir::Ss
     -> std::optional<VmResult> {
     trace_instruction(block, inst);
 
-    // Use hash map for fast opcode dispatch
-    const auto handler_it = opcode_handlers_.find(inst.opcode);
-    if (handler_it != opcode_handlers_.end()) {
-        return handler_it->second(block, inst, current, previous, jumped);
+    // Fast opcode dispatch using string comparison chain (compiler can optimize this)
+    // This avoids std::function overhead and hash map lookup
+    const std::string& opcode = inst.opcode;
+    
+    // Most common opcodes first for better branch prediction
+    if (opcode == "array_get") {
+        return handle_array_get(block, inst, current, previous, jumped);
+    }
+    if (opcode == "array_set") {
+        return handle_array_set(block, inst, current, previous, jumped);
+    }
+    if (opcode == "binary") {
+        return handle_binary(block, inst, current, previous, jumped);
+    }
+    if (opcode == "branch_if") {
+        return handle_branch_if(block, inst, current, previous, jumped);
+    }
+    if (opcode == "call") {
+        return handle_call(block, inst, current, previous, jumped);
+    }
+    if (opcode == "literal") {
+        return handle_literal(block, inst, current, previous, jumped);
+    }
+    if (opcode == "assign") {
+        return handle_assign(block, inst, current, previous, jumped);
+    }
+    if (opcode == "return") {
+        return handle_return(block, inst, current, previous, jumped);
+    }
+    if (opcode == "branch") {
+        return handle_branch(block, inst, current, previous, jumped);
+    }
+    if (opcode == "array_length") {
+        return handle_array_length(block, inst, current, previous, jumped);
+    }
+    if (opcode == "array_make") {
+        return handle_array_make(block, inst, current, previous, jumped);
+    }
+    if (opcode == "unary") {
+        return handle_unary(block, inst, current, previous, jumped);
+    }
+    if (opcode == "literal_string") {
+        return handle_literal_string(block, inst, current, previous, jumped);
+    }
+    if (opcode == "drop") {
+        return handle_drop(block, inst, current, previous, jumped);
     }
 
     return make_result(VmStatus::ModuleError, "unsupported SSA opcode '" + inst.opcode + "'");
@@ -232,10 +275,67 @@ auto SsaInterpreter::handle_binary(const ir::SsaBlock&, const ir::SsaInstruction
     const double left = lhsValue->number;
     const double right = rhsValue->number;
 
-    // Use hash map for binary operator dispatch
-    const auto op_handler_it = binary_op_handlers_.find(op);
-    if (op_handler_it != binary_op_handlers_.end()) {
-        return op_handler_it->second(left, right, inst.result);
+    // Fast binary operator dispatch using string comparison (compiler can optimize this)
+    // Most common operators first for better branch prediction
+    if (op == "+") {
+        store_value(*inst.result, Value::make_number(left + right));
+        return std::nullopt;
+    }
+    if (op == "-") {
+        store_value(*inst.result, Value::make_number(left - right));
+        return std::nullopt;
+    }
+    if (op == "*") {
+        store_value(*inst.result, Value::make_number(left * right));
+        return std::nullopt;
+    }
+    if (op == "<") {
+        store_value(*inst.result, Value::make_number(left < right));
+        return std::nullopt;
+    }
+    if (op == "<=") {
+        store_value(*inst.result, Value::make_number(left <= right));
+        return std::nullopt;
+    }
+    if (op == ">") {
+        store_value(*inst.result, Value::make_number(left > right));
+        return std::nullopt;
+    }
+    if (op == ">=") {
+        store_value(*inst.result, Value::make_number(left >= right));
+        return std::nullopt;
+    }
+    if (op == "==") {
+        store_value(*inst.result, Value::make_number(left == right));
+        return std::nullopt;
+    }
+    if (op == "!=") {
+        store_value(*inst.result, Value::make_number(left != right));
+        return std::nullopt;
+    }
+    if (op == "||") {
+        store_value(*inst.result, Value::make_number(left || right));
+        return std::nullopt;
+    }
+    if (op == "&&") {
+        store_value(*inst.result, Value::make_number(left && right));
+        return std::nullopt;
+    }
+    if (op == "/") {
+        if (std::abs(right) < kEpsilon) {
+            return make_result(VmStatus::RuntimeError, "division by zero during execution");
+        }
+        store_value(*inst.result, Value::make_number(left / right));
+        return std::nullopt;
+    }
+    if (op == "%") {
+        const auto leftIndex = to_index(left);
+        const auto rightIndex = to_index(right);
+        if (!leftIndex.has_value() || !rightIndex.has_value() || *rightIndex == 0) {
+            return make_result(VmStatus::RuntimeError, "modulo requires non-negative integer operands and non-zero divisor");
+        }
+        store_value(*inst.result, Value::make_number(static_cast<double>(*leftIndex % *rightIndex)));
+        return std::nullopt;
     }
 
     return make_result(VmStatus::ModuleError, "unsupported binary operator '" + op + "'");
@@ -368,13 +468,11 @@ auto SsaInterpreter::handle_call(const ir::SsaBlock&, const ir::SsaInstruction& 
         return builtin_it->second(callee_name, args, inst.result);
     }
 
-    // Not a built-in, look up in module functions
+    // Not a built-in, look up in module functions using O(1) map lookup
     const ir::Function* target_func = nullptr;
-    for (const auto& f : functions_) {
-        if (f.name == callee_name) {
-            target_func = &f;
-            break;
-        }
+    const auto func_it = function_lookup_.find(callee_name);
+    if (func_it != function_lookup_.end()) {
+        target_func = func_it->second;
     }
 
     if (target_func == nullptr) {
@@ -422,22 +520,26 @@ auto SsaInterpreter::handle_array_get(const ir::SsaBlock&, const ir::SsaInstruct
     }
     const auto arrayValue = lookup_value(inst.arguments[0]);
     const auto indexValue = lookup_value(inst.arguments[1]);
-    if (!arrayValue.has_value() || !arrayValue->is_object() || arrayValue->as_object() == nullptr ||
-        arrayValue->as_object()->kind != ObjectKind::Array) {
+    if (!arrayValue.has_value() || !arrayValue->is_object()) {
+        return make_result(VmStatus::RuntimeError, "array_get requires an array value");
+    }
+    GcObject* object = arrayValue->as_object();
+    if (object == nullptr || object->kind != ObjectKind::Array) {
         return make_result(VmStatus::RuntimeError, "array_get requires an array value");
     }
     if (!indexValue.has_value() || !indexValue->is_number()) {
         return make_result(VmStatus::RuntimeError, "array_get index must be numeric");
     }
-    const auto maybeIndex = to_index(indexValue->number);
-    if (!maybeIndex.has_value()) {
+    // Fast path: convert to index and check bounds in one go
+    const double indexNum = indexValue->number;
+    if (indexNum < 0.0 || indexNum != std::floor(indexNum)) {
         return make_result(VmStatus::RuntimeError, "array_get index must be a non-negative integer");
     }
-    GcObject* object = arrayValue->as_object();
-    if (*maybeIndex >= object->fields.size()) {
+    const std::size_t index = static_cast<std::size_t>(indexNum);
+    if (index >= object->fields.size()) {
         return make_result(VmStatus::RuntimeError, "array_get index out of bounds");
     }
-    store_value(*inst.result, object->fields[*maybeIndex]);
+    store_value(*inst.result, object->fields[index]);
     return std::nullopt;
 }
 
@@ -448,8 +550,11 @@ auto SsaInterpreter::handle_array_set(const ir::SsaBlock&, const ir::SsaInstruct
     const auto arrayValue = lookup_value(inst.arguments[0]);
     const auto indexValue = lookup_value(inst.arguments[1]);
     const auto value = lookup_value(inst.arguments[2]);
-    if (!arrayValue.has_value() || !arrayValue->is_object() || arrayValue->as_object() == nullptr ||
-        arrayValue->as_object()->kind != ObjectKind::Array) {
+    if (!arrayValue.has_value() || !arrayValue->is_object()) {
+        return make_result(VmStatus::RuntimeError, "array_set requires an array value");
+    }
+    GcObject* object = arrayValue->as_object();
+    if (object == nullptr || object->kind != ObjectKind::Array) {
         return make_result(VmStatus::RuntimeError, "array_set requires an array value");
     }
     if (!indexValue.has_value() || !indexValue->is_number()) {
@@ -458,15 +563,16 @@ auto SsaInterpreter::handle_array_set(const ir::SsaBlock&, const ir::SsaInstruct
     if (!value.has_value()) {
         return make_result(VmStatus::RuntimeError, "array_set value uninitialised");
     }
-    const auto maybeIndex = to_index(indexValue->number);
-    if (!maybeIndex.has_value()) {
+    // Fast path: convert to index and check bounds in one go
+    const double indexNum = indexValue->number;
+    if (indexNum < 0.0 || indexNum != std::floor(indexNum)) {
         return make_result(VmStatus::RuntimeError, "array_set index must be a non-negative integer");
     }
-    GcObject* object = arrayValue->as_object();
-    if (*maybeIndex >= object->fields.size()) {
+    const std::size_t index = static_cast<std::size_t>(indexNum);
+    if (index >= object->fields.size()) {
         return make_result(VmStatus::RuntimeError, "array_set index out of bounds");
     }
-    object->fields[*maybeIndex] = *value;
+    object->fields[index] = *value;
     store_value(*inst.result, *value);
     return std::nullopt;
 }
@@ -485,152 +591,6 @@ auto SsaInterpreter::handle_array_length(const ir::SsaBlock&, const ir::SsaInstr
     return std::nullopt;
 }
 
-void SsaInterpreter::init_opcode_handlers() {
-    opcode_handlers_["literal"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_literal(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["literal_string"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_literal_string(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["unary"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_unary(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["binary"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_binary(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["assign"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_assign(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["drop"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_drop(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["return"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_return(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["branch"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_branch(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["branch_if"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_branch_if(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["call"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_call(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["array_make"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_array_make(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["array_get"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_array_get(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["array_set"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_array_set(block, inst, current, previous, jumped);
-    };
-    opcode_handlers_["array_length"] = [this](const ir::SsaBlock& block, const ir::SsaInstruction& inst, std::size_t current, std::optional<std::size_t>& previous, bool& jumped) {
-        return handle_array_length(block, inst, current, previous, jumped);
-    };
-}
-
-void SsaInterpreter::init_binary_op_handlers() {
-    binary_op_handlers_["+"] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        store_value(*result, Value::make_number(left + right));
-        return std::nullopt;
-    };
-    binary_op_handlers_["-"] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        store_value(*result, Value::make_number(left - right));
-        return std::nullopt;
-    };
-    binary_op_handlers_["*"] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        store_value(*result, Value::make_number(left * right));
-        return std::nullopt;
-    };
-    binary_op_handlers_["/"] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        if (std::abs(right) < kEpsilon) {
-            return make_result(VmStatus::RuntimeError, "division by zero during execution");
-        }
-        store_value(*result, Value::make_number(left / right));
-        return std::nullopt;
-    };
-    binary_op_handlers_["%"] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        if (std::abs(right) < kEpsilon) {
-            return make_result(VmStatus::RuntimeError, "modulo by zero during execution");
-        }
-        const int leftInt = static_cast<int>(left);
-        const int rightInt = static_cast<int>(right);
-        store_value(*result, Value::make_number(static_cast<double>(leftInt % rightInt)));
-        return std::nullopt;
-    };
-    binary_op_handlers_["=="] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        store_value(*result, Value::make_number(left == right ? 1.0 : 0.0));
-        return std::nullopt;
-    };
-    binary_op_handlers_["!="] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        store_value(*result, Value::make_number(left != right ? 1.0 : 0.0));
-        return std::nullopt;
-    };
-    binary_op_handlers_["<"] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        store_value(*result, Value::make_number(left < right ? 1.0 : 0.0));
-        return std::nullopt;
-    };
-    binary_op_handlers_["<="] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        store_value(*result, Value::make_number(left <= right ? 1.0 : 0.0));
-        return std::nullopt;
-    };
-    binary_op_handlers_[">"] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        store_value(*result, Value::make_number(left > right ? 1.0 : 0.0));
-        return std::nullopt;
-    };
-    binary_op_handlers_[">="] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        store_value(*result, Value::make_number(left >= right ? 1.0 : 0.0));
-        return std::nullopt;
-    };
-    binary_op_handlers_["&&"] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        store_value(*result, Value::make_number((left != 0.0 && right != 0.0) ? 1.0 : 0.0));
-        return std::nullopt;
-    };
-    binary_op_handlers_["||"] = [this](double left, double right, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
-        if (!result.has_value()) {
-            return make_result(VmStatus::ModuleError, "binary operation requires destination");
-        }
-        store_value(*result, Value::make_number((left != 0.0 || right != 0.0) ? 1.0 : 0.0));
-        return std::nullopt;
-    };
-}
 
 // lookup_value and store_value are now inline in the header for performance
 

@@ -1,8 +1,11 @@
 #include "impulse/runtime/runtime.h"
 
 #include <algorithm>
+#include <chrono>
+#include <iomanip>
 #include <istream>
 #include <ostream>
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -135,7 +138,7 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
             return candidate.name == loaded.name;
         });
         if (existing != modules_.end()) {
-            // Module is being reloaded - clear JIT cache for this module
+            // Module is being reloaded - clear caches for this module
             std::string module_prefix = loaded.name + "::";
             auto it = jit_cache_.begin();
             while (it != jit_cache_.end()) {
@@ -143,6 +146,15 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
                     it = jit_cache_.erase(it);
                 } else {
                     ++it;
+                }
+            }
+            // Clear SSA cache for this module
+            auto ssa_it = ssa_cache_.begin();
+            while (ssa_it != ssa_cache_.end()) {
+                if (ssa_it->first.find(module_prefix) == 0) {
+                    ssa_it = ssa_cache_.erase(ssa_it);
+                } else {
+                    ++ssa_it;
                 }
             }
             *existing = std::move(loaded);
@@ -189,6 +201,12 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
         return make_result(VmStatus::ModuleError, "function has no basic blocks");
     }
 
+    // Start profiling timer
+    const auto start_time = profiling_enabled_ 
+        ? std::chrono::high_resolution_clock::now() 
+        : std::chrono::high_resolution_clock::time_point{};
+    bool was_jit_compiled = false;
+
     std::vector<Value> stack;
     std::unordered_map<std::string, Value> locals;
     locals.reserve(parameters.size());
@@ -196,8 +214,21 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
         locals.emplace(name, value);
     }
     FrameGuard frame_guard(*this, locals, stack);
-    auto ssa = ir::build_ssa(function);
-    [[maybe_unused]] const bool optimized = ir::optimize_ssa(ssa);
+    
+    // Check SSA cache first (major performance optimization - SSA building is expensive)
+    std::string cache_key = module.name + "::" + function.name;
+    const ir::SsaFunction* ssa_ptr = nullptr;
+    auto ssa_cache_it = ssa_cache_.find(cache_key);
+    if (ssa_cache_it != ssa_cache_.end()) {
+        // Use cached SSA (use pointer to avoid copy)
+        ssa_ptr = &ssa_cache_it->second;
+    } else {
+        // Build SSA and cache it
+        ir::SsaFunction ssa = ir::build_ssa(function);
+        [[maybe_unused]] const bool optimized = ir::optimize_ssa(ssa);
+        ssa_cache_[cache_key] = std::move(ssa);  // Cache the SSA representation
+        ssa_ptr = &ssa_cache_[cache_key];
+    }
 
     // Extract parameter names in order
     std::vector<std::string> param_names;
@@ -206,8 +237,7 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
         param_names.push_back(param.name);
     }
     
-    // Check JIT cache first
-    std::string cache_key = module.name + "::" + function.name;
+    // Check JIT cache (cache_key already computed above)
     auto cache_it = jit_cache_.find(cache_key);
     
     // Try JIT compilation if the function is suitable
@@ -222,10 +252,10 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
             can_jit = cache_it->second.can_jit;
         } else {
             // Check if function can be JIT compiled and compile if possible
-            can_jit = can_jit_compile(ssa, param_names);
+            can_jit = can_jit_compile(*ssa_ptr, param_names);
             if (can_jit) {
                 jit::JitCompiler compiler;
-                auto [func, buffer] = compiler.compile_with_buffer(ssa, param_names);
+                auto [func, buffer] = compiler.compile_with_buffer(*ssa_ptr, param_names);
                 jit_func = func;
                 
                 // Cache the result with the code buffer to keep executable memory alive
@@ -244,6 +274,8 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
         }
         
         if (can_jit && jit_func != nullptr) {
+            was_jit_compiled = true;
+            
             // Write trace output for JIT-compiled functions (to match interpreter behavior)
             if (trace_stream_ != nullptr) {
                 *trace_stream_ << "enter function " << function.name << '\n';
@@ -272,6 +304,24 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
                 *trace_stream_ << "exit function " << function.name;
                 *trace_stream_ << " = " << result_value;
                 *trace_stream_ << '\n';
+            }
+            
+            // Update profiling data
+            if (profiling_enabled_) {
+                const auto end_time = std::chrono::high_resolution_clock::now();
+                const auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time);
+                std::string full_name = module.name + "::" + function.name;
+                auto& profile = profiling_data_[full_name];
+                profile.full_name = full_name;
+                profile.call_count++;
+                profile.total_time += duration;
+                if (duration < profile.min_time) {
+                    profile.min_time = duration;
+                }
+                if (duration > profile.max_time) {
+                    profile.max_time = duration;
+                }
+                profile.was_jit_compiled = was_jit_compiled;
             }
             
             VmResult result;
@@ -322,7 +372,7 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
         *trace_stream_ << "enter function " << function.name << '\n';
     }
 
-    SsaInterpreter interpreter(ssa, parameters, locals, module.module.functions, module.globals,
+    SsaInterpreter interpreter(*ssa_ptr, parameters, locals, module.module.functions, module.globals,
                                std::move(call_function), std::move(allocate_array), std::move(collect_fn),
                                output_buffer, trace_stream_, std::move(read_line));
     auto result = interpreter.run();
@@ -338,6 +388,24 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
             }
         }
         *trace_stream_ << '\n';
+    }
+
+    // Update profiling data for interpreter path
+    if (profiling_enabled_) {
+        const auto end_time = std::chrono::high_resolution_clock::now();
+        const auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time);
+        std::string full_name = module.name + "::" + function.name;
+        auto& profile = profiling_data_[full_name];
+        profile.full_name = full_name;
+        profile.call_count++;
+        profile.total_time += duration;
+        if (duration < profile.min_time) {
+            profile.min_time = duration;
+        }
+        if (duration > profile.max_time) {
+            profile.max_time = duration;
+        }
+        profile.was_jit_compiled = was_jit_compiled;
     }
 
     return result;
@@ -426,6 +494,88 @@ auto Vm::is_function_jit_compiled(const std::string& module_name, const std::str
 
 auto Vm::get_jit_cache_size() const -> size_t {
     return jit_cache_.size();
+}
+
+void Vm::set_profiling_enabled(bool enabled) const {
+    profiling_enabled_ = enabled;
+}
+
+void Vm::reset_profiling() const {
+    profiling_data_.clear();
+}
+
+void Vm::dump_profiling_results(std::ostream& out) const {
+    if (profiling_data_.empty()) {
+        out << "No profiling data collected.\n";
+        return;
+    }
+
+    // Convert to vector and sort by total time (descending)
+    std::vector<const FunctionProfile*> profiles;
+    profiles.reserve(profiling_data_.size());
+    for (const auto& [name, profile] : profiling_data_) {
+        profiles.push_back(&profile);
+    }
+    std::sort(profiles.begin(), profiles.end(), 
+        [](const FunctionProfile* a, const FunctionProfile* b) {
+            return a->total_time > b->total_time;
+        });
+
+    // Calculate total time across all functions
+    std::chrono::nanoseconds total_all_time{0};
+    uint64_t total_calls = 0;
+    for (const auto* profile : profiles) {
+        total_all_time += profile->total_time;
+        total_calls += profile->call_count;
+    }
+
+    out << "=== Function Profiling Results ===\n\n";
+    out << "Total functions profiled: " << profiles.size() << "\n";
+    out << "Total calls: " << total_calls << "\n";
+    out << "Total time: " << std::chrono::duration_cast<std::chrono::milliseconds>(total_all_time).count() << " ms\n\n";
+
+    // Header
+    out << std::left << std::setw(40) << "Function Name"
+        << std::right << std::setw(12) << "Calls"
+        << std::setw(15) << "Total (ms)"
+        << std::setw(15) << "Avg (ms)"
+        << std::setw(15) << "Min (ns)"
+        << std::setw(15) << "Max (ns)"
+        << std::setw(12) << "JIT"
+        << std::setw(12) << "% Total"
+        << "\n";
+    out << std::string(140, '-') << "\n";
+
+    // Data rows
+    for (const auto* profile : profiles) {
+        auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(profile->total_time).count();
+        auto avg_ns = profile->call_count > 0 
+            ? profile->total_time.count() / profile->call_count 
+            : 0;
+        auto avg_ms = avg_ns / 1'000'000.0;
+        auto min_ns = profile->min_time.count();
+        auto max_ns = profile->max_time.count();
+        double percent = total_all_time.count() > 0 
+            ? (100.0 * profile->total_time.count()) / total_all_time.count() 
+            : 0.0;
+
+        out << std::left << std::setw(40) << profile->full_name
+            << std::right << std::setw(12) << profile->call_count
+            << std::setw(15) << total_ms
+            << std::fixed << std::setprecision(3) << std::setw(15) << avg_ms
+            << std::setprecision(0) << std::setw(15) << min_ns
+            << std::setw(15) << max_ns
+            << std::setw(12) << (profile->was_jit_compiled ? "Yes" : "No")
+            << std::setprecision(2) << std::setw(12) << percent << "%"
+            << "\n";
+    }
+    out << "\n";
+}
+
+auto Vm::get_profiling_results() const -> std::string {
+    std::ostringstream oss;
+    dump_profiling_results(oss);
+    return oss.str();
 }
 
 }  // namespace impulse::runtime

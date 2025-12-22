@@ -541,19 +541,19 @@ auto impulse::ir::SsaFunction::find_block(const std::string& block_name) const -
 }
 
 auto SsaFunction::find_symbol(SymbolId id) const -> const SsaSymbol* {
-    for (const auto& symbol : symbols) {
-        if (symbol.id == id) {
-            return &symbol;
-        }
+    // Use index map for O(1) lookup instead of linear search
+    const auto it = symbol_id_index_.find(id);
+    if (it != symbol_id_index_.end()) {
+        return it->second;
     }
     return nullptr;
 }
 
 auto SsaFunction::find_symbol(const std::string& name) const -> const SsaSymbol* {
-    for (const auto& symbol : symbols) {
-        if (symbol.name == name) {
-            return &symbol;
-        }
+    // Use index map for O(1) lookup instead of linear search
+    const auto it = symbol_name_index_.find(name);
+    if (it != symbol_name_index_.end()) {
+        return it->second;
     }
     return nullptr;
 }
@@ -695,6 +695,15 @@ auto impulse::ir::build_ssa(const Function& function, const ControlFlowGraph& cf
     }
 
     ssa.symbols = symbol_table.symbols();
+    
+    // Build symbol index maps for O(1) lookup performance
+    for (const auto& symbol : ssa.symbols) {
+        ssa.symbol_id_index_[symbol.id] = &symbol;
+        if (!symbol.name.empty()) {
+            ssa.symbol_name_index_[symbol.name] = &symbol;
+        }
+    }
+    
     return ssa;
 }
 

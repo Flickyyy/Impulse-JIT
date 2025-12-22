@@ -4,6 +4,7 @@
 #include <limits>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "impulse/ir/cfg.h"
@@ -62,6 +63,10 @@ struct SsaFunction {
     std::string name;
     std::vector<SsaSymbol> symbols;
     std::vector<SsaBlock> blocks;
+    // Performance optimization: O(1) symbol lookup by ID
+    std::unordered_map<SymbolId, const SsaSymbol*> symbol_id_index_;
+    // Performance optimization: O(1) symbol lookup by name
+    std::unordered_map<std::string, const SsaSymbol*> symbol_name_index_;
 
     [[nodiscard]] auto find_block(const std::string& block_name) const -> const SsaBlock*;
     [[nodiscard]] auto find_symbol(SymbolId id) const -> const SsaSymbol*;

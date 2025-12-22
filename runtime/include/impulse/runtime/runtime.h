@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <iosfwd>
@@ -57,6 +58,12 @@ public:
     // Get cache entry count (for testing)
     [[nodiscard]] auto get_jit_cache_size() const -> size_t;
 
+    // Profiling API
+    void set_profiling_enabled(bool enabled) const;
+    void reset_profiling() const;
+    void dump_profiling_results(std::ostream& out) const;
+    [[nodiscard]] auto get_profiling_results() const -> std::string;
+
 private:
     friend class FrameGuard;
 
@@ -105,6 +112,21 @@ private:
     mutable std::string output_buffer_;
     // JIT cache: maps (module_name, function_name) -> JitCacheEntry
     mutable std::unordered_map<std::string, JitCacheEntry> jit_cache_;
+    // SSA cache: maps (module_name, function_name) -> SsaFunction
+    // This avoids rebuilding SSA on every function call (major performance bottleneck)
+    mutable std::unordered_map<std::string, ir::SsaFunction> ssa_cache_;
+    
+    // Profiling data
+    struct FunctionProfile {
+        std::string full_name;  // "module::function"
+        uint64_t call_count = 0;
+        std::chrono::nanoseconds total_time{0};
+        std::chrono::nanoseconds min_time{std::chrono::nanoseconds::max()};
+        std::chrono::nanoseconds max_time{0};
+        bool was_jit_compiled = false;
+    };
+    mutable bool profiling_enabled_ = false;
+    mutable std::unordered_map<std::string, FunctionProfile> profiling_data_;
 };
 
 }  // namespace impulse::runtime

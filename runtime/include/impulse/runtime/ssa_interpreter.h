@@ -27,8 +27,6 @@ public:
     using MaybeCollect = std::function<void()>;
     using ReadLine = std::function<std::optional<std::string>()>;
     using BuiltinHandler = std::function<std::optional<VmResult>(const std::string&, const std::vector<Value>&, const std::optional<ir::SsaValue>&)>;
-    using InstructionHandler = std::function<std::optional<VmResult>(const ir::SsaBlock&, const ir::SsaInstruction&, std::size_t, std::optional<std::size_t>&, bool&)>;
-    using BinaryOpHandler = std::function<std::optional<VmResult>(double, double, const std::optional<ir::SsaValue>&)>;
 
     SsaInterpreter(const ir::SsaFunction& ssa, const std::unordered_map<std::string, Value>& parameters,
                    std::unordered_map<std::string, Value>& locals, const std::vector<ir::Function>& functions,
@@ -78,8 +76,6 @@ private:
     [[nodiscard]] auto handle_array_set(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult>;
     [[nodiscard]] auto handle_array_length(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult>;
     
-    void init_opcode_handlers();
-    void init_binary_op_handlers();
     void init_builtin_table();
     
     [[nodiscard]] auto execute_instruction(const ir::SsaBlock& block, const ir::SsaInstruction& inst,
@@ -124,10 +120,8 @@ private:
         const auto key = encode_value_id(value);
         value_cache_[key] = data;
 
-        // Optimize: only allocate string if needed for locals storage
-        const std::string storage_key = "$ssa:" + value.to_string();
-        locals_[storage_key] = data;
-
+        // Store in locals_ by symbol name for compatibility (only if symbol has a name)
+        // This avoids expensive string allocation on every store
         if (const auto* symbol = ssa_.find_symbol(value.symbol); symbol != nullptr) {
             if (!symbol->name.empty()) {
                 locals_[symbol->name] = data;
@@ -225,9 +219,8 @@ private:
 
     std::unordered_map<std::uint64_t, Value> value_cache_;
     std::unordered_map<std::string, std::size_t> block_lookup_;
+    std::unordered_map<std::string, const ir::Function*> function_lookup_;  // O(1) function lookup
     std::unordered_map<std::string, BuiltinHandler> builtin_table_;
-    std::unordered_map<std::string, InstructionHandler> opcode_handlers_;
-    std::unordered_map<std::string, BinaryOpHandler> binary_op_handlers_;
     std::optional<std::size_t> next_block_;
     CallFunction call_function_;
     AllocateArray allocate_array_;

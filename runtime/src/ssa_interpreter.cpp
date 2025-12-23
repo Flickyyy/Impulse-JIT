@@ -17,6 +17,10 @@ using impulse::runtime::kEpsilon;
 
 namespace impulse::runtime {
 
+// Static builtin table - initialized once
+std::unordered_map<std::string, SsaInterpreter::BuiltinHandler> SsaInterpreter::builtin_table_;
+bool SsaInterpreter::builtin_table_initialized_ = false;
+
 SsaInterpreter::SsaInterpreter(const ir::SsaFunction& ssa, const std::unordered_map<std::string, Value>& parameters,
                                std::unordered_map<std::string, Value>& locals, const std::vector<ir::Function>& functions,
                                const std::unordered_map<std::string, Value>& globals, CallFunction call_function,
@@ -42,14 +46,36 @@ SsaInterpreter::SsaInterpreter(const ir::SsaFunction& ssa, const std::unordered_
         function_lookup_[func.name] = &func;
     }
 
+    // Build symbol ID to name cache to avoid repeated find_symbol calls (performance optimization)
+    for (const auto& symbol : ssa_.symbols) {
+        if (!symbol.name.empty()) {
+            symbol_id_to_name_[symbol.id] = symbol.name;
+        }
+    }
+
+    // Build phi predecessor cache for faster phi materialization (performance optimization)
+    for (const auto& block : ssa_.blocks) {
+        for (const auto& phi : block.phi_nodes) {
+            const std::uint64_t phi_key = encode_value_id(phi.result);
+            auto& pred_map = phi_predecessor_cache_[phi_key];
+            for (const auto& input : phi.inputs) {
+                if (input.value.has_value()) {
+                    pred_map[input.predecessor] = &input;
+                }
+            }
+        }
+    }
+
+    // Initialize parameters using cached symbol lookup
     for (const auto& [name, value] : parameters_) {
-        if (const auto* symbol = ssa_.find_symbol(name); symbol != nullptr) {
+        const auto* symbol = ssa_.find_symbol(name);
+        if (symbol != nullptr) {
             store_value(ir::SsaValue{symbol->id, 1}, value);
         }
     }
     
-    // Initialize built-in function table
-    init_builtin_table();
+    // Ensure built-in function table is initialized (lazy, once)
+    ensure_builtin_table();
 }
 
 auto SsaInterpreter::run() -> VmResult {
@@ -103,6 +129,11 @@ auto SsaInterpreter::run() -> VmResult {
 
 auto SsaInterpreter::materialize_phi(const ir::SsaBlock& block, std::optional<std::size_t> previous)
     -> std::optional<VmResult> {
+    // Fast path: skip if no phi nodes
+    if (block.phi_nodes.empty()) {
+        return std::nullopt;
+    }
+    
     for (const auto& phi : block.phi_nodes) {
         if (!phi.result.is_valid()) {
             return make_result(VmStatus::ModuleError, "phi node missing result value");
@@ -110,22 +141,32 @@ auto SsaInterpreter::materialize_phi(const ir::SsaBlock& block, std::optional<st
 
         std::optional<Value> incoming;
         if (previous.has_value()) {
-            const auto it = std::find_if(phi.inputs.begin(), phi.inputs.end(), [&](const ir::PhiInput& input) {
-                return input.predecessor == *previous;
-            });
-            if (it != phi.inputs.end() && it->value.has_value()) {
-                incoming = lookup_value(*it->value);
+            // Use cached phi predecessor lookup instead of std::find_if
+            const std::uint64_t phi_key = encode_value_id(phi.result);
+            const auto cacheIt = phi_predecessor_cache_.find(phi_key);
+            if (cacheIt != phi_predecessor_cache_.end()) {
+                const auto& pred_map = cacheIt->second;
+                const auto inputIt = pred_map.find(*previous);
+                if (inputIt != pred_map.end() && inputIt->second->value.has_value()) {
+                    incoming = lookup_value(*inputIt->second->value);
+                }
             }
         }
 
         if (!incoming.has_value()) {
-            for (const auto& input : phi.inputs) {
-                if (!input.value.has_value()) {
-                    continue;
-                }
-                incoming = lookup_value(*input.value);
-                if (incoming.has_value()) {
-                    break;
+            // Fast path: try first input before iterating
+            if (!phi.inputs.empty() && phi.inputs[0].value.has_value()) {
+                incoming = lookup_value(*phi.inputs[0].value);
+            }
+            if (!incoming.has_value()) {
+                for (const auto& input : phi.inputs) {
+                    if (!input.value.has_value()) {
+                        continue;
+                    }
+                    incoming = lookup_value(*input.value);
+                    if (incoming.has_value()) {
+                        break;
+                    }
                 }
             }
         }
@@ -146,21 +187,25 @@ auto SsaInterpreter::execute_instruction(const ir::SsaBlock& block, const ir::Ss
                                          std::size_t current,
                                          std::optional<std::size_t>& previous, bool& jumped)
     -> std::optional<VmResult> {
-    trace_instruction(block, inst);
+    // Trace only if enabled (avoid string operations in hot path)
+    if (trace_ != nullptr) {
+        trace_instruction(block, inst);
+    }
 
     // Fast opcode dispatch using string comparison chain (compiler can optimize this)
     // This avoids std::function overhead and hash map lookup
+    // Most common opcodes first for better branch prediction
     const std::string& opcode = inst.opcode;
     
-    // Most common opcodes first for better branch prediction
+    // Hot path: array operations and binary ops are most common in sorting
     if (opcode == "array_get") {
         return handle_array_get(block, inst, current, previous, jumped);
     }
-    if (opcode == "array_set") {
-        return handle_array_set(block, inst, current, previous, jumped);
-    }
     if (opcode == "binary") {
         return handle_binary(block, inst, current, previous, jumped);
+    }
+    if (opcode == "array_set") {
+        return handle_array_set(block, inst, current, previous, jumped);
     }
     if (opcode == "branch_if") {
         return handle_branch_if(block, inst, current, previous, jumped);
@@ -463,9 +508,10 @@ auto SsaInterpreter::handle_call(const ir::SsaBlock&, const ir::SsaInstruction& 
     }
 
     // Check built-in function table first
+    ensure_builtin_table();
     const auto builtin_it = builtin_table_.find(callee_name);
     if (builtin_it != builtin_table_.end()) {
-        return builtin_it->second(callee_name, args, inst.result);
+        return builtin_it->second(this, callee_name, args, inst.result);
     }
 
     // Not a built-in, look up in module functions using O(1) map lookup
@@ -520,22 +566,24 @@ auto SsaInterpreter::handle_array_get(const ir::SsaBlock&, const ir::SsaInstruct
     }
     const auto arrayValue = lookup_value(inst.arguments[0]);
     const auto indexValue = lookup_value(inst.arguments[1]);
-    if (!arrayValue.has_value() || !arrayValue->is_object()) {
-        return make_result(VmStatus::RuntimeError, "array_get requires an array value");
+    if (!arrayValue.has_value() || !indexValue.has_value() || !indexValue->is_number()) {
+        return make_result(VmStatus::RuntimeError, "array_get requires valid array and numeric index");
     }
     GcObject* object = arrayValue->as_object();
     if (object == nullptr || object->kind != ObjectKind::Array) {
         return make_result(VmStatus::RuntimeError, "array_get requires an array value");
     }
-    if (!indexValue.has_value() || !indexValue->is_number()) {
-        return make_result(VmStatus::RuntimeError, "array_get index must be numeric");
-    }
     // Fast path: convert to index and check bounds in one go
     const double indexNum = indexValue->number;
-    if (indexNum < 0.0 || indexNum != std::floor(indexNum)) {
+    // Optimized bounds checking: use integer comparison when possible
+    if (indexNum < 0.0) {
         return make_result(VmStatus::RuntimeError, "array_get index must be a non-negative integer");
     }
     const std::size_t index = static_cast<std::size_t>(indexNum);
+    // Check if it's actually an integer (fast path for common case)
+    if (indexNum != static_cast<double>(index)) {
+        return make_result(VmStatus::RuntimeError, "array_get index must be a non-negative integer");
+    }
     if (index >= object->fields.size()) {
         return make_result(VmStatus::RuntimeError, "array_get index out of bounds");
     }
@@ -550,25 +598,24 @@ auto SsaInterpreter::handle_array_set(const ir::SsaBlock&, const ir::SsaInstruct
     const auto arrayValue = lookup_value(inst.arguments[0]);
     const auto indexValue = lookup_value(inst.arguments[1]);
     const auto value = lookup_value(inst.arguments[2]);
-    if (!arrayValue.has_value() || !arrayValue->is_object()) {
-        return make_result(VmStatus::RuntimeError, "array_set requires an array value");
+    if (!arrayValue.has_value() || !indexValue.has_value() || !value.has_value() || !indexValue->is_number()) {
+        return make_result(VmStatus::RuntimeError, "array_set requires valid array, numeric index, and value");
     }
     GcObject* object = arrayValue->as_object();
     if (object == nullptr || object->kind != ObjectKind::Array) {
         return make_result(VmStatus::RuntimeError, "array_set requires an array value");
     }
-    if (!indexValue.has_value() || !indexValue->is_number()) {
-        return make_result(VmStatus::RuntimeError, "array_set index must be numeric");
-    }
-    if (!value.has_value()) {
-        return make_result(VmStatus::RuntimeError, "array_set value uninitialised");
-    }
     // Fast path: convert to index and check bounds in one go
     const double indexNum = indexValue->number;
-    if (indexNum < 0.0 || indexNum != std::floor(indexNum)) {
+    // Optimized bounds checking: use integer comparison when possible
+    if (indexNum < 0.0) {
         return make_result(VmStatus::RuntimeError, "array_set index must be a non-negative integer");
     }
     const std::size_t index = static_cast<std::size_t>(indexNum);
+    // Check if it's actually an integer (fast path for common case)
+    if (indexNum != static_cast<double>(index)) {
+        return make_result(VmStatus::RuntimeError, "array_set index must be a non-negative integer");
+    }
     if (index >= object->fields.size()) {
         return make_result(VmStatus::RuntimeError, "array_set index out of bounds");
     }
@@ -598,10 +645,19 @@ auto SsaInterpreter::handle_array_length(const ir::SsaBlock&, const ir::SsaInstr
 
 // Trace functions are now inline in the header for performance
 
-// Builtin function implementations - this is a large function, so it's kept here
-void SsaInterpreter::init_builtin_table() {
+// Ensure builtin table is initialized (lazy initialization)
+void SsaInterpreter::ensure_builtin_table() {
+    if (builtin_table_initialized_) {
+        return;
+    }
+    init_builtin_table_static();
+    builtin_table_initialized_ = true;
+}
+
+// Builtin function implementations - static initialization, done once
+void SsaInterpreter::init_builtin_table_static() {
     // I/O functions
-    builtin_table_["print"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["print"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (!result.has_value()) {
             return make_result(VmStatus::ModuleError, "print requires destination for result");
         }
@@ -610,12 +666,12 @@ void SsaInterpreter::init_builtin_table() {
             if (i != 0) text << ' ';
             text << format_value_for_output(args[i]);
         }
-        append_output(text.str(), false);
-        trace_builtin(name, text.str());
-        store_value(*result, Value::make_number(0.0));
+        self->append_output(text.str(), false);
+        self->trace_builtin(name, text.str());
+        self->store_value(*result, Value::make_number(0.0));
         return std::nullopt;
     };
-    builtin_table_["println"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["println"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (!result.has_value()) {
             return make_result(VmStatus::ModuleError, "println requires destination for result");
         }
@@ -624,14 +680,14 @@ void SsaInterpreter::init_builtin_table() {
             if (i != 0) text << ' ';
             text << format_value_for_output(args[i]);
         }
-        append_output(text.str(), true);
-        trace_builtin(name, text.str());
-        store_value(*result, Value::make_number(0.0));
+        self->append_output(text.str(), true);
+        self->trace_builtin(name, text.str());
+        self->store_value(*result, Value::make_number(0.0));
         return std::nullopt;
     };
     
     // String functions
-    builtin_table_["string_length"] = [this](const std::string&, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["string_length"] = [](SsaInterpreter* self, const std::string&, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 1) {
             return make_result(VmStatus::RuntimeError, "string_length expects exactly one argument");
         }
@@ -642,11 +698,11 @@ void SsaInterpreter::init_builtin_table() {
             return make_result(VmStatus::ModuleError, "string_length requires destination for result");
         }
         const auto length = static_cast<double>(args[0].as_string().size());
-        store_value(*result, Value::make_number(length));
+        self->store_value(*result, Value::make_number(length));
         return std::nullopt;
     };
 
-    builtin_table_["string_equals"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["string_equals"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 2) {
             return make_result(VmStatus::RuntimeError, "string_equals expects exactly two arguments");
         }
@@ -657,12 +713,12 @@ void SsaInterpreter::init_builtin_table() {
             return make_result(VmStatus::ModuleError, "string_equals requires destination for result");
         }
         const bool equal = args[0].as_string() == args[1].as_string();
-        store_value(*result, Value::make_number(equal ? 1.0 : 0.0));
-        trace_builtin(name, equal ? "true" : "false");
+        self->store_value(*result, Value::make_number(equal ? 1.0 : 0.0));
+        self->trace_builtin(name, equal ? "true" : "false");
         return std::nullopt;
     };
 
-    builtin_table_["string_concat"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["string_concat"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 2) {
             return make_result(VmStatus::RuntimeError, "string_concat expects exactly two arguments");
         }
@@ -674,12 +730,12 @@ void SsaInterpreter::init_builtin_table() {
         }
         std::string combined{args[0].as_string()};
         combined.append(args[1].as_string());
-        trace_builtin(name, combined);
-        store_value(*result, Value::make_string(std::move(combined)));
+        self->trace_builtin(name, combined);
+        self->store_value(*result, Value::make_string(std::move(combined)));
         return std::nullopt;
     };
 
-    builtin_table_["string_repeat"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["string_repeat"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 2) {
             return make_result(VmStatus::RuntimeError, "string_repeat expects exactly two arguments");
         }
@@ -702,12 +758,12 @@ void SsaInterpreter::init_builtin_table() {
         for (std::size_t i = 0; i < *maybeCount; ++i) {
             repeated.append(pattern);
         }
-        trace_builtin(name, repeated);
-        store_value(*result, Value::make_string(std::move(repeated)));
+        self->trace_builtin(name, repeated);
+        self->store_value(*result, Value::make_string(std::move(repeated)));
         return std::nullopt;
     };
 
-    builtin_table_["string_slice"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["string_slice"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 3) {
             return make_result(VmStatus::RuntimeError, "string_slice expects exactly three arguments");
         }
@@ -733,12 +789,12 @@ void SsaInterpreter::init_builtin_table() {
             return make_result(VmStatus::RuntimeError, "string_slice exceeds string bounds");
         }
         std::string sliced{text.substr(*maybeStart, *maybeCount)};
-        trace_builtin(name, sliced);
-        store_value(*result, Value::make_string(std::move(sliced)));
+        self->trace_builtin(name, sliced);
+        self->store_value(*result, Value::make_string(std::move(sliced)));
         return std::nullopt;
     };
 
-    builtin_table_["string_lower"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["string_lower"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 1) {
             return make_result(VmStatus::RuntimeError, name + " expects exactly one argument");
         }
@@ -752,12 +808,12 @@ void SsaInterpreter::init_builtin_table() {
         for (char& ch : transformed) {
             ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
         }
-        trace_builtin(name, transformed);
-        store_value(*result, Value::make_string(std::move(transformed)));
+        self->trace_builtin(name, transformed);
+        self->store_value(*result, Value::make_string(std::move(transformed)));
         return std::nullopt;
     };
     
-    builtin_table_["string_upper"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["string_upper"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 1) {
             return make_result(VmStatus::RuntimeError, name + " expects exactly one argument");
         }
@@ -771,12 +827,12 @@ void SsaInterpreter::init_builtin_table() {
         for (char& ch : transformed) {
             ch = static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));
         }
-        trace_builtin(name, transformed);
-        store_value(*result, Value::make_string(std::move(transformed)));
+        self->trace_builtin(name, transformed);
+        self->store_value(*result, Value::make_string(std::move(transformed)));
         return std::nullopt;
     };
     
-    builtin_table_["string_trim"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["string_trim"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 1) {
             return make_result(VmStatus::RuntimeError, "string_trim expects exactly one argument");
         }
@@ -796,13 +852,13 @@ void SsaInterpreter::init_builtin_table() {
             --end;
         }
         std::string trimmed{text.substr(begin, end - begin)};
-        trace_builtin(name, trimmed);
-        store_value(*result, Value::make_string(std::move(trimmed)));
+        self->trace_builtin(name, trimmed);
+        self->store_value(*result, Value::make_string(std::move(trimmed)));
         return std::nullopt;
     };
 
     // Array functions
-    builtin_table_["array_push"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["array_push"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 2) {
             return make_result(VmStatus::RuntimeError, "array_push expects exactly two arguments");
         }
@@ -814,13 +870,13 @@ void SsaInterpreter::init_builtin_table() {
         }
         GcObject* object = args[0].as_object();
         object->fields.push_back(args[1]);
-        trace_builtin(name, "len=" + std::to_string(object->fields.size()));
-        store_value(*result, args[0]);
-        maybe_collect_();
+        self->trace_builtin(name, "len=" + std::to_string(object->fields.size()));
+        self->store_value(*result, args[0]);
+        self->maybe_collect_();
         return std::nullopt;
     };
 
-    builtin_table_["array_pop"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["array_pop"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 1) {
             return make_result(VmStatus::RuntimeError, "array_pop expects exactly one argument");
         }
@@ -836,12 +892,12 @@ void SsaInterpreter::init_builtin_table() {
         }
         Value popped = object->fields.back();
         object->fields.pop_back();
-        trace_builtin(name, describe_value(popped));
-        store_value(*result, popped);
+        self->trace_builtin(name, describe_value(popped));
+        self->store_value(*result, popped);
         return std::nullopt;
     };
 
-    builtin_table_["array_join"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["array_join"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 2) {
             return make_result(VmStatus::RuntimeError, "array_join expects exactly two arguments");
         }
@@ -871,12 +927,12 @@ void SsaInterpreter::init_builtin_table() {
             }
         }
         const std::string merged = builder.str();
-        trace_builtin(name, merged);
-        store_value(*result, Value::make_string(merged));
+        self->trace_builtin(name, merged);
+        self->store_value(*result, Value::make_string(merged));
         return std::nullopt;
     };
 
-    builtin_table_["array_fill"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["array_fill"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 2) {
             return make_result(VmStatus::RuntimeError, "array_fill expects exactly two arguments");
         }
@@ -890,12 +946,12 @@ void SsaInterpreter::init_builtin_table() {
         for (auto& field : object->fields) {
             field = args[1];
         }
-        trace_builtin(name, "len=" + std::to_string(object->fields.size()));
-        store_value(*result, args[0]);
+        self->trace_builtin(name, "len=" + std::to_string(object->fields.size()));
+        self->store_value(*result, args[0]);
         return std::nullopt;
     };
 
-    builtin_table_["array_sum"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["array_sum"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 1) {
             return make_result(VmStatus::RuntimeError, "array_sum expects exactly one argument");
         }
@@ -913,12 +969,12 @@ void SsaInterpreter::init_builtin_table() {
                 return make_result(VmStatus::RuntimeError, "array_sum encountered non-numeric element");
             }
         }
-        trace_builtin(name, std::to_string(total));
-        store_value(*result, Value::make_number(total));
+        self->trace_builtin(name, std::to_string(total));
+        self->store_value(*result, Value::make_number(total));
         return std::nullopt;
     };
 
-    builtin_table_["read_line"] = [this](const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["read_line"] = [](SsaInterpreter* self, const std::string& name, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (!args.empty()) {
             return make_result(VmStatus::RuntimeError, "read_line expects no arguments");
         }
@@ -926,19 +982,19 @@ void SsaInterpreter::init_builtin_table() {
             return make_result(VmStatus::ModuleError, "read_line requires destination for result");
         }
         std::string line;
-        if (read_line_) {
-            if (auto fetched = read_line_()) {
+        if (self->read_line_) {
+            if (auto fetched = self->read_line_()) {
                 line = std::move(*fetched);
             }
         }
-        trace_builtin(name, line);
-        store_value(*result, Value::make_string(std::move(line)));
+        self->trace_builtin(name, line);
+        self->store_value(*result, Value::make_string(std::move(line)));
         return std::nullopt;
     };
     
     // Math functions - simple unary
-    auto make_unary_math = [this](const std::string& name, double (*func)(double)) {
-        builtin_table_[name] = [this, func, name](const std::string&, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    auto make_unary_math = [](const std::string& name, double (*func)(double)) {
+        builtin_table_[name] = [func, name](SsaInterpreter* self, const std::string&, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
             if (args.size() != 1) {
                 return make_result(VmStatus::RuntimeError, name + " expects exactly one argument");
             }
@@ -949,7 +1005,7 @@ void SsaInterpreter::init_builtin_table() {
                 return make_result(VmStatus::ModuleError, name + " requires destination for result");
             }
             const double res = func(args[0].number);
-            store_value(*result, Value::make_number(res));
+            self->store_value(*result, Value::make_number(res));
             return std::nullopt;
         };
     };
@@ -978,7 +1034,7 @@ void SsaInterpreter::init_builtin_table() {
     make_unary_math("std::math::log10", std::log10);
     
     // Binary math function
-    builtin_table_["pow"] = [this](const std::string&, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
+    builtin_table_["pow"] = [](SsaInterpreter* self, const std::string&, const std::vector<Value>& args, const std::optional<ir::SsaValue>& result) -> std::optional<VmResult> {
         if (args.size() != 2) {
             return make_result(VmStatus::RuntimeError, "pow expects exactly two arguments");
         }
@@ -989,7 +1045,7 @@ void SsaInterpreter::init_builtin_table() {
             return make_result(VmStatus::ModuleError, "pow requires destination for result");
         }
         const double res = std::pow(args[0].number, args[1].number);
-        store_value(*result, Value::make_number(res));
+        self->store_value(*result, Value::make_number(res));
         return std::nullopt;
     };
     builtin_table_["std::math::pow"] = builtin_table_["pow"];

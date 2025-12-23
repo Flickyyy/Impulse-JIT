@@ -35,12 +35,8 @@ void GcHeap::collect(const std::vector<Value*>& roots) {
         }
     }
 
+    // Sweep now calculates bytes_allocated_ internally to avoid second pass
     sweep();
-
-    bytes_allocated_ = 0;
-    for (GcObject* object = objects_; object != nullptr; object = object->next) {
-        bytes_allocated_ += sizeof(GcObject) + (object->fields.size() * sizeof(Value));
-    }
 
     next_gc_threshold_ = std::max(bytes_allocated_ * std::size_t{2}, default_threshold());
 }
@@ -81,16 +77,20 @@ void GcHeap::mark_object(GcObject* object) {
 
 void GcHeap::sweep() {
     GcObject** current = &objects_;
+    std::size_t live_bytes = 0;
     while (*current != nullptr) {
         if (!(*current)->marked) {
             GcObject* unreached = *current;
             *current = unreached->next;
             delete unreached;
         } else {
+            // Track live bytes during sweep to avoid second pass
+            live_bytes += sizeof(GcObject) + ((*current)->fields.size() * sizeof(Value));
             (*current)->marked = false;
             current = &((*current)->next);
         }
     }
+    bytes_allocated_ = live_bytes;
 }
 
 auto GcHeap::bytes_allocated() const -> std::size_t { return bytes_allocated_; }

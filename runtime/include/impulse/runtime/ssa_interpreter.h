@@ -26,7 +26,7 @@ public:
     using AllocateArray = std::function<GcObject*(std::size_t)>;
     using MaybeCollect = std::function<void()>;
     using ReadLine = std::function<std::optional<std::string>()>;
-    using BuiltinHandler = std::function<std::optional<VmResult>(const std::string&, const std::vector<Value>&, const std::optional<ir::SsaValue>&)>;
+    using BuiltinHandler = std::function<std::optional<VmResult>(SsaInterpreter*, const std::string&, const std::vector<Value>&, const std::optional<ir::SsaValue>&)>;
 
     SsaInterpreter(const ir::SsaFunction& ssa, const std::unordered_map<std::string, Value>& parameters,
                    std::unordered_map<std::string, Value>& locals, const std::vector<ir::Function>& functions,
@@ -76,7 +76,8 @@ private:
     [[nodiscard]] auto handle_array_set(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult>;
     [[nodiscard]] auto handle_array_length(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult>;
     
-    void init_builtin_table();
+    static void init_builtin_table_static();
+    void ensure_builtin_table();
     
     [[nodiscard]] auto execute_instruction(const ir::SsaBlock& block, const ir::SsaInstruction& inst,
                                            std::size_t current,
@@ -95,17 +96,18 @@ private:
         }
 
         if (value.version == 0) {
-            if (const auto* symbol = ssa_.find_symbol(value.symbol); symbol != nullptr) {
-                if (!symbol->name.empty()) {
-                    if (const auto localIt = locals_.find(symbol->name); localIt != locals_.end()) {
-                        return localIt->second;
-                    }
-                    if (const auto paramIt = parameters_.find(symbol->name); paramIt != parameters_.end()) {
-                        return paramIt->second;
-                    }
-                    if (const auto globalIt = globals_.find(symbol->name); globalIt != globals_.end()) {
-                        return globalIt->second;
-                    }
+            // Use cached symbol name lookup instead of calling find_symbol
+            const auto nameIt = symbol_id_to_name_.find(value.symbol);
+            if (nameIt != symbol_id_to_name_.end() && !nameIt->second.empty()) {
+                const std::string& name = nameIt->second;
+                if (const auto localIt = locals_.find(name); localIt != locals_.end()) {
+                    return localIt->second;
+                }
+                if (const auto paramIt = parameters_.find(name); paramIt != parameters_.end()) {
+                    return paramIt->second;
+                }
+                if (const auto globalIt = globals_.find(name); globalIt != globals_.end()) {
+                    return globalIt->second;
                 }
             }
         }
@@ -120,11 +122,12 @@ private:
         const auto key = encode_value_id(value);
         value_cache_[key] = data;
 
-        // Store in locals_ by symbol name for compatibility (only if symbol has a name)
-        // This avoids expensive string allocation on every store
-        if (const auto* symbol = ssa_.find_symbol(value.symbol); symbol != nullptr) {
-            if (!symbol->name.empty()) {
-                locals_[symbol->name] = data;
+        // Update locals_ for version 0 and 1 (parameters and initial values) - hot path (version > 1) skips this
+        // This avoids expensive hash map lookups in the hot path while maintaining compatibility
+        if (value.version <= 1) {
+            const auto nameIt = symbol_id_to_name_.find(value.symbol);
+            if (nameIt != symbol_id_to_name_.end() && !nameIt->second.empty()) {
+                locals_[nameIt->second] = data;
             }
         }
 
@@ -220,7 +223,13 @@ private:
     std::unordered_map<std::uint64_t, Value> value_cache_;
     std::unordered_map<std::string, std::size_t> block_lookup_;
     std::unordered_map<std::string, const ir::Function*> function_lookup_;  // O(1) function lookup
-    std::unordered_map<std::string, BuiltinHandler> builtin_table_;
+    // Static builtin table - initialized once, shared across all instances
+    static std::unordered_map<std::string, BuiltinHandler> builtin_table_;
+    static bool builtin_table_initialized_;
+    // Performance optimization: cache symbol ID to name mapping to avoid repeated find_symbol calls
+    std::unordered_map<ir::SymbolId, std::string> symbol_id_to_name_;
+    // Performance optimization: cache phi node predecessor lookups
+    std::unordered_map<std::uint64_t, std::unordered_map<std::size_t, const ir::PhiInput*>> phi_predecessor_cache_;
     std::optional<std::size_t> next_block_;
     CallFunction call_function_;
     AllocateArray allocate_array_;

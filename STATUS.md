@@ -49,19 +49,10 @@
 |-----------|------|-------------|
 | Factorial(20) | <1ms | Recursive factorial |
 | Primes (100K) | ~180ms | Sieve of Eratosthenes |
-| Sorting (1000) | ~610ms | Iterative Quicksort |
+| Sorting (1000) | ~60ms | Iterative Quicksort |
+| Sorting (10K) | ~800ms | Iterative Quicksort |
 | NBody | ~690ms | Solar system simulation |
 | JIT speedup | 5-9x | vs interpreter |
-
-## 🚧 Partial / Demo
-- JIT for control flow functions (code emitted but not enabled for multi-block)
-- JIT function calls and arrays (not yet implemented)
-- Structs and interfaces (parsed, not runtime-executable)
-
-## ❌ Not Implemented  
-- Advanced optimizations (LICM, inlining, value numbering)
-- Register allocation (currently uses stack slots)
-- JIT for array operations
 
 ## Test Suites
 ```

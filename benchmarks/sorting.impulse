@@ -80,10 +80,14 @@ func is_sorted(arr: array) -> int {
     return 1;
 }
 
-func fill_descending(arr: array, n: int) -> int {
+func fill_random(arr: array, n: int) -> int {
+    // Linear Congruential Generator for pseudo-random numbers
+    // This avoids worst-case O(n²) for quicksort
+    let seed: int = 12345;
     let i: int = 0;
     while i < n {
-        array_set(arr, i, n - i);
+        seed = (seed * 1103515245 + 12345) % 2147483648;
+        array_set(arr, i, seed % n);
         i = i + 1;
     }
     return 0;
@@ -93,7 +97,7 @@ func main() -> int {
     let size: int = 1000;
     let arr: array = array(size);
     
-    fill_descending(arr, size);
+    fill_random(arr, size);
     quicksort(arr, 0, size - 1);
     
     let s: bool = is_sorted(arr);

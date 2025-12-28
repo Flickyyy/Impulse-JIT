@@ -1,7 +1,7 @@
-module benchmark::sorting_10k;
+module benchmark::sorting_large;
 
-// Benchmark: Sort array of 10000 elements
-// Algorithm: Iterative Quicksort (using explicit stack to avoid deep recursion)
+// Benchmark: Sort array of 100000 elements
+// Algorithm: Iterative Quicksort with pseudo-random data (O(n log n) average case)
 
 func swap(arr: array, i: int, j: int) -> int {
     let temp: int = array_get(arr, i);
@@ -69,10 +69,12 @@ func is_sorted(arr: array) -> int {
     return 1;
 }
 
-func fill_descending(arr: array, n: int) -> int {
+func fill_random(arr: array, n: int) -> int {
+    let seed: int = 12345;
     let i: int = 0;
     while i < n {
-        array_set(arr, i, n - i);
+        seed = (seed * 1103515245 + 12345) % 2147483648;
+        array_set(arr, i, seed % n);
         i = i + 1;
     }
     return 0;
@@ -82,11 +84,13 @@ func main() -> int {
     let size: int = 10000;
     let arr: array = array(size);
     
-    fill_descending(arr, size);
+    fill_random(arr, size);
     quicksort(arr, 0, size - 1);
     
     let s: bool = is_sorted(arr);
-    print("Sorted 10000 elements: ");
+    print("Sorted ");
+    print(size);
+    print(" elements: ");
     println(s);
     return s;
 }

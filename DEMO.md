@@ -7,7 +7,7 @@
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 
-# Все тесты (90 тестов, ~3 сек)
+# Все тесты (90 тестов, ~2 сек)
 ./build/tests/impulse-tests
 ```
 
@@ -22,9 +22,11 @@ cmake --build build
 time ./build/tools/cpp-cli/impulse-cpp --file benchmarks/primes.impulse --run
 # Результат: 9592 простых чисел
 
-# Сортировка (1000 элементов) - ~650ms  
+# Сортировка (1000 элементов) - ~60ms
 time ./build/tools/cpp-cli/impulse-cpp --file benchmarks/sorting.impulse --run
-# Результат: Is sorted: 1
+
+# Сортировка (10000 элементов) - ~800ms
+time ./build/tools/cpp-cli/impulse-cpp --file benchmarks/sorting_large.impulse --run
 
 # N-Body симуляция - ~700ms
 time ./build/tools/cpp-cli/impulse-cpp --file benchmarks/nbody.impulse --run
@@ -80,11 +82,6 @@ Speedup: 8.00x
    - x86-64 native code generation
    - SSE инструкции для float операций
    - Кеширование скомпилированного кода
-
-3. **Кеширование**
-   - SSA кеш для hot functions
-   - JIT кеш для скомпилированного кода
-   - Function lookup cache
 
 ## Статистика
 

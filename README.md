@@ -19,7 +19,7 @@ This project fulfills the following requirements:
 | Task | Description | Target | Time |
 |------|-------------|--------|------|
 | Factorial | Recursive factorial | factorial(20) = 2432902008176640000 | <1ms |
-| Sorting | Iterative Quicksort | 1000 elements | ~650ms |
+| Sorting | Iterative Quicksort | 1000 / 10000 elements | ~60ms / ~800ms |
 | Primes | Sieve of Eratosthenes | 100,000 (9592 primes) | ~180ms |
 | NBody | Solar system simulation | Multiple iterations | ~680ms |
 

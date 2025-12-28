@@ -75,6 +75,8 @@ private:
     [[nodiscard]] auto handle_array_get(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult>;
     [[nodiscard]] auto handle_array_set(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult>;
     [[nodiscard]] auto handle_array_length(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult>;
+    [[nodiscard]] auto handle_array_push(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult>;
+    [[nodiscard]] auto handle_array_pop(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult>;
     
     static void init_builtin_table_static();
     void ensure_builtin_table();

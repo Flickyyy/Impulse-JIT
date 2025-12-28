@@ -445,6 +445,15 @@ private:
             }
         }
 
+        // Set enum opcodes for fast dispatch (avoids string comparison in hot path)
+        for (auto& inst : materialized) {
+            inst.op = impulse::ir::opcode_from_string(inst.opcode);
+            // For binary instructions, also set the binary operator enum
+            if (inst.op == impulse::ir::SsaOpcode::Binary && !inst.immediates.empty()) {
+                inst.binary_op = impulse::ir::binary_op_from_string(inst.immediates[0]);
+            }
+        }
+
         block.instructions = std::move(materialized);
 
         for (const auto successor : block.successors) {

@@ -28,34 +28,59 @@
 - **CodeBuffer**: Machine code emission with x86-64 instruction encoding
 - **Arithmetic**: SSE instructions for double precision (addsd, subsd, mulsd, divsd)
 - **Comparisons**: ucomisd with setcc for <, >, ==, !=, <=, >=
-- **Control Flow**: Jump instructions with label patching
+- **Control Flow**: Jump instructions with label patching (branch, branch_if)
 - **Memory**: Stack allocation for SSA values
+- **Speedup**: 5-9x faster than interpreter for straight-line numeric code
+
+### Optimizations
+- **Enum-based dispatch**: SsaOpcode and BinaryOp enums replace string comparisons (~2x interpreter speedup)
+- **SSA caching**: Avoids repeated SSA construction for hot functions
+- **JIT caching**: Compiled code cached for reuse
+- **Function lookup cache**: O(1) function lookup in interpreter
 
 ### Testing
-- 13 Google Test suites passing
+- 16 Google Test suites (90 tests) passing
 - 13 acceptance test cases
-- Exam benchmark programs (factorial, sorting, primes)
+- Exam benchmark programs (factorial, sorting, primes, nbody)
+
+## Benchmarks
+
+| Benchmark | Time | Description |
+|-----------|------|-------------|
+| Factorial(20) | <1ms | Recursive factorial |
+| Primes (100K) | ~180ms | Sieve of Eratosthenes |
+| Sorting (1000) | ~610ms | Iterative Quicksort |
+| NBody | ~690ms | Solar system simulation |
+| JIT speedup | 5-9x | vs interpreter |
 
 ## 🚧 Partial / Demo
-- JIT runtime integration (JIT compiles simple numeric functions, VM interprets complex programs)
+- JIT for control flow functions (code emitted but not enabled for multi-block)
 - JIT function calls and arrays (not yet implemented)
 - Structs and interfaces (parsed, not runtime-executable)
 
 ## ❌ Not Implemented  
-- Advanced optimizations (LICM, inlining, value numbering) - removed for simplicity
+- Advanced optimizations (LICM, inlining, value numbering)
 - Register allocation (currently uses stack slots)
+- JIT for array operations
 
 ## Test Suites
 ```
+[LexerTest]           ✓ (3 tests)
+[ParserTest]          ✓ (3 tests)
 [SemanticTest]        ✓ (22 tests)
 [IRTest]              ✓ (12 tests)
 [OperatorTest]        ✓ (6 tests)
 [ControlFlowTest]     ✓ (4 tests)
 [FunctionCallTest]    ✓ (2 tests)
 [RuntimeTest]         ✓ (12 tests)
-[AcceptanceTest]      ✓ (13 cases)
-[LexerTest]           ✓ (3 tests)
-[ParserTest]          ✓ (3 tests)
+[AcceptanceTest]      ✓ (1 test, 13 cases)
+[BenchmarkTest]       ✓ (8 tests)
+[JitPerformanceTest]  ✓ (4 tests)
+[JitDebugTest]        ✓ (4 tests)
+[JitCorrectnessTest]  ✓ (5 tests)
+[JitCacheTest]        ✓ (1 test)
+[ProfilingTest]       ✓ (2 tests)
+[SortingProfileTest]  ✓ (1 test)
 ────────────────────────
-Total: 13 test suites ✓
+Total: 16 test suites (90 tests) ✓
 ```

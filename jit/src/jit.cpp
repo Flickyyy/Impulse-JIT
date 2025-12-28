@@ -559,6 +559,45 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
             store_xmm_to_value(*inst.result, 0);
         }
     }
+    else if (inst.opcode == "branch") {
+        // Unconditional jump to target block
+        if (!inst.immediates.empty()) {
+            const std::string& target = inst.immediates[0];
+            // Emit jmp rel32 placeholder
+            buffer_.emit_jmp_rel32(0);
+            // Record position for patching
+            pending_jumps_.emplace_back(buffer_.position() - 4, target);
+        }
+    }
+    else if (inst.opcode == "branch_if") {
+        // Conditional jump: branch_if condition, true_label, false_label
+        if (inst.arguments.empty() || inst.immediates.size() < 2) {
+            return;
+        }
+        
+        const std::string& true_label = inst.immediates[0];
+        const std::string& false_label = inst.immediates[1];
+        
+        // Load condition value to XMM0
+        load_value_to_xmm(0, inst.arguments[0]);
+        
+        // Compare XMM0 with zero: ucomisd xmm0, xmm0 after zeroing xmm1
+        // Actually, compare with 0.0: load 0.0 to xmm1, then ucomisd
+        // xorps xmm1, xmm1 to zero it
+        buffer_.emit({0x0F, 0x57, 0xC9});  // xorps xmm1, xmm1
+        buffer_.emit_ucomisd(0, 1);
+        
+        // If condition != 0, jump to true_label
+        // If condition == 0, jump to false_label (fall through or explicit jump)
+        
+        // je false_label (jump if equal to zero)
+        buffer_.emit_je_rel32(0);
+        pending_jumps_.emplace_back(buffer_.position() - 4, false_label);
+        
+        // jmp true_label (fall through to true case if not zero)
+        buffer_.emit_jmp_rel32(0);
+        pending_jumps_.emplace_back(buffer_.position() - 4, true_label);
+    }
     else if (inst.opcode == "return") {
         if (!inst.arguments.empty()) {
             load_value_to_xmm(0, inst.arguments[0]);
@@ -574,7 +613,8 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
 void JitCompiler::compile_block(const ir::SsaBlock& block) {
     label_positions_[block.name] = buffer_.position();
     
-    // Process phi nodes (simplified - just copy first incoming value for now)
+    // Process phi nodes - for now, materialize from first predecessor
+    // A proper implementation would need to know the actual predecessor
     for (const auto& phi : block.phi_nodes) {
         if (!phi.inputs.empty() && phi.inputs[0].value.has_value()) {
             load_value_to_xmm(0, *phi.inputs[0].value);

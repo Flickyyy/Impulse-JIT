@@ -192,53 +192,43 @@ auto SsaInterpreter::execute_instruction(const ir::SsaBlock& block, const ir::Ss
         trace_instruction(block, inst);
     }
 
-    // Fast opcode dispatch using string comparison chain (compiler can optimize this)
-    // This avoids std::function overhead and hash map lookup
-    // Most common opcodes first for better branch prediction
-    const std::string& opcode = inst.opcode;
-    
-    // Hot path: array operations and binary ops are most common in sorting
-    if (opcode == "array_get") {
-        return handle_array_get(block, inst, current, previous, jumped);
-    }
-    if (opcode == "binary") {
-        return handle_binary(block, inst, current, previous, jumped);
-    }
-    if (opcode == "array_set") {
-        return handle_array_set(block, inst, current, previous, jumped);
-    }
-    if (opcode == "branch_if") {
-        return handle_branch_if(block, inst, current, previous, jumped);
-    }
-    if (opcode == "call") {
-        return handle_call(block, inst, current, previous, jumped);
-    }
-    if (opcode == "literal") {
-        return handle_literal(block, inst, current, previous, jumped);
-    }
-    if (opcode == "assign") {
-        return handle_assign(block, inst, current, previous, jumped);
-    }
-    if (opcode == "return") {
-        return handle_return(block, inst, current, previous, jumped);
-    }
-    if (opcode == "branch") {
-        return handle_branch(block, inst, current, previous, jumped);
-    }
-    if (opcode == "array_length") {
-        return handle_array_length(block, inst, current, previous, jumped);
-    }
-    if (opcode == "array_make") {
-        return handle_array_make(block, inst, current, previous, jumped);
-    }
-    if (opcode == "unary") {
-        return handle_unary(block, inst, current, previous, jumped);
-    }
-    if (opcode == "literal_string") {
-        return handle_literal_string(block, inst, current, previous, jumped);
-    }
-    if (opcode == "drop") {
-        return handle_drop(block, inst, current, previous, jumped);
+    // Fast opcode dispatch using enum switch (much faster than string comparison)
+    // Compiler generates jump table for O(1) dispatch
+    switch (inst.op) {
+        case ir::SsaOpcode::ArrayGet:
+            return handle_array_get(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::Binary:
+            return handle_binary(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::ArraySet:
+            return handle_array_set(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::BranchIf:
+            return handle_branch_if(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::Call:
+            return handle_call(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::Literal:
+            return handle_literal(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::Assign:
+            return handle_assign(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::Return:
+            return handle_return(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::Branch:
+            return handle_branch(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::ArrayLength:
+            return handle_array_length(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::ArrayMake:
+            return handle_array_make(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::Unary:
+            return handle_unary(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::LiteralString:
+            return handle_literal_string(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::Drop:
+            return handle_drop(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::ArrayPush:
+            return handle_array_push(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::ArrayPop:
+            return handle_array_pop(block, inst, current, previous, jumped);
+        case ir::SsaOpcode::Unknown:
+            return make_result(VmStatus::ModuleError, "unsupported SSA opcode '" + inst.opcode + "'");
     }
 
     return make_result(VmStatus::ModuleError, "unsupported SSA opcode '" + inst.opcode + "'");
@@ -287,30 +277,32 @@ auto SsaInterpreter::handle_unary(const ir::SsaBlock&, const ir::SsaInstruction&
 }
 
 auto SsaInterpreter::handle_binary(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult> {
-    if (inst.arguments.size() < 2 || inst.immediates.empty() || !inst.result.has_value()) {
+    if (inst.arguments.size() < 2 || !inst.result.has_value()) {
         return make_result(VmStatus::ModuleError, "binary instruction malformed");
     }
     const auto lhsValue = lookup_value(inst.arguments[0]);
     const auto rhsValue = lookup_value(inst.arguments[1]);
-    const std::string& op = inst.immediates.front();
 
     if (!lhsValue.has_value() || !rhsValue.has_value()) {
         return make_result(VmStatus::RuntimeError, "binary instruction missing operands");
     }
 
-    // String operations
-    if (op == "+" && lhsValue->is_string() && rhsValue->is_string()) {
-        std::string combined{lhsValue->as_string()};
-        combined.append(rhsValue->as_string());
-        store_value(*inst.result, Value::make_string(std::move(combined)));
-        return std::nullopt;
-    }
-
-    if ((op == "==" || op == "!=") && lhsValue->is_string() && rhsValue->is_string()) {
-        const bool equal = lhsValue->as_string() == rhsValue->as_string();
-        const bool result_value = (op == "==") ? equal : !equal;
-        store_value(*inst.result, Value::make_number(result_value ? 1.0 : 0.0));
-        return std::nullopt;
+    // String operations - check type first
+    if (lhsValue->is_string() && rhsValue->is_string()) {
+        if (inst.binary_op == ir::BinaryOp::Add) {
+            std::string combined{lhsValue->as_string()};
+            combined.append(rhsValue->as_string());
+            store_value(*inst.result, Value::make_string(std::move(combined)));
+            return std::nullopt;
+        }
+        if (inst.binary_op == ir::BinaryOp::Eq) {
+            store_value(*inst.result, Value::make_number(lhsValue->as_string() == rhsValue->as_string() ? 1.0 : 0.0));
+            return std::nullopt;
+        }
+        if (inst.binary_op == ir::BinaryOp::Ne) {
+            store_value(*inst.result, Value::make_number(lhsValue->as_string() != rhsValue->as_string() ? 1.0 : 0.0));
+            return std::nullopt;
+        }
     }
 
     if (!lhsValue->is_number() || !rhsValue->is_number()) {
@@ -320,69 +312,62 @@ auto SsaInterpreter::handle_binary(const ir::SsaBlock&, const ir::SsaInstruction
     const double left = lhsValue->number;
     const double right = rhsValue->number;
 
-    // Fast binary operator dispatch using string comparison (compiler can optimize this)
-    // Most common operators first for better branch prediction
-    if (op == "+") {
-        store_value(*inst.result, Value::make_number(left + right));
-        return std::nullopt;
-    }
-    if (op == "-") {
-        store_value(*inst.result, Value::make_number(left - right));
-        return std::nullopt;
-    }
-    if (op == "*") {
-        store_value(*inst.result, Value::make_number(left * right));
-        return std::nullopt;
-    }
-    if (op == "<") {
-        store_value(*inst.result, Value::make_number(left < right));
-        return std::nullopt;
-    }
-    if (op == "<=") {
-        store_value(*inst.result, Value::make_number(left <= right));
-        return std::nullopt;
-    }
-    if (op == ">") {
-        store_value(*inst.result, Value::make_number(left > right));
-        return std::nullopt;
-    }
-    if (op == ">=") {
-        store_value(*inst.result, Value::make_number(left >= right));
-        return std::nullopt;
-    }
-    if (op == "==") {
-        store_value(*inst.result, Value::make_number(left == right));
-        return std::nullopt;
-    }
-    if (op == "!=") {
-        store_value(*inst.result, Value::make_number(left != right));
-        return std::nullopt;
-    }
-    if (op == "||") {
-        store_value(*inst.result, Value::make_number(left || right));
-        return std::nullopt;
-    }
-    if (op == "&&") {
-        store_value(*inst.result, Value::make_number(left && right));
-        return std::nullopt;
-    }
-    if (op == "/") {
-        if (std::abs(right) < kEpsilon) {
-            return make_result(VmStatus::RuntimeError, "division by zero during execution");
+    // Fast binary operator dispatch using enum switch (compiler generates jump table)
+    switch (inst.binary_op) {
+        case ir::BinaryOp::Add:
+            store_value(*inst.result, Value::make_number(left + right));
+            return std::nullopt;
+        case ir::BinaryOp::Sub:
+            store_value(*inst.result, Value::make_number(left - right));
+            return std::nullopt;
+        case ir::BinaryOp::Mul:
+            store_value(*inst.result, Value::make_number(left * right));
+            return std::nullopt;
+        case ir::BinaryOp::Div:
+            if (std::abs(right) < kEpsilon) {
+                return make_result(VmStatus::RuntimeError, "division by zero during execution");
+            }
+            store_value(*inst.result, Value::make_number(left / right));
+            return std::nullopt;
+        case ir::BinaryOp::Mod: {
+            const auto leftIndex = to_index(left);
+            const auto rightIndex = to_index(right);
+            if (!leftIndex.has_value() || !rightIndex.has_value() || *rightIndex == 0) {
+                return make_result(VmStatus::RuntimeError, "modulo requires non-negative integer operands and non-zero divisor");
+            }
+            store_value(*inst.result, Value::make_number(static_cast<double>(*leftIndex % *rightIndex)));
+            return std::nullopt;
         }
-        store_value(*inst.result, Value::make_number(left / right));
-        return std::nullopt;
-    }
-    if (op == "%") {
-        const auto leftIndex = to_index(left);
-        const auto rightIndex = to_index(right);
-        if (!leftIndex.has_value() || !rightIndex.has_value() || *rightIndex == 0) {
-            return make_result(VmStatus::RuntimeError, "modulo requires non-negative integer operands and non-zero divisor");
-        }
-        store_value(*inst.result, Value::make_number(static_cast<double>(*leftIndex % *rightIndex)));
-        return std::nullopt;
+        case ir::BinaryOp::Lt:
+            store_value(*inst.result, Value::make_number(left < right ? 1.0 : 0.0));
+            return std::nullopt;
+        case ir::BinaryOp::Le:
+            store_value(*inst.result, Value::make_number(left <= right ? 1.0 : 0.0));
+            return std::nullopt;
+        case ir::BinaryOp::Gt:
+            store_value(*inst.result, Value::make_number(left > right ? 1.0 : 0.0));
+            return std::nullopt;
+        case ir::BinaryOp::Ge:
+            store_value(*inst.result, Value::make_number(left >= right ? 1.0 : 0.0));
+            return std::nullopt;
+        case ir::BinaryOp::Eq:
+            store_value(*inst.result, Value::make_number(left == right ? 1.0 : 0.0));
+            return std::nullopt;
+        case ir::BinaryOp::Ne:
+            store_value(*inst.result, Value::make_number(left != right ? 1.0 : 0.0));
+            return std::nullopt;
+        case ir::BinaryOp::And:
+            store_value(*inst.result, Value::make_number((left != 0.0 && right != 0.0) ? 1.0 : 0.0));
+            return std::nullopt;
+        case ir::BinaryOp::Or:
+            store_value(*inst.result, Value::make_number((left != 0.0 || right != 0.0) ? 1.0 : 0.0));
+            return std::nullopt;
+        case ir::BinaryOp::Unknown:
+            break;
     }
 
+    // Fallback for unknown operators
+    const std::string& op = inst.immediates.empty() ? "" : inst.immediates.front();
     return make_result(VmStatus::ModuleError, "unsupported binary operator '" + op + "'");
 }
 
@@ -635,6 +620,45 @@ auto SsaInterpreter::handle_array_length(const ir::SsaBlock&, const ir::SsaInstr
     }
     const auto length = static_cast<double>(arrayValue->as_object()->fields.size());
     store_value(*inst.result, Value::make_number(length));
+    return std::nullopt;
+}
+
+auto SsaInterpreter::handle_array_push(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult> {
+    if (inst.arguments.size() != 2 || !inst.result.has_value()) {
+        return make_result(VmStatus::ModuleError, "array_push instruction malformed");
+    }
+    const auto arrayValue = lookup_value(inst.arguments[0]);
+    const auto value = lookup_value(inst.arguments[1]);
+    if (!arrayValue.has_value() || !value.has_value()) {
+        return make_result(VmStatus::RuntimeError, "array_push missing arguments");
+    }
+    GcObject* object = arrayValue->as_object();
+    if (object == nullptr || object->kind != ObjectKind::Array) {
+        return make_result(VmStatus::RuntimeError, "array_push requires an array value");
+    }
+    object->fields.push_back(*value);
+    store_value(*inst.result, Value::make_number(static_cast<double>(object->fields.size())));
+    return std::nullopt;
+}
+
+auto SsaInterpreter::handle_array_pop(const ir::SsaBlock&, const ir::SsaInstruction& inst, std::size_t, std::optional<std::size_t>&, bool&) -> std::optional<VmResult> {
+    if (inst.arguments.size() != 1 || !inst.result.has_value()) {
+        return make_result(VmStatus::ModuleError, "array_pop instruction malformed");
+    }
+    const auto arrayValue = lookup_value(inst.arguments.front());
+    if (!arrayValue.has_value()) {
+        return make_result(VmStatus::RuntimeError, "array_pop missing array argument");
+    }
+    GcObject* object = arrayValue->as_object();
+    if (object == nullptr || object->kind != ObjectKind::Array) {
+        return make_result(VmStatus::RuntimeError, "array_pop requires an array value");
+    }
+    if (object->fields.empty()) {
+        return make_result(VmStatus::RuntimeError, "array_pop on empty array");
+    }
+    const Value popped = object->fields.back();
+    object->fields.pop_back();
+    store_value(*inst.result, popped);
     return std::nullopt;
 }
 

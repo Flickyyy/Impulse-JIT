@@ -416,8 +416,9 @@ void JitCompiler::emit_prologue(int num_locals) {
     buffer_.emit_push_rbp();
     buffer_.emit_mov_rbp_rsp();
     
-    // Allocate stack space for locals (16-byte aligned)
-    stack_size_ = ((num_locals * 8) + 15) & ~15;
+    // Allocate stack space for locals + 16 bytes for temp (16-byte aligned)
+    // Extra 16 bytes for temporary storage (e.g., for unary negation sign mask)
+    stack_size_ = (((num_locals * 8) + 16) + 15) & ~15;
     if (stack_size_ > 0) {
         // sub rsp, stack_size_
         buffer_.emit({0x48, 0x81, 0xEC});
@@ -467,15 +468,23 @@ void JitCompiler::store_xmm_to_value(const ir::SsaValue& value, int xmm) {
     buffer_.emit_movsd_mem_xmm(static_cast<int>(Register::RBP), offset, xmm);
 }
 
-void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
+void JitCompiler::compile_instruction(const ir::SsaInstruction& inst, const ir::SsaBlock& block, const ir::SsaFunction& function) {
     if (inst.opcode == "literal") {
         // Load immediate double value directly into XMM0, then store to stack
         double val = 0.0;
         if (!inst.immediates.empty()) {
-            try {
-                val = std::stod(inst.immediates[0]);
-            } catch (...) {
+            const std::string& lit = inst.immediates[0];
+            if (lit == "true") {
+                val = 1.0;
+            } else if (lit == "false") {
                 val = 0.0;
+            } else {
+                try {
+                    val = std::stod(lit);
+                } catch (const std::exception& e) {
+                    // Invalid literal format, default to 0.0
+                    val = 0.0;
+                }
             }
         }
         
@@ -522,6 +531,64 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
             buffer_.emit_mulsd(0, 1);
         } else if (op == "/") {
             buffer_.emit_divsd(0, 1);
+        } else if (op == "%") {
+            // Modulo for doubles: a % b = a - floor(a/b) * b
+            // xmm0 = a, xmm1 = b
+            // Save xmm0 (a) to xmm2
+            buffer_.emit({0xF2, 0x0F, 0x10, 0xD0});  // movsd xmm2, xmm0
+            // Save xmm1 (b) to xmm3
+            buffer_.emit({0xF2, 0x0F, 0x10, 0xD9});  // movsd xmm3, xmm1
+            // xmm0 = a / b
+            buffer_.emit_divsd(0, 1);
+            // Convert to int64 (truncates toward zero), then back to double = floor for positive
+            // cvttsd2si rax, xmm0  (truncate to integer)
+            buffer_.emit({0xF2, 0x48, 0x0F, 0x2C, 0xC0});
+            // cvtsi2sd xmm0, rax   (convert back to double)
+            buffer_.emit({0xF2, 0x48, 0x0F, 0x2A, 0xC0});
+            // xmm0 = floor(a/b) * b
+            buffer_.emit_mulsd(0, 3);
+            // xmm2 = a - floor(a/b)*b
+            buffer_.emit({0xF2, 0x0F, 0x5C, 0xD0});  // subsd xmm2, xmm0
+            // Move result to xmm0
+            buffer_.emit({0xF2, 0x0F, 0x10, 0xC2});  // movsd xmm0, xmm2
+        } else if (op == "&&") {
+            // Logical AND: (a != 0) && (b != 0)
+            // Zero RAX
+            buffer_.emit_xor_reg_reg(static_cast<int>(Register::RAX), static_cast<int>(Register::RAX));
+            // Zero xmm2 for comparison
+            buffer_.emit({0x0F, 0x57, 0xD2});  // xorps xmm2, xmm2
+            // Compare xmm0 with 0
+            buffer_.emit_ucomisd(0, 2);
+            // Set CL = (xmm0 != 0) using setne
+            buffer_.emit({0x0F, 0x95, 0xC1});  // setne cl
+            // Compare xmm1 with 0
+            buffer_.emit_ucomisd(1, 2);
+            // Set AL = (xmm1 != 0) using setne
+            buffer_.emit_setne(0);
+            // AL = AL & CL
+            buffer_.emit({0x20, 0xC8});  // and al, cl
+            // Convert AL to double
+            buffer_.emit({0x48, 0x0F, 0xB6, 0xC0});  // movzx rax, al
+            buffer_.emit({0xF2, 0x48, 0x0F, 0x2A, 0xC0});  // cvtsi2sd xmm0, rax
+        } else if (op == "||") {
+            // Logical OR: (a != 0) || (b != 0)
+            // Zero RAX
+            buffer_.emit_xor_reg_reg(static_cast<int>(Register::RAX), static_cast<int>(Register::RAX));
+            // Zero xmm2 for comparison
+            buffer_.emit({0x0F, 0x57, 0xD2});  // xorps xmm2, xmm2
+            // Compare xmm0 with 0
+            buffer_.emit_ucomisd(0, 2);
+            // Set CL = (xmm0 != 0) using setne
+            buffer_.emit({0x0F, 0x95, 0xC1});  // setne cl
+            // Compare xmm1 with 0
+            buffer_.emit_ucomisd(1, 2);
+            // Set AL = (xmm1 != 0) using setne
+            buffer_.emit_setne(0);
+            // AL = AL | CL
+            buffer_.emit({0x08, 0xC8});  // or al, cl
+            // Convert AL to double
+            buffer_.emit({0x48, 0x0F, 0xB6, 0xC0});  // movzx rax, al
+            buffer_.emit({0xF2, 0x48, 0x0F, 0x2A, 0xC0});  // cvtsi2sd xmm0, rax
         } else if (op == "<" || op == "<=" || op == ">" || op == ">=" ||
                    op == "==" || op == "!=") {
             // Zero RAX first (before ucomisd, so flags aren't affected)
@@ -553,6 +620,53 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
             store_xmm_to_value(*inst.result, 0);
         }
     }
+    else if (inst.opcode == "unary") {
+        if (inst.arguments.empty() || inst.immediates.empty()) {
+            return;
+        }
+        
+        load_value_to_xmm(0, inst.arguments[0]);
+        
+        const std::string& op = inst.immediates[0];
+        
+        if (op == "-") {
+            // Negate: xorps xmm0, sign_mask (flip sign bit)
+            // Sign mask for double: 0x8000000000000000
+            // Load sign mask into RAX, store to stack, load to XMM1, then xorpd
+            int64_t sign_mask = static_cast<int64_t>(0x8000000000000000ULL);
+            buffer_.emit_mov_reg_imm64(static_cast<int>(Register::RAX), sign_mask);
+            
+            // Store to temporary location on stack (use a fixed offset beyond locals)
+            // We can use [rbp - (stack_size + 8)] as temp
+            int32_t temp_offset = -static_cast<int32_t>(stack_size_ + 8);
+            buffer_.emit({0x48, 0x89, 0x85});  // mov [rbp + disp32], rax
+            buffer_.emit(static_cast<uint8_t>(temp_offset & 0xFF));
+            buffer_.emit(static_cast<uint8_t>((temp_offset >> 8) & 0xFF));
+            buffer_.emit(static_cast<uint8_t>((temp_offset >> 16) & 0xFF));
+            buffer_.emit(static_cast<uint8_t>((temp_offset >> 24) & 0xFF));
+            
+            // movsd xmm1, [rbp + temp_offset]
+            buffer_.emit_movsd_xmm_mem(1, static_cast<int>(Register::RBP), temp_offset);
+            
+            // xorpd xmm0, xmm1 (flip sign bit)
+            buffer_.emit({0x66, 0x0F, 0x57, 0xC1});
+        }
+        else if (op == "!") {
+            // Logical not: 0.0 -> 1.0, non-zero -> 0.0
+            // Compare with zero, set AL, convert to double
+            buffer_.emit_xor_reg_reg(static_cast<int>(Register::RAX),
+                                     static_cast<int>(Register::RAX));
+            buffer_.emit({0x0F, 0x57, 0xC9});  // xorps xmm1, xmm1 (zero)
+            buffer_.emit_ucomisd(0, 1);
+            buffer_.emit_sete(0);  // AL = 1 if XMM0 == 0.0
+            // cvtsi2sd xmm0, rax
+            buffer_.emit({0xF2, 0x48, 0x0F, 0x2A, 0xC0});
+        }
+        
+        if (inst.result.has_value()) {
+            store_xmm_to_value(*inst.result, 0);
+        }
+    }
     else if (inst.opcode == "assign") {
         if (!inst.arguments.empty() && inst.result.has_value()) {
             load_value_to_xmm(0, inst.arguments[0]);
@@ -563,6 +677,8 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
         // Unconditional jump to target block
         if (!inst.immediates.empty()) {
             const std::string& target = inst.immediates[0];
+            // Emit phi moves before the jump
+            emit_phi_moves(target);
             // Emit jmp rel32 placeholder
             buffer_.emit_jmp_rel32(0);
             // Record position for patching
@@ -570,33 +686,81 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
         }
     }
     else if (inst.opcode == "branch_if") {
-        // Conditional jump: branch_if condition, true_label, false_label
-        if (inst.arguments.empty() || inst.immediates.size() < 2) {
+        // branch_if condition | target compare_val
+        // Jump to target if condition == compare_val, else fallthrough to next successor
+        if (inst.arguments.empty() || inst.immediates.empty()) {
             return;
         }
         
-        const std::string& true_label = inst.immediates[0];
-        const std::string& false_label = inst.immediates[1];
+        const std::string& target_label = inst.immediates[0];
+        double compare_val = 0.0;
+        if (inst.immediates.size() >= 2) {
+            try {
+                compare_val = std::stod(inst.immediates[1]);
+            } catch (const std::exception& e) {
+                // Invalid compare value format, default to 0.0
+                compare_val = 0.0;
+            }
+        }
+        
+        // Find fallthrough block (the successor that is not the target)
+        std::string fallthrough_label;
+        for (std::size_t succ_id : block.successors) {
+            if (succ_id < function.blocks.size()) {
+                const auto& succ_block = function.blocks[succ_id];
+                if (succ_block.name != target_label) {
+                    fallthrough_label = succ_block.name;
+                    break;
+                }
+            }
+        }
         
         // Load condition value to XMM0
         load_value_to_xmm(0, inst.arguments[0]);
         
-        // Compare XMM0 with zero: ucomisd xmm0, xmm0 after zeroing xmm1
-        // Actually, compare with 0.0: load 0.0 to xmm1, then ucomisd
-        // xorps xmm1, xmm1 to zero it
-        buffer_.emit({0x0F, 0x57, 0xC9});  // xorps xmm1, xmm1
+        // Load compare_val to XMM1
+        if (compare_val == 0.0) {
+            buffer_.emit({0x0F, 0x57, 0xC9});  // xorps xmm1, xmm1
+        } else {
+            // Load compare_val as constant
+            int64_t bits;
+            std::memcpy(&bits, &compare_val, sizeof(bits));
+            buffer_.emit_mov_reg_imm64(static_cast<int>(Register::RAX), bits);
+            int32_t temp_offset = -static_cast<int32_t>(stack_size_ + 8);
+            buffer_.emit({0x48, 0x89, 0x85});  // mov [rbp + disp32], rax
+            buffer_.emit(static_cast<uint8_t>(temp_offset & 0xFF));
+            buffer_.emit(static_cast<uint8_t>((temp_offset >> 8) & 0xFF));
+            buffer_.emit(static_cast<uint8_t>((temp_offset >> 16) & 0xFF));
+            buffer_.emit(static_cast<uint8_t>((temp_offset >> 24) & 0xFF));
+            buffer_.emit_movsd_xmm_mem(1, static_cast<int>(Register::RBP), temp_offset);
+        }
+        
         buffer_.emit_ucomisd(0, 1);
         
-        // If condition != 0, jump to true_label
-        // If condition == 0, jump to false_label (fall through or explicit jump)
+        // je target_label (jump if condition == compare_val)
+        // But first we need to emit phi moves for both paths
+        // Problem: je takes the target block, not fallthrough
         
-        // je false_label (jump if equal to zero)
+        // Strategy: 
+        // 1. je to "take_branch" code
+        // 2. Fallthrough: emit phi moves for fallthrough, jmp to fallthrough block
+        // 3. take_branch: emit phi moves for target, jmp to target block
+        
         buffer_.emit_je_rel32(0);
-        pending_jumps_.emplace_back(buffer_.position() - 4, false_label);
+        size_t branch_jump_pos = buffer_.position() - 4;
         
-        // jmp true_label (fall through to true case if not zero)
+        // Fallthrough path (condition != compare_val)
+        if (!fallthrough_label.empty()) {
+            emit_phi_moves(fallthrough_label);
+            buffer_.emit_jmp_rel32(0);
+            pending_jumps_.emplace_back(buffer_.position() - 4, fallthrough_label);
+        }
+        
+        // Branch taken path (condition == compare_val)
+        buffer_.patch_rel32(branch_jump_pos, static_cast<int32_t>(buffer_.position() - branch_jump_pos - 4));
+        emit_phi_moves(target_label);
         buffer_.emit_jmp_rel32(0);
-        pending_jumps_.emplace_back(buffer_.position() - 4, true_label);
+        pending_jumps_.emplace_back(buffer_.position() - 4, target_label);
     }
     else if (inst.opcode == "return") {
         if (!inst.arguments.empty()) {
@@ -610,21 +774,46 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst) {
     }
 }
 
-void JitCompiler::compile_block(const ir::SsaBlock& block) {
+void JitCompiler::compile_block(const ir::SsaBlock& block, const ir::SsaFunction& function) {
     label_positions_[block.name] = buffer_.position();
+    current_block_id_ = block.id;
     
-    // Process phi nodes - for now, materialize from first predecessor
-    // A proper implementation would need to know the actual predecessor
-    for (const auto& phi : block.phi_nodes) {
-        if (!phi.inputs.empty() && phi.inputs[0].value.has_value()) {
-            load_value_to_xmm(0, *phi.inputs[0].value);
-            store_xmm_to_value(phi.result, 0);
+    // Phi nodes are handled during SSA deconstruction at branch sites
+    // No code generated here for phi nodes
+    
+    // Compile instructions
+    bool has_terminator = false;
+    for (const auto& inst : block.instructions) {
+        compile_instruction(inst, block, function);
+        if (inst.opcode == "return" || inst.opcode == "branch" || inst.opcode == "branch_if") {
+            has_terminator = true;
         }
     }
     
-    // Compile instructions
-    for (const auto& inst : block.instructions) {
-        compile_instruction(inst);
+    // If no explicit terminator, add implicit fallthrough to first successor
+    if (!has_terminator && !block.successors.empty()) {
+        std::size_t succ_id = block.successors[0];
+        if (succ_id < function.blocks.size()) {
+            const std::string& target = function.blocks[succ_id].name;
+            emit_phi_moves(target);
+            buffer_.emit_jmp_rel32(0);
+            pending_jumps_.emplace_back(buffer_.position() - 4, target);
+        }
+    }
+}
+
+void JitCompiler::emit_phi_moves(const std::string& target_block) {
+    auto it = phi_map_.find(target_block);
+    if (it == phi_map_.end()) {
+        return;
+    }
+    
+    // Find phi inputs for current block and copy values to phi results
+    for (const auto& phi_info : it->second) {
+        if (phi_info.pred_block_id == current_block_id_) {
+            load_value_to_xmm(0, phi_info.input);
+            store_xmm_to_value(phi_info.result, 0);
+        }
     }
 }
 
@@ -642,7 +831,25 @@ auto JitCompiler::compile_with_buffer(const ir::SsaFunction& function, const std
     value_offsets_.clear();
     label_positions_.clear();
     pending_jumps_.clear();
+    phi_map_.clear();
+    current_block_id_ = 0;
     buffer_ = CodeBuffer{};
+    
+    // Build phi map for SSA deconstruction
+    // Map: target block name -> list of (predecessor block id, phi result, phi input)
+    for (const auto& block : function.blocks) {
+        for (const auto& phi : block.phi_nodes) {
+            for (const auto& input : phi.inputs) {
+                if (input.value.has_value()) {
+                    PhiInfo info;
+                    info.pred_block_id = input.predecessor;
+                    info.result = phi.result;
+                    info.input = *input.value;
+                    phi_map_[block.name].push_back(info);
+                }
+            }
+        }
+    }
     
     // Pre-allocate all values to determine stack size
     // First, allocate parameters
@@ -707,7 +914,7 @@ auto JitCompiler::compile_with_buffer(const ir::SsaFunction& function, const std
     
     // Compile the blocks
     for (const auto& block : function.blocks) {
-        compile_block(block);
+        compile_block(block, function);
     }
     
     // Patch jumps

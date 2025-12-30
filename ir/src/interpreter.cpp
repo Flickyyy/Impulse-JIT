@@ -50,19 +50,51 @@ constexpr double kEpsilon = 1e-12;
 }
 
 [[nodiscard]] auto make_error(std::string message) -> BindingEvalResult {
-    return BindingEvalResult{
-        .status = EvalStatus::Error,
-        .value = std::nullopt,
-        .message = std::move(message),
-    };
+    BindingEvalResult result;
+    result.status = EvalStatus::Error;
+    result.value = std::nullopt;
+    result.message = std::move(message);
+    return result;
+}
+
+[[nodiscard]] auto make_non_constant(std::string message) -> BindingEvalResult {
+    BindingEvalResult result;
+    result.status = EvalStatus::NonConstant;
+    result.value = std::nullopt;
+    result.message = std::move(message);
+    return result;
+}
+
+[[nodiscard]] auto make_success(double value, std::string message = {}) -> BindingEvalResult {
+    BindingEvalResult result;
+    result.status = EvalStatus::Success;
+    result.value = value;
+    result.message = std::move(message);
+    return result;
 }
 
 [[nodiscard]] auto make_function_error(std::string message) -> FunctionEvalResult {
-    return FunctionEvalResult{
-        .status = EvalStatus::Error,
-        .value = std::nullopt,
-        .message = std::move(message),
-    };
+    FunctionEvalResult result;
+    result.status = EvalStatus::Error;
+    result.value = std::nullopt;
+    result.message = std::move(message);
+    return result;
+}
+
+[[nodiscard]] auto make_function_non_constant(std::string message) -> FunctionEvalResult {
+    FunctionEvalResult result;
+    result.status = EvalStatus::NonConstant;
+    result.value = std::nullopt;
+    result.message = std::move(message);
+    return result;
+}
+
+[[nodiscard]] auto make_function_success(double value, std::string message = {}) -> FunctionEvalResult {
+    FunctionEvalResult result;
+    result.status = EvalStatus::Success;
+    result.value = value;
+    result.message = std::move(message);
+    return result;
 }
 
 }  // namespace
@@ -70,11 +102,7 @@ constexpr double kEpsilon = 1e-12;
 auto interpret_binding(const Binding& binding, const std::unordered_map<std::string, double>& environment)
     -> BindingEvalResult {
     if (binding.initializer_instructions.empty()) {
-        return BindingEvalResult{
-            .status = EvalStatus::NonConstant,
-            .value = std::nullopt,
-            .message = "no initializer instructions",
-        };
+        return make_non_constant("no initializer instructions");
     }
 
     std::vector<double> stack;
@@ -94,22 +122,14 @@ auto interpret_binding(const Binding& binding, const std::unordered_map<std::str
                 break;
             }
             case InstructionKind::StringLiteral:
-                return BindingEvalResult{
-                    EvalStatus::NonConstant,
-                    std::nullopt,
-                    std::string{"string literal requires runtime evaluation"},
-                };
+                return make_non_constant("string literal requires runtime evaluation");
             case InstructionKind::Reference: {
                 if (inst.operands.empty()) {
                     return make_error("reference instruction missing operand");
                 }
                 const auto it = environment.find(inst.operands.front());
                 if (it == environment.end()) {
-                    return BindingEvalResult{
-                        .status = EvalStatus::NonConstant,
-                        .value = std::nullopt,
-                        .message = "reference to unknown binding '" + inst.operands.front() + "'",
-                    };
+                    return make_non_constant("reference to unknown binding '" + inst.operands.front() + "'");
                 }
                 stack.push_back(it->second);
                 break;
@@ -190,11 +210,7 @@ auto interpret_binding(const Binding& binding, const std::unordered_map<std::str
                 }
                 const double value = stack.back();
                 stack.pop_back();
-                return BindingEvalResult{
-                    .status = EvalStatus::Success,
-                    .value = value,
-                    .message = inst.operands.empty() ? std::string{} : inst.operands.front(),
-                };
+                return make_success(value, inst.operands.empty() ? std::string{} : inst.operands.front());
             }
             case InstructionKind::Drop: {
                 if (stack.empty()) {
@@ -211,11 +227,7 @@ auto interpret_binding(const Binding& binding, const std::unordered_map<std::str
             case InstructionKind::ArrayGet:
             case InstructionKind::ArraySet:
             case InstructionKind::ArrayLength:
-                return BindingEvalResult{
-                    .status = EvalStatus::NonConstant,
-                    .value = std::nullopt,
-                    .message = "non-constant control flow in initializer",
-                };
+                return make_non_constant("non-constant control flow in initializer");
             case InstructionKind::Comment:
             case InstructionKind::Return:
                 break;
@@ -223,28 +235,16 @@ auto interpret_binding(const Binding& binding, const std::unordered_map<std::str
     }
 
     if (!stack.empty()) {
-        return BindingEvalResult{
-            .status = EvalStatus::Success,
-            .value = stack.back(),
-            .message = "implicit result",
-        };
+        return make_success(stack.back(), "implicit result");
     }
 
-    return BindingEvalResult{
-        .status = EvalStatus::NonConstant,
-        .value = std::nullopt,
-        .message = "no store encountered",
-    };
+    return make_non_constant("no store encountered");
 }
 
 auto interpret_function(const Function& function, const std::unordered_map<std::string, double>& environment,
                         const std::unordered_map<std::string, double>& parameters) -> FunctionEvalResult {
     if (function.blocks.empty()) {
-        return FunctionEvalResult{
-            .status = EvalStatus::NonConstant,
-            .value = std::nullopt,
-            .message = "function has no basic blocks",
-        };
+        return make_function_non_constant("function has no basic blocks");
     }
 
     std::vector<double> stack;
@@ -279,11 +279,7 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
                 break;
             }
             case InstructionKind::StringLiteral:
-                return FunctionEvalResult{
-                    EvalStatus::NonConstant,
-                    std::nullopt,
-                    std::string{"string literal requires runtime evaluation"},
-                };
+                return make_function_non_constant("string literal requires runtime evaluation");
             case InstructionKind::Reference: {
                     if (inst.operands.empty()) {
                         return make_function_error("reference instruction missing operand");
@@ -301,11 +297,7 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
                     }
                     const auto envIt = environment.find(name);
                     if (envIt == environment.end()) {
-                        return FunctionEvalResult{
-                            .status = EvalStatus::NonConstant,
-                            .value = std::nullopt,
-                            .message = "reference to unknown symbol '" + name + "'",
-                        };
+                        return make_function_non_constant("reference to unknown symbol '" + name + "'");
                     }
                     stack.push_back(envIt->second);
                     break;
@@ -386,11 +378,7 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
                     }
                     const double value = stack.back();
                     stack.pop_back();
-                    return FunctionEvalResult{
-                        .status = EvalStatus::Success,
-                        .value = value,
-                        .message = inst.operands.empty() ? std::string{} : inst.operands.front(),
-                    };
+                    return make_function_success(value, inst.operands.empty() ? std::string{} : inst.operands.front());
                 }
                 case InstructionKind::Store: {
                     if (inst.operands.empty()) {
@@ -443,20 +431,12 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
                     break;
                 }
                 case InstructionKind::Call:
-                    return FunctionEvalResult{
-                        .status = EvalStatus::NonConstant,
-                        .value = std::nullopt,
-                        .message = "function calls require runtime execution",
-                    };
+                    return make_function_non_constant("function calls require runtime execution");
                     case InstructionKind::MakeArray:
                     case InstructionKind::ArrayGet:
                     case InstructionKind::ArraySet:
                     case InstructionKind::ArrayLength:
-                        return FunctionEvalResult{
-                            .status = EvalStatus::NonConstant,
-                            .value = std::nullopt,
-                            .message = "non-constant instruction encountered",
-                        };
+                        return make_function_non_constant("non-constant instruction encountered");
                 case InstructionKind::Label:
                 case InstructionKind::Comment:
                     break;
@@ -464,11 +444,7 @@ auto interpret_function(const Function& function, const std::unordered_map<std::
         ++pc;
     }
 
-    return FunctionEvalResult{
-        .status = EvalStatus::NonConstant,
-        .value = std::nullopt,
-        .message = "no return encountered",
-    };
+    return make_function_non_constant("no return encountered");
 }
 
 }  // namespace impulse::ir

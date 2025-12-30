@@ -1,8 +1,8 @@
-module benchmark::sorting_large;
+module benchmark::sorting_small;
 
-// Benchmark: Sort array of 1000000 elements (1 million)
-// Algorithm: Iterative Quicksort with pseudo-random data (O(n log n) average case)
-// This is a stress test - expected time ~60-120 seconds
+// Benchmark: Sort array of 1000 elements (small version for fast tests)
+// Algorithm: Iterative Quicksort with pseudo-random data
+// This is for unit tests that need fast execution
 
 func swap(arr: array, i: int, j: int) -> int {
     let temp: int = array_get(arr, i);
@@ -82,7 +82,7 @@ func fill_random(arr: array, n: int) -> int {
 }
 
 func main() -> int {
-    let size: int = 1000000;
+    let size: int = 1000;
     let arr: array = array(size);
     
     fill_random(arr, size);

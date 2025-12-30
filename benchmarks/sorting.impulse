@@ -1,6 +1,6 @@
 module benchmark::sorting;
 
-// Benchmark: Sort array of 1000 elements
+// Benchmark: Sort array of 5000 elements
 // Algorithm: Iterative Quicksort (using explicit stack to avoid deep recursion)
 // Demonstrates: array handling, loops, stack-based iteration, element comparison
 // Expected result: 1 (array is correctly sorted)
@@ -94,14 +94,16 @@ func fill_random(arr: array, n: int) -> int {
 }
 
 func main() -> int {
-    let size: int = 1000;
+    let size: int = 5000;
     let arr: array = array(size);
     
     fill_random(arr, size);
     quicksort(arr, 0, size - 1);
     
     let s: bool = is_sorted(arr);
-    print("Is sorted: ");
+    print("Sorted ");
+    print(size);
+    print(" elements: ");
     println(s);
     return s;
 }

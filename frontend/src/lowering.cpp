@@ -18,7 +18,7 @@ namespace ir = ::impulse::ir;
 
 namespace {
 
-int label_counter = 0;
+thread_local int label_counter = 0;
 
 [[nodiscard]] auto generate_label() -> std::string {
     return "L" + std::to_string(label_counter++);

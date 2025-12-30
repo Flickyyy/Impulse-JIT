@@ -125,11 +125,23 @@ private:
     std::unordered_map<std::string, size_t> label_positions_;
     std::vector<std::pair<size_t, std::string>> pending_jumps_;
     
-    void compile_block(const ir::SsaBlock& block);
-    void compile_instruction(const ir::SsaInstruction& inst);
+    // Phi node map: target block name -> list of (predecessor block id, phi result, phi input value)
+    struct PhiInfo {
+        std::size_t pred_block_id;
+        ir::SsaValue result;
+        ir::SsaValue input;
+    };
+    std::unordered_map<std::string, std::vector<PhiInfo>> phi_map_;
+    std::size_t current_block_id_ = 0;
+    
+    void compile_block(const ir::SsaBlock& block, const ir::SsaFunction& function);
+    void compile_instruction(const ir::SsaInstruction& inst, const ir::SsaBlock& block, const ir::SsaFunction& function);
     
     void emit_prologue(int num_locals);
     void emit_epilogue();
+    
+    // Emit phi moves for a jump to target block from current block
+    void emit_phi_moves(const std::string& target_block);
     
     [[nodiscard]] auto get_value_offset(const ir::SsaValue& value) -> int32_t;
     void allocate_value(const ir::SsaValue& value);

@@ -35,15 +35,11 @@ private:
 };
 
 // Check if an SSA function can be JIT compiled
-// JIT only supports: literal, binary (with +, -, *, /, <, <=, >, >=, ==, !=), assign, return
-// It does not support: branch, branch_if, call, array operations, string operations, unary, modulo, logical operators, globals, control flow
+// JIT supports: literal, binary (with +, -, *, /, %, <, <=, >, >=, ==, !=, &&, ||), unary (-, !), assign, return
+// JIT also supports: branch, branch_if (control flow), phi nodes (via SSA deconstruction)
+// It does not support: call, array operations, string operations, globals
 [[nodiscard]] static auto can_jit_compile(const ir::SsaFunction& ssa, const std::vector<std::string>& parameter_names) -> bool {
     if (!jit::JitCompiler::is_supported()) {
-        return false;
-    }
-    
-    // JIT doesn't handle control flow - only single-block functions (straight-line code)
-    if (ssa.blocks.size() != 1) {
         return false;
     }
     
@@ -60,23 +56,26 @@ private:
     
     // Supported binary operators
     const std::unordered_set<std::string> supported_binary_ops = {
-        "+", "-", "*", "/", "<", "<=", ">", ">=", "==", "!="
+        "+", "-", "*", "/", "%", "<", "<=", ">", ">=", "==", "!=", "&&", "||"
     };
     
     // Check that function has a return statement
+    // Phi nodes are now supported via SSA deconstruction
     bool has_return = false;
     for (const auto& block : ssa.blocks) {
-        // Check for phi nodes - these indicate control flow
-        if (!block.phi_nodes.empty()) {
-            return false;
-        }
-        
         for (const auto& inst : block.instructions) {
             if (inst.opcode == "return") {
                 has_return = true;
             }
             if (inst.opcode == "unary") {
-                return false;  // Unary operations not supported
+                // Check if unary operator is supported (-, !)
+                if (inst.immediates.empty()) {
+                    return false;
+                }
+                const std::string& op = inst.immediates[0];
+                if (op != "-" && op != "!") {
+                    return false;  // Unsupported unary operator
+                }
             }
             if (inst.opcode == "binary") {
                 // Check if the operator is supported
@@ -84,9 +83,12 @@ private:
                     supported_binary_ops.find(inst.immediates[0]) == supported_binary_ops.end()) {
                     return false;  // Unsupported binary operator (e.g., %, &&, ||)
                 }
+            } else if (inst.opcode == "branch" || inst.opcode == "branch_if") {
+                // Control flow is now supported by JIT
+                continue;
             } else if (inst.opcode != "literal" && inst.opcode != "assign" && 
                        inst.opcode != "return") {
-                return false;  // Unsupported opcode (includes branch, branch_if, call, etc.)
+                return false;  // Unsupported opcode (includes call, array ops, etc.)
             }
             
             // Check if any arguments reference non-parameter symbols (i.e., globals)

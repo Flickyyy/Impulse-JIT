@@ -65,11 +65,11 @@ auto build_control_flow_graph(const Function& function) -> ControlFlowGraph {
     cfg.instructions = flat_instructions;
 
     if (flat_instructions.empty()) {
-        cfg.blocks.push_back(ControlFlowGraph::Block{
-            .name = first_non_empty_label(function),
-            .start_index = 0,
-            .end_index = 0,
-        });
+        ControlFlowGraph::Block empty_block;
+        empty_block.name = first_non_empty_label(function);
+        empty_block.start_index = 0;
+        empty_block.end_index = 0;
+        cfg.blocks.push_back(std::move(empty_block));
         cfg.label_to_block[cfg.blocks.front().name] = 0;
         return cfg;
     }

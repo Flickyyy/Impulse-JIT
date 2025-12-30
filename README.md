@@ -19,13 +19,20 @@ This project fulfills the following requirements:
 | Task | Description | Target | Time |
 |------|-------------|--------|------|
 | Factorial | Recursive factorial | factorial(20) = 2432902008176640000 | <1ms |
-| Sorting | Iterative Quicksort | 1000 / 10000 elements | ~60ms / ~800ms |
-| Primes | Sieve of Eratosthenes | 100,000 (9592 primes) | ~180ms |
-| NBody | Solar system simulation | Multiple iterations | ~680ms |
+| Sorting | Iterative Quicksort | 10000 elements | ~600ms |
+| Primes | Sieve of Eratosthenes | 100,000 (9592 primes) | ~150ms |
+| NBody | Solar system simulation | Multiple iterations | ~650ms |
 
 ### JIT Performance
 
 JIT provides **5-9x speedup** for numeric computations vs interpreter.
+
+### Test Coverage
+
+- **134 tests** across 19 test suites
+- EdgeCaseTest: 34 tests (boundary values, boolean logic, control flow edges)
+- StressTest: 7 tests (deep recursion, large loops, binary search)
+- AlgorithmTest: 3 tests (GCD, BubbleSort, Power)
 
 See `benchmarks/` for implementation.
 

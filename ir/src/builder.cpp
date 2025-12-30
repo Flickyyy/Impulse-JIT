@@ -14,7 +14,9 @@ void FunctionBuilder::ensureEntry() {
         return;
     }
     if (function_->blocks.empty()) {
-        function_->blocks.push_back(BasicBlock{.label = "entry"});
+        BasicBlock entry_block;
+        entry_block.label = "entry";
+        function_->blocks.push_back(std::move(entry_block));
         currentIndex_ = 0;
     } else if (currentIndex_ >= function_->blocks.size()) {
         currentIndex_ = 0;
@@ -44,17 +46,19 @@ auto FunctionBuilder::newBlock(std::string label) -> BasicBlock& {
     if (label.empty()) {
         label = "block" + std::to_string(function_->blocks.size());
     }
-    function_->blocks.push_back(BasicBlock{.label = std::move(label)});
+    BasicBlock new_block;
+    new_block.label = std::move(label);
+    function_->blocks.push_back(std::move(new_block));
     currentIndex_ = function_->blocks.size() - 1;
     return function_->blocks.back();
 }
 
 auto FunctionBuilder::append(InstructionKind kind, std::vector<std::string> operands) -> Instruction& {
     auto& block = current();
-    block.instructions.push_back(Instruction{
-        .kind = kind,
-        .operands = std::move(operands),
-    });
+    Instruction inst;
+    inst.kind = kind;
+    inst.operands = std::move(operands);
+    block.instructions.push_back(std::move(inst));
     return block.instructions.back();
 }
 

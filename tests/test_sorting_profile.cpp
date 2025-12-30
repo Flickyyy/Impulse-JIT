@@ -30,10 +30,11 @@ namespace {
 
 TEST(SortingProfileTest, ProfileSortingBenchmark) {
     const auto benchmarks_dir = get_benchmarks_dir();
-    const auto sorting_path = benchmarks_dir / "sorting.impulse";
+    // Use small sorting benchmark for fast tests (1000 elements instead of 100000)
+    const auto sorting_path = benchmarks_dir / "sorting_small.impulse";
     
     const auto source = read_file(sorting_path);
-    ASSERT_TRUE(source.has_value()) << "Failed to read sorting.impulse";
+    ASSERT_TRUE(source.has_value()) << "Failed to read sorting_small.impulse";
     
     impulse::frontend::Parser parser(*source);
     auto parse_result = parser.parseModule();
@@ -68,7 +69,7 @@ TEST(SortingProfileTest, ProfileSortingBenchmark) {
     const auto load_result = vm.load(lowered);
     ASSERT_TRUE(load_result.success);
     
-    std::cout << "\n=== Running sorting benchmark with profiling ===\n";
+    std::cout << "\n=== Running sorting benchmark with profiling (1000 elements) ===\n";
     const auto start_time = std::chrono::high_resolution_clock::now();
     
     const auto result = vm.run(module_name, "main");

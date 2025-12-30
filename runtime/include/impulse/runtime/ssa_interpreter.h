@@ -236,9 +236,9 @@ private:
     CallFunction call_function_;
     AllocateArray allocate_array_;
     MaybeCollect maybe_collect_;
-    ReadLine read_line_;
     std::string* output_buffer_ = nullptr;
     std::ostream* trace_ = nullptr;
+    ReadLine read_line_;
 };
 
 }  // namespace impulse::runtime

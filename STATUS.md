@@ -27,10 +27,14 @@
 ### JIT Compiler (x86-64)
 - **CodeBuffer**: Machine code emission with x86-64 instruction encoding
 - **Arithmetic**: SSE instructions for double precision (addsd, subsd, mulsd, divsd)
+- **Modulo**: Integer truncation-based modulo operator (%)
+- **Logical ops**: Short-circuit evaluation for && and ||
+- **Unary ops**: Negation (-) and logical not (!) operators
 - **Comparisons**: ucomisd with setcc for <, >, ==, !=, <=, >=
-- **Control Flow**: Jump instructions with label patching (branch, branch_if)
+- **Control Flow**: Full support for loops and branches (branch, branch_if)
+- **SSA Deconstruction**: Proper phi node handling via parallel copy semantics
 - **Memory**: Stack allocation for SSA values
-- **Speedup**: 5-9x faster than interpreter for straight-line numeric code
+- **Speedup**: 3.6x-10x faster than interpreter for numeric code with loops
 
 ### Optimizations
 - **Enum-based dispatch**: SsaOpcode and BinaryOp enums replace string comparisons (~2x interpreter speedup)
@@ -39,20 +43,23 @@
 - **Function lookup cache**: O(1) function lookup in interpreter
 
 ### Testing
-- 16 Google Test suites (90 tests) passing
+- 19 Google Test suites (134 tests) passing
 - 13 acceptance test cases
 - Exam benchmark programs (factorial, sorting, primes, nbody)
+- Edge case and stress tests
 
 ## Benchmarks
 
 | Benchmark | Time | Description |
 |-----------|------|-------------|
 | Factorial(20) | <1ms | Recursive factorial |
-| Primes (100K) | ~180ms | Sieve of Eratosthenes |
-| Sorting (1000) | ~60ms | Iterative Quicksort |
-| Sorting (10K) | ~800ms | Iterative Quicksort |
-| NBody | ~690ms | Solar system simulation |
-| JIT speedup | 5-9x | vs interpreter |
+| Primes (100K) | ~150ms | Sieve of Eratosthenes |
+| Sorting (5K) | ~150ms | Iterative Quicksort |
+| NBody | ~610ms | Solar system simulation |
+| JIT speedup | 3.6-10x | vs interpreter (for arithmetic with loops) |
+
+**Note**: Sorting and NBody benchmarks use arrays and function calls 
+which are not yet JIT-compiled. JIT compiles numeric computations with control flow.
 
 ## Test Suites
 ```
@@ -72,6 +79,8 @@
 [JitCacheTest]        ✓ (1 test)
 [ProfilingTest]       ✓ (2 tests)
 [SortingProfileTest]  ✓ (1 test)
+[EdgeCaseTest]        ✓ (34 tests)
+[StressTest]          ✓ (7 tests)
+[AlgorithmTest]       ✓ (3 tests)
 ────────────────────────
-Total: 16 test suites (90 tests) ✓
-```
+Total: 19 test suites (134 tests) ✓

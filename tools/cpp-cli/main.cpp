@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <fstream>
 #include <functional>
@@ -44,6 +45,8 @@ struct Options {
     bool useProcessStdin = false;
     std::optional<std::string> stdinFile;
     std::optional<std::string> stdinText;
+    bool jitEnabled = true;
+    bool showTime = false;
 };
 
 void printUsage() {
@@ -54,6 +57,11 @@ void printUsage() {
                  "  --check                           Run semantic checks only\n"
                  "  --evaluate [--eval-binding <name>] Evaluate constant bindings\n"
                  "  --run [--entry-binding <name>]    Execute the program\n"
+                 "\n"
+                 "Execution options:\n"
+                 "  --jit                             Enable JIT compilation (default)\n"
+                 "  --no-jit                          Disable JIT compilation\n"
+                 "  --time                            Show execution time\n"
                  "\n"
                  "Introspection options (optional path argument writes to file):\n"
                  "  --dump-tokens [path]              Dump lexer tokens\n"
@@ -206,6 +214,18 @@ auto parseArgs(int argc, char** argv) -> std::optional<Options> {
         if (arg == "--help" || arg == "-h") {
             printUsage();
             return std::nullopt;
+        }
+        if (arg == "--jit") {
+            opts.jitEnabled = true;
+            continue;
+        }
+        if (arg == "--no-jit") {
+            opts.jitEnabled = false;
+            continue;
+        }
+        if (arg == "--time") {
+            opts.showTime = true;
+            continue;
         }
         std::cerr << "Unknown argument: " << arg << '\n';
         return std::nullopt;
@@ -424,6 +444,7 @@ auto main(int argc, char** argv) -> int {
         bool triedRuntime = false;
         if (loweredModule.has_value()) {
             impulse::runtime::Vm vm;
+            vm.set_jit_enabled(options->jitEnabled);
 
             std::ifstream stdinFileStream;
             std::istringstream stdinTextStream;
@@ -472,7 +493,10 @@ auto main(int argc, char** argv) -> int {
                     vm.set_trace_stream(traceStream);
                 }
                 const auto moduleName = joinModulePath(loweredModule->path);
+                const auto startTime = std::chrono::high_resolution_clock::now();
                 const auto vmResult = vm.run(moduleName, entry);
+                const auto endTime = std::chrono::high_resolution_clock::now();
+                const auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
                 if (traceStream != nullptr) {
                     vm.set_trace_stream(nullptr);
                     if (traceToBuffer) {
@@ -497,6 +521,9 @@ auto main(int argc, char** argv) -> int {
                     }
                     const int exitCode = static_cast<int>(std::llround(vmResult.value));
                     std::cout << "Program exited with " << exitCode << '\n';
+                    if (options->showTime) {
+                        std::cout << "Execution time: " << elapsedMs << " ms\n";
+                    }
                     return evalSuccess ? 0 : 2;
                 }
                 if (vmResult.status != impulse::runtime::VmStatus::MissingSymbol) {

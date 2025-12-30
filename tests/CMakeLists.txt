@@ -13,6 +13,7 @@ add_executable(impulse-tests
 	test_jit.cpp
 	test_profiling.cpp
 	test_sorting_profile.cpp
+	test_edge_cases.cpp
 	acceptance/harness.cpp
 )
 

@@ -157,7 +157,7 @@ TEST(BenchmarkTest, Sorting) {
         << "Expected array to be sorted (1), got " << result.value;
     
     // Log execution time
-    std::cout << "Sorting benchmark (Iterative Quicksort, 1000 elements): " 
+    std::cout << "Sorting benchmark (Iterative Quicksort, 5000 elements): " 
               << duration.count() << " ms" << std::endl;
 }
 

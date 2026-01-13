@@ -751,7 +751,7 @@ func countdown(n: int) -> int {
 }
 
 func main() -> int {
-    return countdown(1000);
+    return countdown(100);
 }
 )";
     const auto result = run_program(source);

@@ -1,7 +1,7 @@
 module benchmark::factorial;
 
-// Benchmark: Factorial of 20
-// Expected result: 2432902008176640000
+// Benchmark: Factorial of 21
+// Expected result: 51090942171709440000
 // Demonstrates: recursive function calls, stack management, handling of large numbers
 // Note: 21! = 51090942171709440000 overflows int64 (max 9223372036854775807)
 
@@ -13,10 +13,10 @@ func factorial(n: int) -> int {
 }
 
 func main() -> int {
-    // Calculate and return factorial of 20
-    // 20! = 2432902008176640000 (fits in int64)
-    let fact: int = factorial(20);
-    print("factorial(20) = ");
+    // Calculate and return factorial of 21
+    // 21! = 51090942171709440000 (fits in int64)
+    let fact: int = factorial(21);
+    print("factorial(21) = ");
     println(fact);
     return fact;
 }

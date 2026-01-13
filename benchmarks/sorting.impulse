@@ -94,7 +94,7 @@ func fill_random(arr: array, n: int) -> int {
 }
 
 func main() -> int {
-    let size: int = 5000;
+    let size: int = 10000;
     let arr: array = array(size);
     
     fill_random(arr, size);

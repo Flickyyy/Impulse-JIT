@@ -94,12 +94,12 @@ TEST(BenchmarkTest, Factorial) {
         << "Runtime error: " << result.message;
     EXPECT_TRUE(result.has_value);
     
-    // Expected: factorial(20) = 2432902008176640000
+    // Expected: factorial(21) = 51090942171709440000
     // Using approximate comparison due to floating point precision
-    const double expected = 2432902008176640000.0;
-    const double tolerance = 1e6;  // Allow for floating point precision loss
+    const double expected = 51090942171709440000.0;
+    const double tolerance = 1e1;  // Allow for floating point precision loss
     EXPECT_NEAR(result.value, expected, tolerance)
-        << "Expected factorial(20) ≈ " << expected 
+        << "Expected factorial(21) ≈ " << expected
         << ", got " << result.value;
 }
 

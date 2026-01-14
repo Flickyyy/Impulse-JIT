@@ -58,6 +58,9 @@ public:
     // Get cache entry count (for testing)
     [[nodiscard]] auto get_jit_cache_size() const -> size_t;
 
+    // Expose JIT optimization stats for tests
+    [[nodiscard]] auto get_jit_opt_stats(const std::string& module_name, const std::string& function_name) const -> std::optional<jit::JitCompiler::JitOptStats>;
+
     // Profiling API
     void set_profiling_enabled(bool enabled) const;
     void reset_profiling() const;
@@ -85,6 +88,8 @@ private:
     struct JitCacheEntry {
         jit::JitFunction function = nullptr;
         jit::CodeBuffer code_buffer;  // Keep executable memory alive
+        // JIT optimization statistics from the compiler
+        jit::JitCompiler::JitOptStats opt_stats;
         bool can_jit = false;
         
         JitCacheEntry() = default;
@@ -116,6 +121,7 @@ private:
     mutable std::string output_buffer_;
     // JIT cache: maps (module_name, function_name) -> JitCacheEntry
     mutable std::unordered_map<std::string, JitCacheEntry> jit_cache_;
+
     // SSA cache: maps (module_name, function_name) -> SsaFunction
     // This avoids rebuilding SSA on every function call (major performance bottleneck)
     mutable std::unordered_map<std::string, ir::SsaFunction> ssa_cache_;

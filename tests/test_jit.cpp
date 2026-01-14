@@ -11,6 +11,8 @@
 #include "../frontend/include/impulse/frontend/parser.h"
 #include "../frontend/include/impulse/frontend/semantic.h"
 #include "../runtime/include/impulse/runtime/runtime.h"
+#include "../ir/include/impulse/ir/ssa.h"
+#include "../jit/include/impulse/jit/jit.h"
 
 using namespace impulse::runtime;
 using namespace std::chrono;
@@ -950,4 +952,53 @@ func main() -> float {
     EXPECT_DOUBLE_EQ(result.value, 21.0);
     
     std::cout << "JIT Dead Code Elimination: unused computations skipped ✓" << std::endl;
+}
+
+// Test: Loop unrolling optimization (simple counted loop)
+TEST(JitOptimizationTest, LoopUnrolling) {
+    const std::string source = R"(
+module test;
+
+func main() -> float {
+    let i: float = 0.0;
+    let acc: float = 0.0;
+    while i < 4.0 {
+        acc = acc + 2.0;
+        i = i + 1.0;
+    }
+    return acc;
+}
+)";
+
+    // Interpreter run
+    Vm vm_int;
+    vm_int.set_jit_enabled(false);
+
+    impulse::frontend::Parser parser(source);
+    auto parse_result = parser.parseModule();
+    ASSERT_TRUE(parse_result.success);
+    const auto semantic = impulse::frontend::analyzeModule(parse_result.module);
+    ASSERT_TRUE(semantic.success);
+    const auto lowered = impulse::frontend::lower_to_ir(parse_result.module);
+
+    auto load_result = vm_int.load(lowered);
+    ASSERT_TRUE(load_result.success);
+
+    auto result_int = vm_int.run("test", "main");
+    ASSERT_EQ(result_int.status, VmStatus::Success);
+    ASSERT_TRUE(result_int.has_value);
+
+    // JIT compilation: compile the SSA directly to inspect optimization stats (avoid executing compiled code)
+    const impulse::ir::Function* func_ptr = nullptr;
+    for (const auto& f : lowered.functions) {
+        if (f.name == "main") { func_ptr = &f; break; }
+    }
+    ASSERT_NE(func_ptr, nullptr);
+
+    // Build SSA and compile with JIT compiler directly to get opt stats
+    auto ssa = impulse::ir::build_ssa(*func_ptr);
+    impulse::jit::JitCompiler compiler;
+    auto [jf, cb] = compiler.compile_with_buffer(ssa, std::vector<std::string>{});
+    auto stats = compiler.get_opt_stats();
+    EXPECT_GT(stats.loops_unrolled, 0) << "Expected the JIT to detect and unroll the simple loop";
 }

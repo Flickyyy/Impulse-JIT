@@ -112,6 +112,13 @@ private:
     return true;
 }
 
+[[nodiscard]] auto Vm::get_jit_opt_stats(const std::string& module_name, const std::string& function_name) const -> std::optional<jit::JitCompiler::JitOptStats> {
+    std::string key = module_name + "::" + function_name;
+    auto it = jit_cache_.find(key);
+    if (it == jit_cache_.end()) return std::nullopt;
+    return it->second.opt_stats;
+}
+
 auto Vm::load(ir::Module module) -> VmLoadResult {
     VmLoadResult result;
     LoadedModule loaded;
@@ -269,6 +276,8 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
                 JitCacheEntry entry;
                 entry.function = jit_func;
                 entry.code_buffer = std::move(buffer);
+                // Store optimization statistics gathered by the compiler
+                entry.opt_stats = compiler.get_opt_stats();
                 entry.can_jit = can_jit;
                 jit_cache_[cache_key] = std::move(entry);
             } else {

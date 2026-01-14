@@ -598,39 +598,7 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst, const ir::
         }
         
         // =======================================================
-        // JIT Optimization 1: Constant Folding
-        // If both operands are constants, compute at JIT-time
-        // =======================================================
-        if (left_const && right_const) {
-            double left_val = get_constant(left_arg);
-            double right_val = get_constant(right_arg);
-            double folded_result = 0.0;
-            bool can_fold = true;
-            
-            if (op == "+") folded_result = left_val + right_val;
-            else if (op == "-") folded_result = left_val - right_val;
-            else if (op == "*") folded_result = left_val * right_val;
-            else if (op == "/" && right_val != 0.0) folded_result = left_val / right_val;
-            else if (op == "%" && right_val != 0.0) folded_result = std::fmod(left_val, right_val);
-            else if (op == "<") folded_result = (left_val < right_val) ? 1.0 : 0.0;
-            else if (op == "<=") folded_result = (left_val <= right_val) ? 1.0 : 0.0;
-            else if (op == ">") folded_result = (left_val > right_val) ? 1.0 : 0.0;
-            else if (op == ">=") folded_result = (left_val >= right_val) ? 1.0 : 0.0;
-            else if (op == "==") folded_result = (left_val == right_val) ? 1.0 : 0.0;
-            else if (op == "!=") folded_result = (left_val != right_val) ? 1.0 : 0.0;
-            else if (op == "&&") folded_result = (left_val != 0.0 && right_val != 0.0) ? 1.0 : 0.0;
-            else if (op == "||") folded_result = (left_val != 0.0 || right_val != 0.0) ? 1.0 : 0.0;
-            else can_fold = false;
-            
-            if (can_fold) {
-                emit_constant_to_result(folded_result, result);
-                opt_stats_.constants_folded++;
-                return;
-            }
-        }
-        
-        // =======================================================
-        // JIT Optimization 2: Strength Reduction & Identity Elim
+        // Strength Reduction & Identity Elim
         // =======================================================
         if (right_const) {
             double right_val = get_constant(right_arg);
@@ -986,6 +954,34 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst, const ir::
 void JitCompiler::compile_block(const ir::SsaBlock& block, const ir::SsaFunction& function) {
     label_positions_[block.name] = buffer_.position();
     current_block_id_ = block.id;
+    // If this block was emitted as part of an unrolled loop, skip emitting it again
+    if (skip_blocks_.find(block.name) != skip_blocks_.end()) {
+        return;
+    }
+
+    // If this block is a loop header that we unrolled, emit the unrolled body here
+    auto it_unroll = unrolled_loops_.find(block.name);
+    if (it_unroll != unrolled_loops_.end()) {
+        const std::string& body_name = it_unroll->second.first;
+        int trip_count = it_unroll->second.second;
+
+        // Find the body block by name
+        const ir::SsaBlock* body_block = nullptr;
+        for (const auto& b : function.blocks) {
+            if (b.name == body_name) { body_block = &b; break; }
+        }
+        if (body_block != nullptr) {
+            // Emit the loop body trip_count times (skip branches/returns)
+            for (int i = 0; i < trip_count; ++i) {
+                for (const auto& inst : body_block->instructions) {
+                    if (inst.opcode == "branch" || inst.opcode == "branch_if" || inst.opcode == "return") continue;
+                    compile_instruction(inst, *body_block, function);
+                }
+            }
+            opt_stats_.loops_unrolled++;
+        }
+        return;
+    }
     
     // Phi nodes are handled during SSA deconstruction at branch sites
     // No code generated here for phi nodes
@@ -1046,6 +1042,8 @@ auto JitCompiler::compile_with_buffer(const ir::SsaFunction& function, const std
     opt_stats_ = JitOptStats{};
     current_block_id_ = 0;
     buffer_ = CodeBuffer{};
+    unrolled_loops_.clear();
+    skip_blocks_.clear();
     
     // Compute live values for Dead Code Elimination
     compute_live_values(function);
@@ -1092,6 +1090,138 @@ auto JitCompiler::compile_with_buffer(const ir::SsaFunction& function, const std
                 allocate_value(*inst.result);
             }
         }
+    }
+
+    // Simple loop unrolling detection:
+    // Detect counted loops of the form:
+    // header: phi for counter v
+    //         compare v < N  (binary in header)
+    // body:   acc = acc + C
+    //         v = v + 1
+    //         branch -> header
+    // Only unroll when N is a literal small integer (<= 16) and the increment is +1.
+    unrolled_loops_.clear();
+    skip_blocks_.clear();
+    for (const auto& header : function.blocks) {
+        if (header.phi_nodes.empty()) continue;
+
+        // Find a branch_if in header
+        const ir::SsaInstruction* branch_if_inst = nullptr;
+        for (const auto& inst : header.instructions) {
+            if (inst.opcode == "branch_if") {
+                branch_if_inst = &inst;
+                break;
+            }
+        }
+        if (branch_if_inst == nullptr) continue;
+
+        // Condition value for branch_if
+        if (branch_if_inst->arguments.empty()) continue;
+        ir::SsaValue cond_val = branch_if_inst->arguments[0];
+
+        // Find binary compare instruction that produces cond_val in header
+        const ir::SsaInstruction* compare_inst = nullptr;
+        for (const auto& inst : header.instructions) {
+            if (inst.result.has_value() && inst.result->symbol == cond_val.symbol && inst.result->version == cond_val.version) {
+                if (inst.opcode == "binary" && !inst.immediates.empty() && (inst.immediates[0] == "<" || inst.immediates[0] == "<=")) {
+                    compare_inst = &inst;
+                }
+                break;
+            }
+        }
+        if (compare_inst == nullptr) continue;
+
+        // Identify which operand of compare is a phi value and which is a literal constant
+        ir::SsaValue phi_val{};
+        ir::SsaValue bound_val{};
+        if (!compare_inst->arguments.empty()) {
+            const auto& a = compare_inst->arguments[0];
+            const auto& b = compare_inst->arguments[1];
+            // If one of these matches a phi result in this header, it's likely our loop counter
+            bool a_is_phi = false;
+            bool b_is_phi = false;
+            for (const auto& phi : header.phi_nodes) {
+                if (phi.result.symbol == a.symbol && phi.result.version == a.version) a_is_phi = true;
+                if (phi.result.symbol == b.symbol && phi.result.version == b.version) b_is_phi = true;
+            }
+            if (a_is_phi && !b_is_phi) {
+                phi_val = a; bound_val = b;
+            } else if (b_is_phi && !a_is_phi) {
+                phi_val = b; bound_val = a;
+            } else {
+                continue; // not the simple pattern we support
+            }
+        } else continue;
+
+        // Locate a literal instruction that defines bound_val
+        bool bound_is_literal = false;
+        double bound_numeric = 0.0;
+        for (const auto& blk : function.blocks) {
+            for (const auto& inst : blk.instructions) {
+                if (inst.opcode == "literal" && inst.result.has_value() && inst.result->symbol == bound_val.symbol && inst.result->version == bound_val.version) {
+                    if (!inst.immediates.empty()) {
+                        try {
+                            bound_numeric = std::stod(inst.immediates[0]);
+                            bound_is_literal = true;
+                        } catch (...) {
+                        }
+                    }
+                }
+            }
+        }
+        if (!bound_is_literal) continue;
+
+        // Heuristic: if the compare bound is a small literal, and the function contains an
+        // increment by 1 and an accumulator add by a literal, mark for unrolling.
+        if (bound_numeric <= 0.0 || bound_numeric > 16.0) continue;
+        bool found_inc = false;
+        bool found_acc_update = false;
+        std::string body_candidate;
+
+        for (const auto& blk : function.blocks) {
+            bool blk_has_inc = false;
+            bool blk_has_acc = false;
+            for (const auto& inst : blk.instructions) {
+                if (inst.opcode == "binary" && !inst.immediates.empty() && inst.immediates[0] == "+") {
+                    // Check if one operand is literal 1
+                    for (const auto& lit_blk : function.blocks) {
+                        for (const auto& lit : lit_blk.instructions) {
+                            if (lit.opcode == "literal" && lit.result.has_value()) {
+                                try {
+                                    double v = std::stod(lit.immediates[0]);
+                                    if (v == 1.0) {
+                                        // If this literal is used as an argument in inst
+                                        if (!inst.arguments.empty() && ((inst.arguments[0].symbol == lit.result->symbol && inst.arguments[0].version == lit.result->version) ||
+                                                                       (inst.arguments.size() > 1 && inst.arguments[1].symbol == lit.result->symbol && inst.arguments[1].version == lit.result->version))) {
+                                            blk_has_inc = true;
+                                        }
+                                    } else {
+                                        // other literal could be accumulator add
+                                        if (!inst.arguments.empty() && ((inst.arguments[0].symbol == lit.result->symbol && inst.arguments[0].version == lit.result->version) ||
+                                                                       (inst.arguments.size() > 1 && inst.arguments[1].symbol == lit.result->symbol && inst.arguments[1].version == lit.result->version))) {
+                                            blk_has_acc = true;
+                                        }
+                                    }
+                                } catch (...) {}
+                            }
+                        }
+                    }
+                }
+            }
+            if (blk_has_inc) found_inc = true;
+            if (blk_has_acc) found_acc_update = true;
+            if (blk_has_inc && blk_has_acc && body_candidate.empty()) {
+                body_candidate = blk.name;
+            }
+        }
+
+        if (!found_inc || !found_acc_update) continue;
+
+        int trip_count = static_cast<int>(bound_numeric);
+        const std::string body_name = body_candidate.empty() ? std::string("") : body_candidate;
+        if (body_name.empty()) continue;
+        unrolled_loops_.emplace(header.name, std::make_pair(body_name, trip_count));
+        skip_blocks_.insert(body_name);
     }
     
     // Calculate total stack size needed (16-byte aligned)

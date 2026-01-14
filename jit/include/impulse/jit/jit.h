@@ -121,6 +121,7 @@ public:
         int strength_reductions = 0;   // x*2 → x+x, etc.
         int identity_eliminations = 0; // x*1 → x, x+0 → x, etc.
         int dead_code_eliminated = 0;  // Instructions with unused results skipped
+        int loops_unrolled = 0;       // Count of loops unrolled by JIT
     };
     
     [[nodiscard]] auto get_opt_stats() const -> const JitOptStats& { return opt_stats_; }
@@ -151,6 +152,11 @@ private:
     // JIT-time constant tracking for optimization
     std::unordered_map<uint64_t, double> known_constants_;
     JitOptStats opt_stats_;
+
+    // Loop unrolling bookkeeping: header -> (body, trip_count)
+    std::unordered_map<std::string, std::pair<std::string, int>> unrolled_loops_;
+    // Blocks that were emitted as part of unrolling and should be skipped
+    std::unordered_set<std::string> skip_blocks_;
     
     // Helper to get SSA value key
     [[nodiscard]] static auto value_key(const ir::SsaValue& v) -> uint64_t {

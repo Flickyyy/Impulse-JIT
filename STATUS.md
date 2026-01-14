@@ -50,6 +50,22 @@
 - **Memory**: Stack allocation for SSA values
 - **Speedup**: 3.6x-10x faster than interpreter for numeric code with loops
 
+### JIT Optimizations (Runtime Code Generation)
+- **Constant Folding**: Folds constant expressions at JIT compile time
+  - Evaluates binary ops with known operands (e.g., `3.0 + 5.0` → emit `movsd` of `8.0`)
+  - Tracks constants through "literal" instructions
+  - Propagates through chained operations
+- **Strength Reduction**: Emits cheaper x86-64 instruction sequences
+  - `x * 2.0` → `addsd xmm, xmm` (addition instead of multiplication)
+  - `2.0 * x` → `addsd xmm, xmm` (commutative case)
+- **Identity Elimination**: Skips redundant operations at JIT time
+  - `x * 1.0` → just `movsd` (no multiplication emitted)
+  - `x + 0.0` → just `movsd` (no addition emitted)
+  - `x - 0.0` → just `movsd` (no subtraction emitted)
+  - `x / 1.0` → just `movsd` (no division emitted)
+- **Zero Propagation**: Optimizes multiplication by zero
+  - `x * 0.0` → emit constant `0.0` directly (no multiplication)
+
 ### Performance Optimizations
 - **Enum-based dispatch**: SsaOpcode and BinaryOp enums replace string comparisons (~2x interpreter speedup)
 - **SSA caching**: Avoids repeated SSA construction for hot functions
@@ -95,10 +111,11 @@ which are not yet JIT-compiled. JIT compiles numeric computations with control f
 [JitDebugTest]        ✓ (4 tests)
 [JitCorrectnessTest]  ✓ (5 tests)
 [JitCacheTest]        ✓ (1 test)
+[JitOptimizationTest] ✓ (4 tests)  ★ NEW
 [ProfilingTest]       ✓ (2 tests)
 [SortingProfileTest]  ✓ (1 test)
 [EdgeCaseTest]        ✓ (34 tests)
 [StressTest]          ✓ (7 tests)
 [AlgorithmTest]       ✓ (3 tests)
 ────────────────────────
-Total: 22 test suites (154+ tests) ✓
+Total: 23 test suites (158+ tests) ✓

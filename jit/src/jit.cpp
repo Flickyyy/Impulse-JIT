@@ -1,5 +1,6 @@
 #include "impulse/jit/jit.h"
 
+#include <cmath>
 #include <cstring>
 #include <stdexcept>
 
@@ -468,6 +469,25 @@ void JitCompiler::store_xmm_to_value(const ir::SsaValue& value, int xmm) {
     buffer_.emit_movsd_mem_xmm(static_cast<int>(Register::RBP), offset, xmm);
 }
 
+void JitCompiler::emit_constant_to_result(double val, const ir::SsaValue& result) {
+    // Store constant and mark as known for future optimizations
+    set_constant(result, val);
+    
+    int32_t offset = get_value_offset(result);
+    int64_t bits;
+    std::memcpy(&bits, &val, sizeof(bits));
+    
+    // mov rax, imm64
+    buffer_.emit_mov_reg_imm64(static_cast<int>(Register::RAX), bits);
+    
+    // mov [rbp + offset], rax
+    buffer_.emit({0x48, 0x89, 0x85});
+    buffer_.emit(static_cast<uint8_t>(offset & 0xFF));
+    buffer_.emit(static_cast<uint8_t>((offset >> 8) & 0xFF));
+    buffer_.emit(static_cast<uint8_t>((offset >> 16) & 0xFF));
+    buffer_.emit(static_cast<uint8_t>((offset >> 24) & 0xFF));
+}
+
 void JitCompiler::compile_instruction(const ir::SsaInstruction& inst, const ir::SsaBlock& block, const ir::SsaFunction& function) {
     if (inst.opcode == "literal") {
         // Load immediate double value directly into XMM0, then store to stack
@@ -489,12 +509,13 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst, const ir::
         }
         
         if (inst.result.has_value()) {
+            // Track this constant for JIT-time optimizations
+            set_constant(*inst.result, val);
+            
             // Load double constant into XMM0 using movsd from memory
-            // We'll store the constant in the code and load it
-            // First, allocate space for the constant
             int32_t offset = get_value_offset(*inst.result);
             
-            // Move the double bits to RAX, then to memory, then load to XMM
+            // Move the double bits to RAX, then to memory
             int64_t bits;
             std::memcpy(&bits, &val, sizeof(bits));
             
@@ -508,20 +529,157 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst, const ir::
             buffer_.emit(static_cast<uint8_t>((offset >> 16) & 0xFF));
             buffer_.emit(static_cast<uint8_t>((offset >> 24) & 0xFF));
             
-            // Now load it into XMM0 for consistency (though we could skip this)
             // movsd xmm0, [rbp + offset]
             buffer_.emit_movsd_xmm_mem(0, static_cast<int>(Register::RBP), offset);
         }
     }
     else if (inst.opcode == "binary") {
-        if (inst.arguments.size() < 2 || inst.immediates.empty()) {
+        if (inst.arguments.size() < 2 || inst.immediates.empty() || !inst.result.has_value()) {
             return;
         }
         
-        load_value_to_xmm(0, inst.arguments[0]);
-        load_value_to_xmm(1, inst.arguments[1]);
-        
         const std::string& op = inst.immediates[0];
+        const ir::SsaValue& left_arg = inst.arguments[0];
+        const ir::SsaValue& right_arg = inst.arguments[1];
+        const ir::SsaValue& result = *inst.result;
+        
+        bool left_const = is_constant(left_arg);
+        bool right_const = is_constant(right_arg);
+        
+        // =======================================================
+        // JIT Optimization 1: Constant Folding
+        // If both operands are constants, compute at JIT-time
+        // =======================================================
+        if (left_const && right_const) {
+            double left_val = get_constant(left_arg);
+            double right_val = get_constant(right_arg);
+            double folded_result = 0.0;
+            bool can_fold = true;
+            
+            if (op == "+") folded_result = left_val + right_val;
+            else if (op == "-") folded_result = left_val - right_val;
+            else if (op == "*") folded_result = left_val * right_val;
+            else if (op == "/" && right_val != 0.0) folded_result = left_val / right_val;
+            else if (op == "%" && right_val != 0.0) folded_result = std::fmod(left_val, right_val);
+            else if (op == "<") folded_result = (left_val < right_val) ? 1.0 : 0.0;
+            else if (op == "<=") folded_result = (left_val <= right_val) ? 1.0 : 0.0;
+            else if (op == ">") folded_result = (left_val > right_val) ? 1.0 : 0.0;
+            else if (op == ">=") folded_result = (left_val >= right_val) ? 1.0 : 0.0;
+            else if (op == "==") folded_result = (left_val == right_val) ? 1.0 : 0.0;
+            else if (op == "!=") folded_result = (left_val != right_val) ? 1.0 : 0.0;
+            else if (op == "&&") folded_result = (left_val != 0.0 && right_val != 0.0) ? 1.0 : 0.0;
+            else if (op == "||") folded_result = (left_val != 0.0 || right_val != 0.0) ? 1.0 : 0.0;
+            else can_fold = false;
+            
+            if (can_fold) {
+                emit_constant_to_result(folded_result, result);
+                opt_stats_.constants_folded++;
+                return;
+            }
+        }
+        
+        // =======================================================
+        // JIT Optimization 2: Strength Reduction & Identity Elim
+        // =======================================================
+        if (right_const) {
+            double right_val = get_constant(right_arg);
+            
+            // x * 2.0 → x + x (addsd is faster than mulsd)
+            if (op == "*" && right_val == 2.0) {
+                load_value_to_xmm(0, left_arg);
+                buffer_.emit_addsd(0, 0);  // xmm0 = xmm0 + xmm0
+                store_xmm_to_value(result, 0);
+                opt_stats_.strength_reductions++;
+                return;
+            }
+            
+            // x * 1.0 → x (identity)
+            if (op == "*" && right_val == 1.0) {
+                load_value_to_xmm(0, left_arg);
+                store_xmm_to_value(result, 0);
+                if (left_const) set_constant(result, get_constant(left_arg));
+                opt_stats_.identity_eliminations++;
+                return;
+            }
+            
+            // x * 0.0 → 0.0
+            if (op == "*" && right_val == 0.0) {
+                emit_constant_to_result(0.0, result);
+                opt_stats_.identity_eliminations++;
+                return;
+            }
+            
+            // x + 0.0 → x (identity)
+            if (op == "+" && right_val == 0.0) {
+                load_value_to_xmm(0, left_arg);
+                store_xmm_to_value(result, 0);
+                if (left_const) set_constant(result, get_constant(left_arg));
+                opt_stats_.identity_eliminations++;
+                return;
+            }
+            
+            // x - 0.0 → x (identity)
+            if (op == "-" && right_val == 0.0) {
+                load_value_to_xmm(0, left_arg);
+                store_xmm_to_value(result, 0);
+                if (left_const) set_constant(result, get_constant(left_arg));
+                opt_stats_.identity_eliminations++;
+                return;
+            }
+            
+            // x / 1.0 → x (identity)
+            if (op == "/" && right_val == 1.0) {
+                load_value_to_xmm(0, left_arg);
+                store_xmm_to_value(result, 0);
+                if (left_const) set_constant(result, get_constant(left_arg));
+                opt_stats_.identity_eliminations++;
+                return;
+            }
+        }
+        
+        if (left_const) {
+            double left_val = get_constant(left_arg);
+            
+            // 2.0 * x → x + x
+            if (op == "*" && left_val == 2.0) {
+                load_value_to_xmm(0, right_arg);
+                buffer_.emit_addsd(0, 0);
+                store_xmm_to_value(result, 0);
+                opt_stats_.strength_reductions++;
+                return;
+            }
+            
+            // 1.0 * x → x
+            if (op == "*" && left_val == 1.0) {
+                load_value_to_xmm(0, right_arg);
+                store_xmm_to_value(result, 0);
+                if (right_const) set_constant(result, get_constant(right_arg));
+                opt_stats_.identity_eliminations++;
+                return;
+            }
+            
+            // 0.0 * x → 0.0
+            if (op == "*" && left_val == 0.0) {
+                emit_constant_to_result(0.0, result);
+                opt_stats_.identity_eliminations++;
+                return;
+            }
+            
+            // 0.0 + x → x
+            if (op == "+" && left_val == 0.0) {
+                load_value_to_xmm(0, right_arg);
+                store_xmm_to_value(result, 0);
+                if (right_const) set_constant(result, get_constant(right_arg));
+                opt_stats_.identity_eliminations++;
+                return;
+            }
+        }
+        
+        // =======================================================
+        // No optimization applicable - emit standard code
+        // =======================================================
+        load_value_to_xmm(0, left_arg);
+        load_value_to_xmm(1, right_arg);
         
         if (op == "+") {
             buffer_.emit_addsd(0, 1);
@@ -832,6 +990,8 @@ auto JitCompiler::compile_with_buffer(const ir::SsaFunction& function, const std
     label_positions_.clear();
     pending_jumps_.clear();
     phi_map_.clear();
+    known_constants_.clear();
+    opt_stats_ = JitOptStats{};
     current_block_id_ = 0;
     buffer_ = CodeBuffer{};
     

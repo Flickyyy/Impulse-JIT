@@ -113,6 +113,15 @@ public:
     
     // Check if JIT is supported on this platform
     [[nodiscard]] static auto is_supported() -> bool;
+    
+    // JIT optimization statistics
+    struct JitOptStats {
+        int constants_folded = 0;      // Binary ops on constants computed at JIT time
+        int strength_reductions = 0;   // x*2 → x+x, etc.
+        int identity_eliminations = 0; // x*1 → x, x+0 → x, etc.
+    };
+    
+    [[nodiscard]] auto get_opt_stats() const -> const JitOptStats& { return opt_stats_; }
 
 private:
     CodeBuffer buffer_;
@@ -134,6 +143,30 @@ private:
     std::unordered_map<std::string, std::vector<PhiInfo>> phi_map_;
     std::size_t current_block_id_ = 0;
     
+    // JIT-time constant tracking for optimization
+    std::unordered_map<uint64_t, double> known_constants_;
+    JitOptStats opt_stats_;
+    
+    // Helper to get SSA value key
+    [[nodiscard]] static auto value_key(const ir::SsaValue& v) -> uint64_t {
+        return (static_cast<uint64_t>(v.symbol) << 32) | v.version;
+    }
+    
+    // Check if a value is a known constant
+    [[nodiscard]] auto is_constant(const ir::SsaValue& v) const -> bool {
+        return known_constants_.find(value_key(v)) != known_constants_.end();
+    }
+    
+    // Get constant value (assumes is_constant returned true)
+    [[nodiscard]] auto get_constant(const ir::SsaValue& v) const -> double {
+        return known_constants_.at(value_key(v));
+    }
+    
+    // Store a known constant
+    void set_constant(const ir::SsaValue& v, double val) {
+        known_constants_[value_key(v)] = val;
+    }
+    
     void compile_block(const ir::SsaBlock& block, const ir::SsaFunction& function);
     void compile_instruction(const ir::SsaInstruction& inst, const ir::SsaBlock& block, const ir::SsaFunction& function);
     
@@ -148,6 +181,9 @@ private:
     
     void load_value_to_xmm(int xmm, const ir::SsaValue& value);
     void store_xmm_to_value(const ir::SsaValue& value, int xmm);
+    
+    // Emit a constant load (used for JIT-time computed values)
+    void emit_constant_to_result(double val, const ir::SsaValue& result);
 };
 
 }  // namespace impulse::jit

@@ -715,3 +715,162 @@ func main() -> float {
     std::cout << "========================================\n" << std::endl;
 }
 
+// ============================================================================
+// JIT Optimization Tests
+// ============================================================================
+
+TEST(JitOptimizationTest, ConstantFolding) {
+    // Test that constant expressions are computed at JIT-time
+    const std::string source = R"(
+module test;
+
+func compute() -> float {
+    // These should all be folded at JIT-time
+    let a: float = 3.0 + 5.0;    // -> 8.0
+    let b: float = 10.0 * 2.0;   // -> 20.0
+    let c: float = a + b;        // -> 28.0 (chained folding)
+    return c;
+}
+
+func main() -> float {
+    return compute();
+}
+)";
+
+    Vm vm;
+    vm.set_jit_enabled(true);
+    
+    impulse::frontend::Parser parser(source);
+    auto parse_result = parser.parseModule();
+    ASSERT_TRUE(parse_result.success);
+    
+    const auto semantic = impulse::frontend::analyzeModule(parse_result.module);
+    ASSERT_TRUE(semantic.success);
+    
+    const auto ir = impulse::frontend::lower_to_ir(parse_result.module);
+    const auto load = vm.load(ir);
+    ASSERT_TRUE(load.success);
+    
+    auto result = vm.run("test", "main");
+    EXPECT_EQ(result.status, VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_DOUBLE_EQ(result.value, 28.0);
+    
+    std::cout << "JIT Constant Folding: 3+5=8, 10*2=20, 8+20=28 ✓" << std::endl;
+}
+
+TEST(JitOptimizationTest, StrengthReduction) {
+    // Test x * 2.0 -> x + x optimization
+    const std::string source = R"(
+module test;
+
+func double_it(x: float) -> float {
+    return x * 2.0;
+}
+
+func main() -> float {
+    let a: float = double_it(5.0);
+    let b: float = double_it(10.0);
+    let c: float = double_it(2.5);
+    return a + b + c;
+}
+)";
+
+    Vm vm;
+    vm.set_jit_enabled(true);
+    
+    impulse::frontend::Parser parser(source);
+    auto parse_result = parser.parseModule();
+    ASSERT_TRUE(parse_result.success);
+    
+    const auto semantic = impulse::frontend::analyzeModule(parse_result.module);
+    ASSERT_TRUE(semantic.success);
+    
+    const auto ir = impulse::frontend::lower_to_ir(parse_result.module);
+    const auto load = vm.load(ir);
+    ASSERT_TRUE(load.success);
+    
+    auto result = vm.run("test", "main");
+    EXPECT_EQ(result.status, VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    // 5*2 + 10*2 + 2.5*2 = 10 + 20 + 5 = 35
+    EXPECT_DOUBLE_EQ(result.value, 35.0);
+    
+    std::cout << "JIT Strength Reduction: x*2 -> x+x ✓" << std::endl;
+}
+
+TEST(JitOptimizationTest, IdentityElimination) {
+    // Test identity optimizations: x*1, x+0, x-0, x/1
+    const std::string source = R"(
+module test;
+
+func identity_ops(x: float) -> float {
+    let a: float = x * 1.0;  // Should be just x
+    let b: float = a + 0.0;  // Should be just a
+    let c: float = b - 0.0;  // Should be just b
+    let d: float = c / 1.0;  // Should be just c
+    return d;
+}
+
+func main() -> float {
+    return identity_ops(42.0);
+}
+)";
+
+    Vm vm;
+    vm.set_jit_enabled(true);
+    
+    impulse::frontend::Parser parser(source);
+    auto parse_result = parser.parseModule();
+    ASSERT_TRUE(parse_result.success);
+    
+    const auto semantic = impulse::frontend::analyzeModule(parse_result.module);
+    ASSERT_TRUE(semantic.success);
+    
+    const auto ir = impulse::frontend::lower_to_ir(parse_result.module);
+    const auto load = vm.load(ir);
+    ASSERT_TRUE(load.success);
+    
+    auto result = vm.run("test", "main");
+    EXPECT_EQ(result.status, VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_DOUBLE_EQ(result.value, 42.0);
+    
+    std::cout << "JIT Identity Elimination: x*1=x, x+0=x, x-0=x, x/1=x ✓" << std::endl;
+}
+
+TEST(JitOptimizationTest, ZeroMultiplication) {
+    // Test x * 0.0 -> 0.0 optimization
+    const std::string source = R"(
+module test;
+
+func zero_mult(x: float) -> float {
+    return x * 0.0;  // Should be just 0.0
+}
+
+func main() -> float {
+    return zero_mult(12345.0);
+}
+)";
+
+    Vm vm;
+    vm.set_jit_enabled(true);
+    
+    impulse::frontend::Parser parser(source);
+    auto parse_result = parser.parseModule();
+    ASSERT_TRUE(parse_result.success);
+    
+    const auto semantic = impulse::frontend::analyzeModule(parse_result.module);
+    ASSERT_TRUE(semantic.success);
+    
+    const auto ir = impulse::frontend::lower_to_ir(parse_result.module);
+    const auto load = vm.load(ir);
+    ASSERT_TRUE(load.success);
+    
+    auto result = vm.run("test", "main");
+    EXPECT_EQ(result.status, VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_DOUBLE_EQ(result.value, 0.0);
+    
+    std::cout << "JIT Zero Multiplication: x*0=0 ✓" << std::endl;
+}

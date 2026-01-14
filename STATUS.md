@@ -65,6 +65,10 @@
   - `x / 1.0` → just `movsd` (no division emitted)
 - **Zero Propagation**: Optimizes multiplication by zero
   - `x * 0.0` → emit constant `0.0` directly (no multiplication)
+- **Dead Code Elimination**: Skips instructions with unused results
+  - Computes live value set before code generation
+  - Instructions producing unused values are not emitted
+  - Preserves side-effect instructions (calls, array mutations)
 
 ### Performance Optimizations
 - **Enum-based dispatch**: SsaOpcode and BinaryOp enums replace string comparisons (~2x interpreter speedup)
@@ -111,7 +115,7 @@ which are not yet JIT-compiled. JIT compiles numeric computations with control f
 [JitDebugTest]        ✓ (4 tests)
 [JitCorrectnessTest]  ✓ (5 tests)
 [JitCacheTest]        ✓ (1 test)
-[JitOptimizationTest] ✓ (4 tests)  ★ NEW
+[JitOptimizationTest] ✓ (5 tests)  ★ NEW
 [ProfilingTest]       ✓ (2 tests)
 [SortingProfileTest]  ✓ (1 test)
 [EdgeCaseTest]        ✓ (34 tests)

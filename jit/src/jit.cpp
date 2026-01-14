@@ -488,7 +488,51 @@ void JitCompiler::emit_constant_to_result(double val, const ir::SsaValue& result
     buffer_.emit(static_cast<uint8_t>((offset >> 24) & 0xFF));
 }
 
+// ============================================================================
+// Dead Code Elimination
+// ============================================================================
+
+void JitCompiler::compute_live_values(const ir::SsaFunction& function) {
+    live_values_.clear();
+    
+    // Mark all values that are used as arguments to any instruction
+    for (const auto& block : function.blocks) {
+        // Phi node inputs are live
+        for (const auto& phi : block.phi_nodes) {
+            for (const auto& input : phi.inputs) {
+                if (input.value.has_value()) {
+                    live_values_.insert(value_key(*input.value));
+                }
+            }
+        }
+        
+        // Instruction arguments are live
+        for (const auto& inst : block.instructions) {
+            for (const auto& arg : inst.arguments) {
+                live_values_.insert(value_key(arg));
+            }
+        }
+    }
+}
+
 void JitCompiler::compile_instruction(const ir::SsaInstruction& inst, const ir::SsaBlock& block, const ir::SsaFunction& function) {
+    // ========================================================================
+    // Dead Code Elimination: skip instructions with unused results
+    // ========================================================================
+    // Exception: control flow (branch, branch_if, return), calls, and array mutations
+    // have side effects and must always be emitted
+    if (inst.result.has_value()) {
+        bool is_side_effect = (inst.opcode == "call" || 
+                               inst.opcode == "array_set" || 
+                               inst.opcode == "array_push" ||
+                               inst.opcode == "array_pop");
+        if (!is_side_effect && live_values_.find(value_key(*inst.result)) == live_values_.end()) {
+            // Result is not used anywhere - skip this instruction
+            opt_stats_.dead_code_eliminated++;
+            return;
+        }
+    }
+    
     if (inst.opcode == "literal") {
         // Load immediate double value directly into XMM0, then store to stack
         double val = 0.0;
@@ -991,9 +1035,13 @@ auto JitCompiler::compile_with_buffer(const ir::SsaFunction& function, const std
     pending_jumps_.clear();
     phi_map_.clear();
     known_constants_.clear();
+    live_values_.clear();
     opt_stats_ = JitOptStats{};
     current_block_id_ = 0;
     buffer_ = CodeBuffer{};
+    
+    // Compute live values for Dead Code Elimination
+    compute_live_values(function);
     
     // Build phi map for SSA deconstruction
     // Map: target block name -> list of (predecessor block id, phi result, phi input)

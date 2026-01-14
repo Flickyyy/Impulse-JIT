@@ -5,6 +5,7 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "impulse/ir/ssa.h"
@@ -119,6 +120,7 @@ public:
         int constants_folded = 0;      // Binary ops on constants computed at JIT time
         int strength_reductions = 0;   // x*2 → x+x, etc.
         int identity_eliminations = 0; // x*1 → x, x+0 → x, etc.
+        int dead_code_eliminated = 0;  // Instructions with unused results skipped
     };
     
     [[nodiscard]] auto get_opt_stats() const -> const JitOptStats& { return opt_stats_; }
@@ -142,6 +144,9 @@ private:
     };
     std::unordered_map<std::string, std::vector<PhiInfo>> phi_map_;
     std::size_t current_block_id_ = 0;
+    
+    // Dead Code Elimination: set of live (used) SSA values
+    std::unordered_set<uint64_t> live_values_;
     
     // JIT-time constant tracking for optimization
     std::unordered_map<uint64_t, double> known_constants_;
@@ -169,6 +174,9 @@ private:
     
     void compile_block(const ir::SsaBlock& block, const ir::SsaFunction& function);
     void compile_instruction(const ir::SsaInstruction& inst, const ir::SsaBlock& block, const ir::SsaFunction& function);
+    
+    // Dead Code Elimination: compute set of live values
+    void compute_live_values(const ir::SsaFunction& function);
     
     void emit_prologue(int num_locals);
     void emit_epilogue();

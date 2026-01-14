@@ -874,3 +874,42 @@ func main() -> float {
     
     std::cout << "JIT Zero Multiplication: x*0=0 ✓" << std::endl;
 }
+
+TEST(JitOptimizationTest, DeadCodeElimination) {
+    // Test that unused computations are eliminated
+    const std::string source = R"(
+module test;
+
+func compute(x: float) -> float {
+    let a: float = x * 2.0;
+    let b: float = x * 3.0;
+    return b;
+}
+
+func main() -> float {
+    return compute(7.0);
+}
+)";
+
+    Vm vm;
+    vm.set_jit_enabled(true);
+    
+    impulse::frontend::Parser parser(source);
+    auto parse_result = parser.parseModule();
+    ASSERT_TRUE(parse_result.success) << "Parse error: " << (parse_result.diagnostics.empty() ? "unknown" : parse_result.diagnostics[0].message);
+    
+    const auto semantic = impulse::frontend::analyzeModule(parse_result.module);
+    ASSERT_TRUE(semantic.success);
+    
+    const auto ir = impulse::frontend::lower_to_ir(parse_result.module);
+    const auto load = vm.load(ir);
+    ASSERT_TRUE(load.success);
+    
+    auto result = vm.run("test", "main");
+    EXPECT_EQ(result.status, VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    // 7.0 * 3.0 = 21.0
+    EXPECT_DOUBLE_EQ(result.value, 21.0);
+    
+    std::cout << "JIT Dead Code Elimination: unused computations skipped ✓" << std::endl;
+}

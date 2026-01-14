@@ -799,6 +799,44 @@ func main() -> float {
     std::cout << "JIT Strength Reduction: x*2 -> x+x ✓" << std::endl;
 }
 
+TEST(JitOptimizationTest, SubtractSelfZero) {
+    // Test that x - x is optimized to 0.0
+    const std::string source = R"(
+module test;
+
+func sub_self(x: float) -> float {
+    return x - x;
+}
+
+func main() -> float {
+    let a: float = sub_self(5.0);
+    let b: float = sub_self(0.0);
+    return a + b;
+}
+)";
+
+    Vm vm;
+    vm.set_jit_enabled(true);
+
+    impulse::frontend::Parser parser(source);
+    auto parse_result = parser.parseModule();
+    ASSERT_TRUE(parse_result.success);
+
+    const auto semantic = impulse::frontend::analyzeModule(parse_result.module);
+    ASSERT_TRUE(semantic.success);
+
+    const auto ir = impulse::frontend::lower_to_ir(parse_result.module);
+    const auto load = vm.load(ir);
+    ASSERT_TRUE(load.success);
+
+    auto result = vm.run("test", "main");
+    EXPECT_EQ(result.status, VmStatus::Success);
+    EXPECT_TRUE(result.has_value);
+    EXPECT_NEAR(result.value, 0.0, 1e-9);
+
+    std::cout << "JIT SubtractSelfZero ✓" << std::endl;
+}
+
 TEST(JitOptimizationTest, IdentityElimination) {
     // Test identity optimizations: x*1, x+0, x-0, x/1
     const std::string source = R"(

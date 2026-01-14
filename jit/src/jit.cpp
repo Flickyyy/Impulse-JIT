@@ -589,6 +589,13 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst, const ir::
         
         bool left_const = is_constant(left_arg);
         bool right_const = is_constant(right_arg);
+
+        // Optimization: x - x => 0.0 (identity elimination)
+        if (op == "-" && left_arg.symbol == right_arg.symbol && left_arg.version == right_arg.version) {
+            emit_constant_to_result(0.0, result);
+            opt_stats_.identity_eliminations++;
+            return;
+        }
         
         // =======================================================
         // JIT Optimization 1: Constant Folding
@@ -826,10 +833,10 @@ void JitCompiler::compile_instruction(const ir::SsaInstruction& inst, const ir::
         if (inst.arguments.empty() || inst.immediates.empty()) {
             return;
         }
-        
-        load_value_to_xmm(0, inst.arguments[0]);
-        
+        const auto& arg0 = inst.arguments[0];
         const std::string& op = inst.immediates[0];
+
+        load_value_to_xmm(0, inst.arguments[0]);
         
         if (op == "-") {
             // Negate: xorps xmm0, sign_mask (flip sign bit)

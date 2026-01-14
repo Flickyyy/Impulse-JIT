@@ -63,6 +63,10 @@ public:
     void reset_profiling() const;
     void dump_profiling_results(std::ostream& out) const;
     [[nodiscard]] auto get_profiling_results() const -> std::string;
+    
+    // Hotspot JIT trigger: compile after N calls (0 = immediate/eager JIT)
+    void set_jit_hotspot_threshold(uint64_t threshold) const;
+    [[nodiscard]] auto get_jit_hotspot_threshold() const -> uint64_t;
 
 private:
     friend class FrameGuard;
@@ -127,6 +131,11 @@ private:
     };
     mutable bool profiling_enabled_ = false;
     mutable std::unordered_map<std::string, FunctionProfile> profiling_data_;
+    
+    // Hotspot threshold: JIT compiles after this many calls (0 = eager/immediate)
+    mutable uint64_t jit_hotspot_threshold_ = 0;
+    // Call counter for hotspot detection (separate from profiling)
+    mutable std::unordered_map<std::string, uint64_t> call_counts_;
 };
 
 }  // namespace impulse::runtime

@@ -239,19 +239,24 @@ auto Vm::load(ir::Module module) -> VmLoadResult {
         param_names.push_back(param.name);
     }
     
-    // Check JIT cache (cache_key already computed above)
-    auto cache_it = jit_cache_.find(cache_key);
+    // Increment call counter for hotspot detection
+    uint64_t& call_count = call_counts_[cache_key];
+    ++call_count;
     
     // Try JIT compilation if the function is suitable
-    // JIT can compile any suitable function, not just entry points
-    if (jit_enabled_) {
+    // Hotspot trigger: only JIT compile after threshold calls (0 = eager/immediate)
+    const bool hotspot_ready = (jit_hotspot_threshold_ == 0) || (call_count >= jit_hotspot_threshold_);
+    
+    if (jit_enabled_ && hotspot_ready) {
         jit::JitFunction jit_func = nullptr;
         bool can_jit = false;
         
-        if (cache_it != jit_cache_.end()) {
+        // Re-check cache (cache_it may be invalid after call_counts_ modification)
+        auto jit_cache_it = jit_cache_.find(cache_key);
+        if (jit_cache_it != jit_cache_.end()) {
             // Use cached result
-            jit_func = cache_it->second.function;
-            can_jit = cache_it->second.can_jit;
+            jit_func = jit_cache_it->second.function;
+            can_jit = jit_cache_it->second.can_jit;
         } else {
             // Check if function can be JIT compiled and compile if possible
             can_jit = can_jit_compile(*ssa_ptr, param_names);
@@ -431,6 +436,14 @@ void Vm::set_read_line_provider(std::function<std::optional<std::string>()> prov
 
 void Vm::set_jit_enabled(bool enabled) const {
     jit_enabled_ = enabled;
+}
+
+void Vm::set_jit_hotspot_threshold(uint64_t threshold) const {
+    jit_hotspot_threshold_ = threshold;
+}
+
+auto Vm::get_jit_hotspot_threshold() const -> uint64_t {
+    return jit_hotspot_threshold_;
 }
 
 void Vm::collect_garbage() const {

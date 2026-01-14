@@ -1,15 +1,15 @@
 Function swap
-  optimizations disabled - using JIT
+  no optimizations applied
 
 Function partition
-  optimizations disabled - using JIT
+  no optimizations applied
 
 Function quicksort
-  optimizations disabled - using JIT
+  no optimizations applied
 
 Function is_sorted
-  optimizations disabled - using JIT
+  no optimizations applied
 
 Function main
-  optimizations disabled - using JIT
+  no optimizations applied
 

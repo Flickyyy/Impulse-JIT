@@ -1,12 +1,12 @@
 Function fibonacci
-  optimizations disabled - using JIT
+  no optimizations applied
 
 Function emit_value
-  optimizations disabled - using JIT
+  no optimizations applied
 
 Function build_banner
-  optimizations disabled - using JIT
+  no optimizations applied
 
 Function main
-  optimizations disabled - using JIT
+  no optimizations applied
 

@@ -1,6 +1,6 @@
 Function join_words
-  optimizations disabled - using JIT
+  no optimizations applied
 
 Function main
-  optimizations disabled - using JIT
+  no optimizations applied
 

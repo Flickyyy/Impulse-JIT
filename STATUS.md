@@ -19,10 +19,24 @@
 - **CFG**: Control flow graph construction with dominators
 - **SSA**: Phi placement, value renaming, SSA blocks/instructions
 
+### SSA Optimizations
+- **Constant Folding**: Evaluates constant expressions at compile time
+  - Arithmetic: `3 + 5` → `8`
+  - Comparison: `5 < 10` → `true`
+  - Unary: `-2` folded directly
+  - Chained: propagates through multiple operations
+- **Strength Reduction**: Replaces expensive operations with cheaper equivalents
+  - `x * 2` → `x + x` (multiplication → addition)
+  - `x * 1` → `x` (identity elimination)
+  - `x * 0` → `0` (zero propagation)
+  - `x + 0` → `x`, `x - 0` → `x` (identity elimination)
+  - `x / 1` → `x` (identity elimination)
+
 ### Runtime
 - **VM**: SSA-driven interpreter with GC-managed heap
 - **GC**: Mark-sweep garbage collector with frame rooting
 - **Builtins**: print, println, string operations, array operations, read_line
+- **Hotspot Trigger**: Configurable threshold for JIT compilation (eager or lazy)
 
 ### JIT Compiler (x86-64)
 - **CodeBuffer**: Machine code emission with x86-64 instruction encoding
@@ -36,17 +50,18 @@
 - **Memory**: Stack allocation for SSA values
 - **Speedup**: 3.6x-10x faster than interpreter for numeric code with loops
 
-### Optimizations
+### Performance Optimizations
 - **Enum-based dispatch**: SsaOpcode and BinaryOp enums replace string comparisons (~2x interpreter speedup)
 - **SSA caching**: Avoids repeated SSA construction for hot functions
 - **JIT caching**: Compiled code cached for reuse
 - **Function lookup cache**: O(1) function lookup in interpreter
 
 ### Testing
-- 19 Google Test suites (134 tests) passing
+- 22 Google Test suites (154+ tests) passing
 - 13 acceptance test cases
 - Exam benchmark programs (factorial, sorting, primes, nbody)
 - Edge case and stress tests
+- Dedicated optimizer tests (20 tests)
 
 ## Benchmarks
 
@@ -67,6 +82,9 @@ which are not yet JIT-compiled. JIT compiles numeric computations with control f
 [ParserTest]          ✓ (3 tests)
 [SemanticTest]        ✓ (22 tests)
 [IRTest]              ✓ (12 tests)
+[ConstantFolding]     ✓ (8 tests)  ★ NEW
+[StrengthReduction]   ✓ (9 tests)  ★ NEW
+[OptimizeSSA]         ✓ (3 tests)  ★ NEW
 [OperatorTest]        ✓ (6 tests)
 [ControlFlowTest]     ✓ (4 tests)
 [FunctionCallTest]    ✓ (2 tests)
@@ -83,4 +101,4 @@ which are not yet JIT-compiled. JIT compiles numeric computations with control f
 [StressTest]          ✓ (7 tests)
 [AlgorithmTest]       ✓ (3 tests)
 ────────────────────────
-Total: 19 test suites (134 tests) ✓
+Total: 22 test suites (154+ tests) ✓

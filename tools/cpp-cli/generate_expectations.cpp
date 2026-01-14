@@ -159,6 +159,7 @@ void append_diagnostics(std::string_view stage, const std::vector<impulse::front
     }
 
     impulse::runtime::Vm vm;
+    vm.set_jit_enabled(false);  // Disable JIT for consistent trace output
     std::istringstream stdin_stream;
     if (stdin_text.has_value()) {
         stdin_stream.str(*stdin_text);

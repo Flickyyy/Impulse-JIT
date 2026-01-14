@@ -1,9 +1,9 @@
 Function is_prime
-  optimizations disabled - using JIT
+  no optimizations applied
 
 Function count_primes
-  optimizations disabled - using JIT
+  no optimizations applied
 
 Function main
-  optimizations disabled - using JIT
+  no optimizations applied
 

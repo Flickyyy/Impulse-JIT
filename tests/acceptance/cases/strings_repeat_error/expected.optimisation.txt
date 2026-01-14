@@ -1,3 +1,4 @@
 Function main
-  optimizations disabled - using JIT
+  constant folding: 1 expressions folded
+  total changes: 1
 
